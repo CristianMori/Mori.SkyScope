@@ -19,6 +19,7 @@ export * from "./sources/mqtt-mapping.js";
 export * from "./recording/mcap.js";
 export * from "./recording/lz4.js";
 export * from "./recording/recorder.js";
+export * from "./recording/export.js";
 export * from "./paint/painter.js";
 export * from "./paint/recording-painter.js";
 export * from "./scene/geometry.js";

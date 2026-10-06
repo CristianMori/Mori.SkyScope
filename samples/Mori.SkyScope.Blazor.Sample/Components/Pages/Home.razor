@@ -28,6 +28,10 @@
         <Button Size="Core.Size.Sm" OnClick="Reset">reset</Button>
         <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => _chart!.DownloadLayoutAsync("skyscope-layout.json"))">save layout</Button>
         <label class="skyscope-button skyscope-button--sm skyscope-button--ghost" style="cursor:pointer">load layout<InputFile OnChange="LoadLayout" accept=".json" style="display:none" /></label>
+        <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => ExportCursors("csv"))">export A→B</Button>
+        <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => ExportCursors("mcap"))">export A→B mcap</Button>
+        @if (_note is not null) { <span style="font-size:12px;color:#dc2626">@_note</span> }
+        <Button Size="Core.Size.Sm" Variant="@(_editor ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _editor = !_editor)">editor</Button>
         <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => { _dark = !_dark; _config.Theme = _dark ? ChartTheme.Dark : ChartTheme.Light; })">@(_dark ? "light" : "dark")</Button>
         <span style="width:8px"></span>
         <Button Size="Core.Size.Sm" Variant="@(_mode == "live" ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _mode = "live")">live</Button>
@@ -39,7 +43,7 @@
         <Playback Key="rec" />
     }
     <div style="flex:1;min-height:0;display:grid;grid-template-columns:200px 2fr 1fr;gap:8px">
-        <SignalTree WsUrl="@DataUrl" Chart="_chart" />
+        @if (_editor) { <ChartEditor Chart="_chart" /> } else { <SignalTree WsUrl="@DataUrl" Chart="_chart" /> }
         <TrendChart @ref="_chart" WsUrl="@DataUrl" Config="_config" Tool="_tool" Height="100%" />
         <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
             <div style="display:flex;gap:4px">
@@ -94,6 +98,7 @@
     private string _sceneTool = "pan";
     private string _scene3dTool = "orbit";
     private bool _scene3d = true;
+    private bool _editor;
     private string _mode = "live";
     /// <summary>Charts and scenes follow the live socket or the browser-side playback registered as "rec".</summary>
     private string DataUrl => _mode == "live" ? WsUrl : "playback:rec";
@@ -158,6 +163,14 @@
     }
 
     /// <summary>Switches the trend chart's pointer tool.</summary>
+    private string? _note;
+    /// <summary>Downloads the visible signals between cursors A and B as CSV or MCAP; the chart declines without both cursors.</summary>
+    private async Task ExportCursors(string format)
+    {
+        var ok = _chart is not null && await _chart.ExportCursorsAsync(format);
+        _note = ok ? null : "export: set cursors A and B first (cursor tool: click, Shift + click)";
+    }
+
     /// <summary>Reads the chosen JSON layout file and hands it to the chart.</summary>
     private async Task LoadLayout(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
     {

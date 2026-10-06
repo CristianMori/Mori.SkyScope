@@ -21,7 +21,7 @@ and the fixture file under `spec/fixtures/` that pins both. Suites: TypeScript 2
 | WebSocketFrameSource | `@mori/skyscope-sources` `websocket-source.ts` (optional Web Worker) | `Sources/WebSocketFrameSource.cs` | — | Binary frames → store; text messages carry the channel catalog and relayed scene layers; reconnects; .NET side marshals through `Dispatch`. |
 | FrameBroadcaster + endpoint | — | `Mori.SkyScope.Streaming`: `FrameBroadcaster.cs`, `StreamEndpoints.cs` | — | Server sink (`ISignalSink` + `ILayerSink`): bounded per-client queues, drop accounting, catalog and layer declarations replayed on connect; `app.MapSkyScopeStream("/ws", broadcaster)`. |
 | Painter contract | `paint/painter.ts`, `paint/recording-painter.ts` | `Paint/IPainter.cs`, `RecordingPainter.cs`, `CssColor.cs` | `paint.json` | About fifteen primitives (line, polyline, polygon, rect, circle, arc, sector, text, measureText, image, clip, transform, layer cache); `RasterImage` for core-produced RGBA; the recording painter records resolved styles and a pixel hash for parity. |
-| Renderers | `@mori/skyscope-render`: `canvas2d-painter.ts`, `webgl-lines.ts` | `Mori.SkyScope.Render.Skia`: `SkiaPainter.cs`, `RasterCache.cs` | — | Canvas2D painter with device-pixel ratio and layer surfaces; WebGL `LINE_STRIP` renderer with per-lane scissor; SkiaSharp painter with `SKSurface` layers and raster upload cache. |
+| Renderers | `@mori/skyscope-render`: `canvas2d-painter.ts`, `webgl-lines.ts` | `Mori.SkyScope.Render.Skia`: `SkiaPainter.cs`, `RasterCache.cs` | — | Canvas2D painter with device-pixel ratio and layer surfaces; WebGL series renderer (one instanced screen-space quad per segment, width in device pixels, one-pixel feathered edge and round caps in the fragment shader, per-lane scissor; native hairlines without `ANGLE_instanced_arrays`); SkiaSharp painter with `SKSurface` layers and raster upload cache. |
 | Scene engine | `scene/geometry.ts`, `camera.ts`, `scene.ts`, `layers.ts`, `interaction.ts` | `Scene/Geometry.cs`, `Camera2D.cs`, `Scene.cs`, `Layers.cs`, `Interaction.cs` | `geometry.json`, `camera.json`, `scene.json`, `interaction.json` | `Mat3` (DOMMatrix order), `Camera2D` behind a dimension-agnostic `Projection` interface (fit bounds, zoom about a point, rotation, y-up), `ScaleProjection` for chart plots, `Scene` with per-layer surface caching by projection version, `PolylineLayer` / `PointsLayer` / `GridLayer`, and a pure interaction reducer (pan, wheel zoom, box zoom, cursor, select, modifier overrides). |
 
 ## 2. TrendChart (the flagship)
@@ -95,6 +95,14 @@ Signal handling follows ibaAnalyzer (manual part 2, chapter 6). Everything below
   host is a drop target that previews the target on drag-over and raises `onChannelDrop` / `ChannelDrop` before applying
   it (cancel, redirect, handle). `addChannels` (model and hosts) adds channels from code with the same drop rules; channels
   not in the chart become series `ch:<id>`. The tree is optional: any control that produces the payload feeds a chart.
+
+- **Chart editor** (`editorRows`, `addLane`/`updateLane`, `addAxis`/`updateAxis`/`removeAxis`, `updateSeries`,
+  `addThreshold`/`updateThreshold`/`removeThreshold`, `addMarker`/`updateMarker`/`removeMarker` on the model in both cores;
+  C# patches are `LanePatch`, `AxisPatch`, `SeriesPatch`, `ThresholdPatch`, `MarkerPatch` with `Opt<T>` fields; fixture
+  `trend-chart.json` case 30). `reorderSeries` moves a signal in the configuration order; `snapshotConfig`/`restoreConfig` carry the whole configuration (theme and
+  style included) for the panels' undo and redo. Lanes created by the editor carry `keep` and survive empty. Panels: `ChartEditorPanel` (DOM,
+  render package), React `ChartEditor`, Blazor `ChartEditor.razor`, WPF `ChartEditorControl` (list + form), Windows Forms
+  `ChartEditorControl` (TreeView + PropertyGrid with wrapper objects). Every sample has an "editor" toggle in place of the tree.
 
 Hosts: `TrendChartView` (three canvases: 2D background, WebGL series, 2D foreground; pointer, wheel, keyboard,
 hit-test routing, `onConfigChanged`), React `TrendChart` + hooks (`useSignalStore`, `useSource`, `useWebSocketSource`),
@@ -174,7 +182,7 @@ Hosts: web `SceneView`, React `SceneView`, Blazor `SceneView.razor` (JSON layer 
 | Layers: Path3D, Pose3D, Markers, LaserScan3D, OccupancyGridPlane | `scene3d/robot-layers3d.ts` (+ `primitives.ts`) | `Scene3D/RobotLayers3D.cs` (+ `Primitives.cs`) | `scene3d.json` |
 | Scene3DController (orbit/measure/select, HUD) | `scene3d/controller3d.ts` | `Scene3D/Scene3DController.cs` | `scene3d-controller.json` (4 cases) |
 | Binary layer message (`SKSL`) | `streaming/layer-message.ts` | `Streaming/LayerMessage.cs` | `layer-message.json` (3 cases), `spec/frames/layer-cloud.bin` |
-| Mesh resources (STL binary/ASCII, GLB) + MeshRegistry, `meshes` layer, `mesh` markers | `scene3d/mesh-formats.ts` | `Scene3D/MeshFormats.cs` | `mesh-formats.json` (4 cases), `spec/meshes/*` |
+| Mesh resources (STL binary/ASCII; glTF `.glb` and `.gltf` with embedded, `data:` URI or external buffers through a resolver, first material's base colour; Collada `.dae`: triangles and polylists, node transforms, up axis, bound material diffuse colour) + MeshRegistry (`load`, `registerFiles`, `resolver`, per-resource colour used by `mesh` markers without one), `meshes` layer (`color`), `mesh` markers | `scene3d/mesh-formats.ts` (XML through `urdf.ts`) | `Scene3D/MeshFormats.cs` (XDocument) | `mesh-formats.json` (6 cases), `spec/meshes/*` (`tri.gltf`, `box-external.gltf/.glb/.bin`) |
 | URDF → markers + joint transforms, `publishUrdf` | `scene3d/urdf.ts` (own XML reader) | `Scene3D/Urdf.cs` (XDocument) | `urdf.json` (3 cases), `spec/meshes/arm.urdf` |
 | Renderers (thick lines as instanced quads) | `render/webgl-painter3d.ts` (WebGL2, GLSL ES 300) | `Render.OpenTK/GlPainter3D.cs` (OpenGL 3.3, same shader bodies) | — |
 | Synthetic 3D scene | — | `Sources/SyntheticScene3DSource.cs` | C# test |
@@ -190,8 +198,10 @@ double-click fits; F fit, R reset, T top-down, O orthographic; measure (two clic
 
 Hosts: web `Scene3DView` (GL canvas + HUD canvas), React `Scene3DView`, Blazor `SceneView3D.razor`, WPF
 `SceneControl3D` (OpenTK `GLWpfControl` + Skia HUD; shows a notice when no OpenGL context is available), Windows Forms
-`SceneControl3D` (own OpenGL 3.3 core context on the control window, `GlPainter3D` then Skia on the same framebuffer,
-`Snapshot()` reads the pixels back; verified on a desktop against the demo server).
+`SceneControl3D` (own OpenGL 3.3 core context on the control window, 4-sample multisampled through `wglChoosePixelFormatARB`
+when the driver grants it (`Samples`), `GlPainter3D` then Skia on the same framebuffer, `Snapshot()` reads the pixels back,
+through a resolve blit when the driver will not read a multisampled window; verified on a desktop against the demo server).
+WPF asks `GLWpfControlSettings.Samples = 4` too.
 
 ## 6. Source plugins
 
@@ -200,7 +210,7 @@ Hosts: web `Scene3DView` (GL canvas + HUD canvas), React `Scene3DView`, Blazor `
 | Playback (CSV) | `sources/playback.ts` (`parseCsv`, `Recording`, `PlaybackSource`) | `Sources/Playback.cs` (`CsvRecording`, `PlaybackSource`) | `playback.json` (5 cases) |
 | MQTT mapping | `sources/mqtt-mapping.ts` | `Sources/MqttMapping.cs` | `mqtt-mapping.json` (4 cases) |
 | MQTT client | `@mori/skyscope-sources` `mqtt-source.ts` (mqtt.js over WebSocket) | `Mori.SkyScope.Sources.Mqtt` (MQTTnet) | — |
-| ROS 2 | — | `Mori.SkyScope.Sources.Ros2` on Mori.Ros2Sharp 0.2.0; hand-written CDR decoders (`Cdr`) | compiles; no live peer tested |
+| ROS 2 | — | `Mori.SkyScope.Sources.Ros2` on Mori.Ros2Sharp 0.5.0 (RTPS fragmentation, so large clouds and maps arrive); hand-written CDR decoders (`Cdr`) | compiles; no live peer tested |
 | Synthetic robot scene | — | `Sources/SyntheticSceneSource.cs` | used by the demo server and snapshots |
 | Template | `ts/packages/source-template` | `Mori.SkyScope.Sources.Template` | `counter-source.test.ts`, `TemplateAndBenchTests.cs` |
 
@@ -212,8 +222,19 @@ robot, trail and zones; also publishes the pose as channels 100–103.
 
 Recording (backlog 2): MCAP writer/reader (`recording/mcap.ts`, C# `Mcap/Mcap.cs`), `McapRecorder` tee and the SkyScope
 topic layout (`recording/recorder.ts`, C# `Mcap/McapRecorder.cs`), layer events in `Recording` and `PlaybackSource`,
-`LayerSink.reset`; fixture `mcap.json` (5 cases) and golden `spec/mcap/sample.mcap`. Hosts: React `RecordButton` /
-`useRecorder`, WPF and Windows Forms `RecorderControl`, Blazor `Recorder`; demo server `--record` and `/record` endpoints.
+`LayerSink.reset`; chunk reading for uncompressed, lz4 (`recording/lz4.ts` / `Mcap/Lz4.cs`) and zstd chunks (the `fzstd`
+package in TypeScript, `ZstdSharp.Port` in .NET); zstd chunk writing from .NET only (`McapWriterOptions { Compression,
+ChunkBytes }`, chunks with message indexes and chunk indexes, `McapRecorderOptions.Compression`; the default `None` stays
+byte-identical with the TypeScript writer, which cannot compress); fixture `mcap.json` and goldens `spec/mcap/sample.mcap`,
+`sample-lz4.mcap`, `sample-zstd.mcap`, `sample-zstd-written.mcap` (the chunked copies read exactly like the unchunked one;
+the last is the C# writer's output, read by both cores). Hosts: React `RecordButton` /
+`useRecorder`, WPF and Windows Forms `RecorderControl`, Blazor `Recorder`; demo server `--record`, `--record-compression zstd` and `/record` endpoints.
+Range export (`recording/export.ts`, C# `Mcap/RangeExport.cs`): `exportRangeCsv` (wide CSV that `parseCsv` / `CsvRecording.Parse`
+read back, empty cells for missing samples, `formatFixed` shared half-away-from-zero formatting) and `exportRangeMcap` (the
+recorder's layout, ≤ 1 000 samples per frame, regular runs kept) over any range; `TrendChartModel.cursorRange` /
+`exportCursorsCsv` / `exportCursorsMcap` over the cursor span and the visible series; web view `exportCursors`, Blazor
+`ExportCursorsAsync`, WPF and Windows Forms `ExportCursorsCsv` / `ExportCursorsMcap` / `SaveCursorsRange`; fixture
+`trend-chart.json` (case "export: …", CSV text and MCAP byte hash identical in both cores).
 
 Playback UI (backlog 1): React `usePlayback` + `PlaybackControls`, WPF and Windows Forms `PlaybackControl`, Blazor `Playback.razor`
 (charts bind with `WsUrl="playback:<key>"`).

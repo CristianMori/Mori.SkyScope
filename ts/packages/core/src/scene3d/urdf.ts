@@ -34,20 +34,22 @@ export interface UrdfJoint { name: string; type: UrdfJointType; parent: string; 
 /** Parsed `<robot>`: links, joints and named materials. */
 export interface RobotModel { name: string; links: UrdfLink[]; joints: UrdfJoint[]; materials: Record<string, { color: string; opacity: number }> }
 
-/** A tiny XML element tree (URDF needs elements and attributes only). */
-export interface XmlElement { name: string; attrs: Record<string, string>; children: XmlElement[] }
+/** A tiny XML element tree: elements, attributes and the element's own character data (`text`, direct text nodes joined; URDF ignores it, Collada reads float and index arrays from it). */
+export interface XmlElement { name: string; attrs: Record<string, string>; children: XmlElement[]; text: string }
 
-/** Dependency-free XML element parser: elements, attributes, self-closing tags; comments, PIs, CDATA and text are skipped. */
+/** Dependency-free XML element parser: elements, attributes, self-closing tags and direct text; comments, PIs, CDATA and DOCTYPE are skipped. */
 export function parseXml(text: string): XmlElement {
-  const root: XmlElement = { name: "#root", attrs: {}, children: [] };
+  const root: XmlElement = { name: "#root", attrs: {}, children: [], text: "" };
   const stack: XmlElement[] = [root];
   const re = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<\?[\s\S]*?\?>|<!DOCTYPE[^>]*>|<\/([A-Za-z_][\w.:-]*)\s*>|<([A-Za-z_][\w.:-]*)((?:\s+[\w.:-]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>/g;
   const attrRe = /([\w.:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-  let m: RegExpExecArray | null;
+  let m: RegExpExecArray | null, last = 0;
   while ((m = re.exec(text))) {
+    if (m.index > last) { const top = stack[stack.length - 1]!; const t = text.slice(last, m.index); if (t.trim().length > 0) top.text += t; }
+    last = m.index + m[0].length;
     if (m[1] !== undefined) { if (stack.length > 1 && stack[stack.length - 1]!.name === m[1]) stack.pop(); continue; }
     if (m[2] === undefined) continue;
-    const el: XmlElement = { name: m[2], attrs: {}, children: [] };
+    const el: XmlElement = { name: m[2], attrs: {}, children: [], text: "" };
     let a: RegExpExecArray | null; attrRe.lastIndex = 0;
     while ((a = attrRe.exec(m[3] ?? ""))) el.attrs[a[1]!] = (a[2] ?? a[3] ?? "").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
     stack[stack.length - 1]!.children.push(el);

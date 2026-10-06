@@ -18,6 +18,8 @@ public sealed partial class TrendDriver : IFixtureDriver
 
     private sealed class State(TrendChartModel model, double width, double height)
     {
+        /// <summary>Configuration snapshot taken by the snapshotConfig step.</summary>
+        public string? Snapshot { get; set; }
         public TrendChartModel Model { get; } = model;
         public double Width { get; } = width;
         public double Height { get; } = height;

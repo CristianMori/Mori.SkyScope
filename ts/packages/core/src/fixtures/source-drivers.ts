@@ -19,6 +19,7 @@ export const signalStoreDriver: FixtureDriver<StoreState> = {
     const store = new SignalStore({
       retentionSeconds: setup.retentionSeconds === undefined ? undefined : num(setup.retentionSeconds),
       defaultCapacity: setup.defaultCapacity === undefined ? undefined : num(setup.defaultCapacity),
+      maxCapacity: setup.maxCapacity === undefined ? undefined : num(setup.maxCapacity),
     });
     const s: StoreState = { store, notifications: [], queries: [] };
     store.subscribe((ids) => s.notifications.push([...ids]));
@@ -39,9 +40,9 @@ export const signalStoreDriver: FixtureDriver<StoreState> = {
       case "pushFrame": store.pushFrame(frameFromJson(step.frame as FrameJson)); return s;
       case "query":
         if ("channels" in step) {
-          queries.push([...store.channels.values()].sort((a, b) => a.info.id - b.info.id).map(({ info, buffer }) => ({
+          queries.push([...store.channels.values()].sort((a, b) => a.info.id - b.info.id).map(({ info, buffer, observedRate }) => ({
             id: info.id, name: info.name, unit: info.unit ?? null, kind: info.kind ?? null, timing: info.timing ?? "regular", rate: info.rate ?? null,
-            capacity: buffer.capacity, length: buffer.length, latestTime: buffer.isEmpty ? null : buffer.latestTime(),
+            capacity: buffer.capacity, length: buffer.length, latestTime: buffer.isEmpty ? null : buffer.latestTime(), observedRate: observedRate ?? null,
           })));
         } else if ("samples" in step) {
           const ch = store.get(num(step.samples));

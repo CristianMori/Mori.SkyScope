@@ -10,7 +10,7 @@ import { fnv1a } from "../charts/colormaps.js";
 import { Camera3D, type Camera3DOptions } from "../scene3d/camera3d.js";
 import { FrameTree } from "../scene3d/frame-tree.js";
 import { RecordingPainter3D, meshHash } from "../scene3d/painter3d.js";
-import { meshFromParsed, parseMeshResource } from "../scene3d/mesh-formats.js";
+import { joinUri, meshFromParsed, parseMeshResource } from "../scene3d/mesh-formats.js";
 import { parseUrdf, urdfMarkers, urdfMeshUris, urdfRootLink, urdfTransforms, type RobotModel } from "../scene3d/urdf.js";
 import { sceneBounds3, type FrameTransformMessage } from "../scene3d/layers3d.js";
 import { SceneLayerSink, applyLayerPayload, type LayerMeta } from "../scene/layer-json.js";
@@ -325,19 +325,23 @@ export const scene3dControllerDriver: FixtureDriver<Ctrl3DState> = {
   snapshot({ queries }) { return { queries }; },
 };
 
-/** Mesh resource parsers: base64 STL/GLB in, vertex/triangle counts, bounds and buffer hashes out. */
+/** Mesh resource parsers: base64 STL/GLB/glTF/Collada in, vertex/triangle counts, bounds, buffer hashes and the material colour out. */
 export const meshFormatsDriver: FixtureDriver<{ queries: unknown[] }> = {
   component: "meshFormats",
   create() { return { queries: [] }; },
-  /** Query: parse (base64 data and an optional name); errors are pushed as `{ error }`. */
+  /**
+   * Query: parse (base64 data, an optional name and optional `files`: sibling files as base64 by path relative to the
+   * resource, served to the parser's resolver); errors are pushed as `{ error }`.
+   */
   step(s, step: Step) {
     if ("parse" in step) {
-      const { data, name } = step.parse as { data: string; name?: string };
+      const { data, name, files } = step.parse as { data: string; name?: string; files?: Record<string, string> };
       try {
-        const p = parseMeshResource(fromBase64(data), name ?? "");
+        const siblings = new Map(Object.entries(files ?? {}).map(([k, v]) => [joinUri(name ?? "", k), fromBase64(v)]));
+        const p = parseMeshResource(fromBase64(data), name ?? "", { resolve: (uri) => siblings.get(joinUri(name ?? "", uri)) });
         const mesh = meshFromParsed("fixture", p);
         const b = M.box3FromPositions(p.positions);
-        s.queries.push({ vertices: p.positions.length / 3, triangles: (p.indices ? p.indices.length : p.positions.length / 3) / 3, indexed: !!p.indices, bounds: rBox(b), hash: meshHash(mesh) });
+        s.queries.push({ vertices: p.positions.length / 3, triangles: (p.indices ? p.indices.length : p.positions.length / 3) / 3, indexed: !!p.indices, bounds: rBox(b), hash: meshHash(mesh), color: p.color ? p.color.map(r9) : null });
       } catch (e) { s.queries.push({ error: (e as Error).message }); }
     } else throw new Error(`unknown query ${JSON.stringify(step)}`);
     return s;

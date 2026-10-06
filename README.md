@@ -72,6 +72,14 @@ dashed frame means "this lane, own axis".
 
 ![Dragging a channel from the tree into a lane](docs/screenshots/trend-tree-drag-own-axis.jpg)
 
+**The chart editor.** The same chart as a tree of lanes, axes, signals, the logic stack, thresholds and markers;
+the selected item's properties in a form, the chart's own settings when nothing is selected. Here the analog lane's
+weight was just set to 4. The editor exists on every host (React, plain DOM, Blazor, WPF, Windows Forms).
+
+![Chart editor](docs/screenshots/trend-editor-react.jpg)
+
+![Chart editor on Windows Forms](docs/screenshots/winforms-editor.png)
+
 **Any drag source will do.** The plain TypeScript sample drags `ch6` from a hand-made list (right) over the saw lane;
 the chart previews the drop like it does for its own tree, and the drop hook reports it in the status line.
 
@@ -145,9 +153,15 @@ The flagship. A strip chart for hundreds of channels at 1 kHz with everything an
   values, cursor values, true/false for digital signals.
 - **Cursors and measurements**: two draggable time cursors with their times tagged and the span shaded; with both set, a table under the time axis gives per signal the value at A and B, the difference, and the minimum, maximum and mean over the span, plus Δt and its frequency.
 - **Lanes resize** by dragging the gap between them; the legend doubles as a control (click to hide or show, right-click for rename, colour, width, remove); the arrangement saves to and loads from a JSON layout file in every host.
+- **Chart editor** in every host: the structure as a tree (lanes, axes, signals, logic stack, thresholds, markers) with
+  add, remove, move and a property form for the selected item; chart settings, theme and style when nothing is
+  selected; undo and redo over every change, gestures included.
+- **Export**: the span between cursors A and B, or any range, to a CSV the player reads back or to an MCAP file in the
+  recorder's layout, identical bytes from both cores.
 - **Theme and style**: every colour in `ChartTheme`, every metric in `ChartStyle`, light and dark presets.
-- **Rendering**: three passes (background, series, foreground) so WebGL can take the series pass in the browser;
-  SkiaSharp on the desktop.
+- **Rendering**: three passes (background, series, foreground) so WebGL can take the series pass in the browser
+  (anti-aliased strokes at the configured width, one instanced quad per segment); SkiaSharp on the desktop, on a
+  4-sample multisampled OpenGL surface in Windows Forms when the driver grants one.
 
 ### Gauges
 
@@ -167,8 +181,8 @@ labels on one pan/zoom/rotate canvas, with measure and select tools and a scale 
 ### Scene3DView
 
 A 3D viewport in the style of a robotics visualizer: point clouds, laser scans, a frame tree with timed transforms,
-paths, poses, markers (cube, sphere, cylinder, arrow, lines, points, text), occupancy grids as textured planes, STL
-and glTF meshes, robots from URDF with joints driven by joint states. Orbit, pan and dolly camera, perspective or
+paths, poses, markers (cube, sphere, cylinder, arrow, lines, points, text), occupancy grids as textured planes, STL,
+glTF and Collada meshes, robots from URDF with joints driven by joint states. Orbit, pan and dolly camera, perspective or
 orthographic, measure and select tools. WebGL2 in the browser, OpenGL through OpenTK on the desktop, from one core.
 
 ### Data plane
@@ -222,7 +236,11 @@ playback mode, **open…** opens a local `.mcap` or `.csv`, **Record** records w
 Offscreen renders without a window: `Mori.SkyScope.Wpf.Sample.exe --snapshot out.png`, `--logic out.png`,
 `--charts out.png`, `--scene out.png` (`--dark`, `--width`, `--height`). `Mori.SkyScope.WinForms.Sample.exe --snapshot out.png`
 renders the Windows Forms dashboard with synthetic data; `--screen out.png --gpu` captures it live, composing the
-pixels each control reads back, so it also works on a desktop no one is looking at.
+pixels each control reads back, so it also works on a desktop no one is looking at. `--bench [--points 200000]
+[--seconds 5] [--cpu] [--uncapped] [--shot out.png]` shows the dashboard with synthetic signals and a random point
+cloud, counts the paint passes of the trend chart and the 3D view and prints their frame rates (`--uncapped` paints
+each control frame after frame instead of from the controls' timers, which is also what happens on a desktop that
+delivers no paint messages; `--shot` saves the 3D view's last frame).
 
 ---
 
@@ -253,6 +271,7 @@ The gestures, as the samples wire them:
 | Plot | click / Shift + click | cursor A / cursor B |
 | Plot | double-click | reset to live, autoscale |
 | Cursor line | drag | move cursor A or B; with both set, the measurement table shows value at A and B, Δ, min, max, mean per signal, Δt and frequency |
+| Cursors A and B set | "export A→B" button (sample toolbars) | the visible signals between the cursors as a CSV or MCAP file (`exportCursors` on the web view, `ExportCursorsCsv` / `ExportCursorsMcap` / `SaveCursorsRange` on the desktop controls) |
 | Signal label or legend row | drag onto a Y-axis strip | join that axis (shared scale) |
 | Signal label or legend row | drag into a lane's free area | that lane, own axis |
 | Signal label or legend row | drag onto the time axis, a gap or above the first lane | new lane there |
@@ -271,6 +290,7 @@ The gestures, as the samples wire them:
 | Navigator | click outside the frame / ← → | centre there / step by a tenth |
 | Signal tree, or anything that drags channels | drag a row (or a Ctrl / Shift selection) into the chart | adds the channels, same drop rules |
 | Signal tree | double-click a row | adds the channel to the first lane |
+| Chart editor | select, edit a field, add / remove / move | same commands as the gestures, as a form |
 | Anywhere | Esc | cancel the drag, clear the selection |
 
 Everything above is model state. The model exposes `hitTest(layout, x, y)` → `HitRegion`, `dropTarget(…)` →
@@ -331,7 +351,7 @@ render loop. `onReady` hands you the view for pause, resume, reset, time span, a
 `onChannelDrop` sees every drop before it is applied, `onConfigChanged` fires after any change of the arrangement.
 Other components: `RadialGaugeView`, `LinearGaugeView`, `LedArrayView`, `NumericDisplayView`, `CompassView`,
 `AttitudeView`, `KnobView`, `SwitchView`, `SliderView`, `XYChart`, `PieChartView`, `PolarChartView`, `HeatmapView`,
-`SceneView`, `Scene3DView`, `PlaybackControls` with `usePlayback`, `RecordButton` with `useRecorder`.
+`SceneView`, `Scene3DView`, `ChartEditor`, `PlaybackControls` with `usePlayback`, `RecordButton` with `useRecorder`.
 
 ### Blazor
 
@@ -366,6 +386,36 @@ ws.StartAsync(new SourceContext(Chart.Store, layers, Chart.Clock, log),
 `TrendChartControl` paints with SkiaSharp on a 30 fps dispatcher timer, routes mouse, wheel and keys through the
 same hit test as the web view and raises `ConfigChanged` after a gesture changed the arrangement. `SceneControl3D`
 draws through OpenTK with a Skia HUD on top.
+
+### Editing the chart at runtime
+
+Every host ships a chart editor panel: `ChartEditorPanel` (DOM), React `ChartEditor`, Blazor `<ChartEditor Chart="_chart" />`,
+WPF and Windows Forms `ChartEditorControl` (the Windows Forms one is a tree plus a `PropertyGrid`). It lists the structure
+the way the chart draws it (lanes → axes → signals, the logic stack, unused axes, thresholds, markers), adds and removes
+items, moves lanes, and edits the selected item: lane label, weight and fold; axis label, unit, bounds, side and colour;
+signal name, lane, axis (or a new one), digital, visibility, colour and width; threshold axis, values, colour and label;
+marker time, label and colour; and, with nothing selected, time span, time format, legend, the panel toggles, the theme
+preset, signal width, font size and the grids. Signals reorder within their axis with the arrow buttons; undo and redo
+cover every change, gestures on the chart included (Ctrl+Z, Ctrl+Y); the arrow keys move the selection and Delete
+removes it. A lane added by the editor is kept while empty (`keep`); other empty lanes still vanish.
+
+```ts
+const editor = new ChartEditorPanel(document.getElementById("editor")!, { chart: view });
+// the commands behind it are on the model, usable without any panel:
+view.model.addLane(undefined, "pressure");
+view.model.updateAxis("axis:pressure", { unit: "bar", min: 0, max: 10 });
+view.model.addThreshold("axis:pressure", 8, undefined, "#dc2626", "high");
+view.notifyConfigChanged();
+```
+
+```csharp
+Editor.Chart = Chart;                                    // WPF or Windows Forms
+Chart.Model.UpdateSeries("s1", new SeriesPatch { Width = 2, Color = "#0ea5e9" });
+Chart.NotifyConfigChanged();
+```
+
+`editorRows()` / `EditorRows()` is the row list both cores produce identically (pinned by a fixture), so a custom panel can
+render the same tree.
 
 ### Adding signals: drag and drop, or code
 
@@ -430,8 +480,9 @@ ws.StartAsync(new SourceContext(chart.Store, layers, chart.Clock, log),
 ```
 
 Every control has a `Rendering` property: **Cpu** paints with SkiaSharp into a bitmap (works everywhere, remote
-sessions included), **Gpu** puts an OpenGL 3.3 core context on the control's own window and lets SkiaSharp draw on
-it. `EffectiveRendering` tells which one is in use; a session without OpenGL falls back to the CPU on its own.
+sessions included), **Gpu** puts an OpenGL 3.3 core context on the control's own window (a 4-sample multisampled
+pixel format when the driver offers one, `Samples` tells) and lets SkiaSharp draw on it. `EffectiveRendering` tells
+which one is in use; a session without OpenGL falls back to the CPU on its own.
 `SceneControl3D` always runs on the OpenGL surface (the scene through OpenTK, the HUD through Skia on the same
 framebuffer) and shows a notice where no context can be made. `Snapshot()` returns any control's pixels, read back
 from the framebuffer on the GPU path. Controls: `TrendChartControl`, `SignalTreeControl`, `GaugeControl`,
@@ -498,11 +549,23 @@ An `McapRecorder` sits between a source and the sinks, forwards everything, and 
 an MCAP file with the frames, the channel catalog and every layer message (binary payloads on a second channel of
 the same `/layers/<id>` topic). The file plays back through `PlaybackSource` with play, pause, speed, seek and loop
 over a manual clock; seeking backwards resets the sinks and replays, so charts and scenes show exactly what was on
-screen at that time. Playback hosts set the navigator's range to the recording's span. Uncompressed and lz4 chunks are
-read; zstd is not yet.
+screen at that time. Playback hosts set the navigator's range to the recording's span. Uncompressed, lz4 and zstd chunks
+are all read (zstd through `fzstd` in TypeScript and `ZstdSharp.Port` in .NET). Recordings are written without chunks by
+default in both cores; .NET can also write zstd-compressed chunks with message and chunk indexes
+(`McapRecorderOptions { Compression = McapCompression.Zstd }`, demo server `--record-compression zstd`).
 
-Record from the React, Blazor or WPF dashboards, from any .NET process, or on the demo server (`--record`, or the
+Record from the React, Blazor, WPF or Windows Forms dashboards, from any .NET process, or on the demo server (`--record`, or the
 `/record` endpoints while it runs).
+
+A time range of a chart exports without recording: `exportRangeCsv(store, channelIds, t0, t1)` (C#
+`RangeExport.ExportRangeCsv`) writes a wide CSV that `parseCsv` reads back (one row per distinct timestamp, a cell empty
+where a channel has no sample, fixed decimals identical in both cores), and `exportRangeMcap` writes the same samples as
+an MCAP file in the recorder's layout, in frames of at most 1 000 samples per channel, that `readRecording` plays back
+like a recording of that span. The chart model wraps the two over the span between cursors A and B and its visible
+signals (`cursorRange`, `exportCursorsCsv`, `exportCursorsMcap`, null until both cursors are set); the web view downloads
+it (`exportCursors("csv" | "mcap")`, also on the Blazor handle and `ExportCursorsAsync`), the WPF and Windows Forms
+controls return the data or save it (`SaveCursorsRange(path)`, the extension picks the format), and every sample has an
+"export A→B" button next to the layout buttons.
 
 ---
 
@@ -515,7 +578,8 @@ cursor readout.
 
 **Scene3DView** layers: `grid3d`, `axes`, `pointCloud3d`, `laserScan3d`, `path3d`, `pose3d`, `markers`,
 `occupancyGrid3d`, `frames`, `meshes`. Every layer takes a frame and an optional stamp and is placed through a
-tf-style `FrameTree` into the fixed frame. Markers may reference STL or glTF (.glb) meshes by URI; `publishUrdf`
+tf-style `FrameTree` into the fixed frame. Markers may reference STL, glTF (.glb, .gltf) or Collada (.dae) meshes by URI
+(a mesh marker without a colour takes the material colour the file carries); `publishUrdf`
 turns a URDF into a marker set plus joint transforms you drive from joint states. Controller: left drag orbits,
 middle or Shift drag pans, right drag or wheel dollies, double-click fits, F fit, R reset, T top-down, O orthographic,
 measure and select with a gizmo and cursor readout. Lines wider than one device pixel are drawn as instanced
@@ -630,15 +694,22 @@ so the WPF and Windows Forms projects build too.
 
 Known limits:
 
-- MCAP files with zstd chunks cannot be read yet (uncompressed and lz4 can); foreign CDR topics in bags are not
-  decoded on playback.
-- ROS 2 payloads over about 60 KB need RTPS fragmentation that Mori.Ros2Sharp does not have yet; relay large clouds
-  from a machine running a full ROS 2 stack.
-- glTF meshes are read from `.glb` files only (no external buffers or textures, triangles only); Collada is not read.
-- The OpenGL desktop path has been exercised through its painter contract and offscreen renders; a GPU session is
-  the place to judge its frame rate.
-- Channels declared without a rate keep a fixed number of samples rather than a retention time, which bounds how far
-  back the navigator can show for them.
+- MCAP chunks are read whether uncompressed, lz4 or zstd; the .NET writer can produce zstd chunks, the TypeScript
+  writer produces unchunked files only (no lz4 writing in either core); foreign CDR topics in bags are not decoded on
+  playback.
+- glTF meshes are read from `.glb` and `.gltf` files with embedded, `data:` URI or external buffers (sibling files
+  through the mesh registry's `registerFiles`/resolver), triangles only; materials contribute their base colour but no
+  textures. Collada (`.dae`) is read (triangles and polylists, node transforms, up axis, the bound material's diffuse
+  colour) without textures, controllers or animations.
+- Channels declared without a rate start with a fixed buffer and grow to `rate × retention` once their batches
+  reveal the rate (capped at one million samples per channel by default, `maxCapacity`).
+- The chart editor edits one item at a time (no multi-select); the WPF multisampling setting compiles but has not been
+  run on screen here.
+
+Measured (Windows Forms sample `--bench`, GeForce RTX 4090, OpenGL 3.3, about 440 × 460 px per view, uncapped,
+4 samples per pixel): the trend chart paints at about 600 frames per second on the GPU surface and 300 on the CPU one;
+the 3D view with a 200 000-point cloud at about 4 000 frames per second, and the same with 1 000 000 points, since the
+cloud is one buffer draw. Timer-paced, the live dashboard runs at its 30 and 60 Hz caps.
 
 ---
 

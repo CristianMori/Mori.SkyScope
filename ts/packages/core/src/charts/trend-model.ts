@@ -6,8 +6,10 @@ import type { SignalStore } from "../sources/signal-store.js";
 import { LinearScale, TimeScale } from "../scales/scale.js";
 import type { Effect } from "../scene/interaction.js";
 import { rectContains, type Rect } from "../scene/geometry.js";
+import type { EditorRow, MarkerConfig, Patch, ThresholdConfig } from "./trend-config.js";
 import { defaultTrendConfig, legendRowHeight, SERIES_PALETTE, type TrendChartOptions, type AxisConfig, type AxisDragState, type DragState, type DropTarget, type HitRegion, type LaneConfig, type LaneDragState, type LaneLayout, type NavigatorDragState, type SeriesConfig, type TrendChartConfig, type TrendLayout, trendLayoutToJson, trendLayoutFromJson, type LaneResizeState, type CursorDragState } from "./trend-config.js";
 import { layoutTrendChart } from "./trend-layout.js";
+import { exportRangeCsv, exportRangeMcap, type CsvExportOptions } from "../recording/export.js";
 
 /** One sample of one series. */
 export interface SeriesValue { /** Series id. */ seriesId: string; /** Sample time in chart seconds. */ time: number; /** Sample value. */ value: number }
@@ -270,7 +272,7 @@ export class TrendChartModel {
   pruneEmptyLanes(): void {
     const lanes = this.lanes();
     for (let i = lanes.length - 1; i >= 0 && lanes.length > 1; i--) {
-      if (!this.config.series.some((x) => this.laneIdOf(x) === lanes[i]!.id)) lanes.splice(i, 1);
+      if (!lanes[i]!.keep && !this.config.series.some((x) => this.laneIdOf(x) === lanes[i]!.id)) lanes.splice(i, 1);
     }
   }
   /** Series of a lane grouped by axis (first-appearance order): shared-axis series sit together in the legend and the labels. */
@@ -545,6 +547,172 @@ export class TrendChartModel {
     return true;
   }
 
+  // ---- editor: structure and property edits -----------------------------------
+  private axisSeq = 0;
+  private thresholdSeq = 0;
+  private markerSeq = 0;
+  /** Add an empty lane at `index` (the end by default) that stays while empty (`keep`); returns its id. */
+  addLane(index?: number, label?: string): string {
+    const id = this.insertLane(index ?? this.lanes().length);
+    const lane = this.lanes().find((l) => l.id === id)!;
+    lane.keep = true;
+    if (label && label.trim() !== "") lane.label = label.trim();
+    return id;
+  }
+  /** Change a lane's label, weight, fold state or keep flag. */
+  updateLane(laneId: string, patch: Patch<Pick<LaneConfig, "label" | "weight" | "collapsed" | "keep">>): boolean {
+    const lane = this.lanes().find((l) => l.id === laneId);
+    if (!lane) return false;
+    if ("label" in patch) { if (patch.label === null || patch.label === undefined || patch.label.trim() === "") delete lane.label; else lane.label = patch.label.trim(); }
+    if ("weight" in patch) { if (patch.weight === null || patch.weight === undefined || !(patch.weight > 0)) delete lane.weight; else lane.weight = patch.weight; }
+    if ("collapsed" in patch) { if (patch.collapsed) lane.collapsed = true; else delete lane.collapsed; }
+    if ("keep" in patch) { if (patch.keep) lane.keep = true; else delete lane.keep; }
+    return true;
+  }
+  /** Add an axis definition (id `axis-N` unless given); it shows once a series uses it. Returns the id. */
+  addAxis(props?: Patch<Omit<AxisConfig, "id">>, id?: string): string {
+    if (!id || id.trim() === "") do { id = `axis-${++this.axisSeq}`; } while (this.config.axes.some((a) => a.id === id));
+    if (!this.config.axes.some((a) => a.id === id)) this.config.axes.push({ id });
+    if (props) this.updateAxis(id, props);
+    return id;
+  }
+  /** Change an axis's label, unit, bounds, side or colour; an axis known only implicitly (`axis:<lane>`) gets a definition. */
+  updateAxis(axisId: string, patch: Patch<Omit<AxisConfig, "id">>): boolean {
+    let axis = this.config.axes.find((a) => a.id === axisId);
+    if (!axis) { axis = { id: axisId }; this.config.axes.push(axis); }
+    const text = (k: "label" | "unit" | "color", trim: boolean): void => { if (!(k in patch)) return; const v = patch[k]; if (v === null || v === undefined || v.trim() === "") delete axis[k]; else axis[k] = trim ? v.trim() : v; };
+    text("label", true); text("unit", true); text("color", false);
+    if ("min" in patch) { if (patch.min === null || patch.min === undefined) delete axis.min; else axis.min = patch.min; }
+    if ("max" in patch) { if (patch.max === null || patch.max === undefined) delete axis.max; else axis.max = patch.max; }
+    if ("side" in patch) { if (patch.side === "right") axis.side = "right"; else delete axis.side; }
+    return true;
+  }
+  /** Remove an axis definition: series on it fall back to their lane's default axis, thresholds on it are removed. */
+  removeAxis(axisId: string): boolean {
+    const i = this.config.axes.findIndex((a) => a.id === axisId);
+    const used = this.config.series.some((s) => s.axisId === axisId);
+    if (i < 0 && !used) return false;
+    if (i >= 0) this.config.axes.splice(i, 1);
+    for (const s of this.config.series) if (s.axisId === axisId) delete s.axisId;
+    this.config.thresholds = this.config.thresholds.filter((t) => t.axisId !== axisId);
+    return true;
+  }
+  /** Change a series's name, colour, width, visibility, lane, axis or kind; lanes left empty vanish unless kept. */
+  updateSeries(seriesId: string, patch: Patch<Pick<SeriesConfig, "name" | "color" | "width" | "visible" | "laneId" | "axisId" | "kind">>): boolean {
+    const s = this.config.series.find((x) => x.id === seriesId);
+    if (!s) return false;
+    if ("laneId" in patch && patch.laneId && !this.lanes().some((l) => l.id === patch.laneId)) return false;
+    if ("name" in patch) this.renameSeries(seriesId, patch.name ?? null);
+    if ("color" in patch) this.setSeriesColor(seriesId, patch.color && patch.color.trim() !== "" ? patch.color : null);
+    if ("width" in patch) this.setSeriesWidth(seriesId, patch.width ?? null);
+    if ("visible" in patch) { if (patch.visible === false) s.visible = false; else delete s.visible; }
+    if ("kind" in patch) { if (patch.kind === "digital") s.kind = "digital"; else delete s.kind; }
+    if ("laneId" in patch || "axisId" in patch) {
+      this.pinLanes();
+      if ("laneId" in patch) s.laneId = patch.laneId && patch.laneId !== "" ? patch.laneId : this.lanes()[0]!.id;
+      if ("axisId" in patch) { if (patch.axisId && patch.axisId !== "" && patch.axisId !== `axis:${this.laneIdOf(s)}`) s.axisId = patch.axisId; else delete s.axisId; }
+      this.pruneEmptyLanes();
+    }
+    return true;
+  }
+  /** Add a threshold line (`to` omitted) or band on an axis; returns its id (`threshold-N` unless given). */
+  addThreshold(axisId: string, from: number, to?: number | null, color?: string | null, label?: string | null, id?: string): string {
+    if (!id || id.trim() === "") do { id = `threshold-${++this.thresholdSeq}`; } while (this.config.thresholds.some((t) => t.id === id));
+    this.config.thresholds = this.config.thresholds.filter((t) => t.id !== id);
+    const t: ThresholdConfig = { id, axisId, from, color: color && color.trim() !== "" ? color : "#dc2626" };
+    if (to !== undefined && to !== null) t.to = to;
+    if (label && label.trim() !== "") t.label = label;
+    this.config.thresholds.push(t);
+    return id;
+  }
+  /** Change a threshold's axis, values, colour or label. */
+  updateThreshold(id: string, patch: Patch<Omit<ThresholdConfig, "id">>): boolean {
+    const t = this.config.thresholds.find((x) => x.id === id);
+    if (!t) return false;
+    if ("axisId" in patch && patch.axisId) t.axisId = patch.axisId;
+    if ("from" in patch && patch.from !== null && patch.from !== undefined) t.from = patch.from;
+    if ("to" in patch) { if (patch.to === null || patch.to === undefined) delete t.to; else t.to = patch.to; }
+    if ("color" in patch && patch.color && patch.color.trim() !== "") t.color = patch.color;
+    if ("label" in patch) { if (!patch.label || patch.label.trim() === "") delete t.label; else t.label = patch.label; }
+    return true;
+  }
+  /** Remove a threshold. */
+  removeThreshold(id: string): boolean { const n = this.config.thresholds.length; this.config.thresholds = this.config.thresholds.filter((t) => t.id !== id); return this.config.thresholds.length < n; }
+  /** Add an event marker at a chart time; returns its id (`marker-N` unless given). */
+  addMarker(time: number, label?: string | null, color?: string | null, id?: string): string {
+    if (!id || id.trim() === "") do { id = `marker-${++this.markerSeq}`; } while (this.config.markers.some((m) => m.id === id));
+    this.config.markers = this.config.markers.filter((m) => m.id !== id);
+    const m: MarkerConfig = { id, time };
+    if (label && label.trim() !== "") m.label = label;
+    if (color && color.trim() !== "") m.color = color;
+    this.config.markers.push(m);
+    return id;
+  }
+  /** Change a marker's time, label or colour. */
+  updateMarker(id: string, patch: Patch<Omit<MarkerConfig, "id">>): boolean {
+    const m = this.config.markers.find((x) => x.id === id);
+    if (!m) return false;
+    if ("time" in patch && patch.time !== null && patch.time !== undefined) m.time = patch.time;
+    if ("label" in patch) { if (!patch.label || patch.label.trim() === "") delete m.label; else m.label = patch.label; }
+    if ("color" in patch) { if (!patch.color || patch.color.trim() === "") delete m.color; else m.color = patch.color; }
+    return true;
+  }
+  /** Move a series to position `index` in the configuration order (what the legend and the labels follow). */
+  reorderSeries(seriesId: string, index: number): boolean {
+    const list = this.config.series;
+    const i = list.findIndex((s) => s.id === seriesId);
+    if (i < 0) return false;
+    const at = Math.max(0, Math.min(index, list.length - 1));
+    if (at === i) return false;
+    const [s] = list.splice(i, 1);
+    list.splice(at, 0, s!);
+    return true;
+  }
+  /** The whole configuration (theme and style included) as JSON, for undo history; `restoreConfig` takes it back. */
+  snapshotConfig(): string { return JSON.stringify(this.config); }
+  /** Replace the whole configuration with a snapshot; cursors and the time window are kept, the measurement cache is dropped. */
+  restoreConfig(json: string): void {
+    const c = JSON.parse(json) as TrendChartOptions;
+    for (const k of Object.keys(this.config)) delete (this.config as unknown as Record<string, unknown>)[k];
+    Object.assign(this.config, defaultTrendConfig(c));
+    this.timeSpan = this.config.timeSpan;
+    this.measureCache.clear();
+  }
+  /** Remove a marker. */
+  removeMarker(id: string): boolean { const n = this.config.markers.length; this.config.markers = this.config.markers.filter((m) => m.id !== id); return this.config.markers.length < n; }
+  /**
+   * The rows an editor panel renders, in display order: each lane, under it its axes (left ones first) with their
+   * series (hidden ones included), then the logic stack with the digital series; then axis definitions no series
+   * uses, the thresholds and the markers. Both cores produce the same list.
+   */
+  editorRows(): EditorRow[] {
+    const rows: EditorRow[] = [];
+    const used = new Set<string>();
+    const r3 = (v: number): string => String(Math.round(v * 1000) / 1000);
+    for (const lane of this.lanes()) {
+      const all = this.allSeriesIn(lane.id);
+      rows.push({ kind: "lane", id: lane.id, parentId: null, depth: 0, label: lane.label ?? lane.id, detail: `weight ${lane.weight ?? 1}${lane.collapsed ? ", folded" : ""}` });
+      const ids: string[] = [];
+      for (const s of all) { if (s.kind === "digital") continue; const id = this.axisIdOf(s); if (!ids.includes(id)) ids.push(id); }
+      const axes = ids.map((id) => this.axis(id));
+      for (const a of [...axes.filter((a) => (a.side ?? "left") === "left"), ...axes.filter((a) => a.side === "right")]) {
+        used.add(a.id);
+        const bounds = a.min !== undefined || a.max !== undefined ? `${a.min !== undefined ? r3(a.min) : "auto"} … ${a.max !== undefined ? r3(a.max) : "auto"}` : "autoscale";
+        rows.push({ kind: "axis", id: a.id, parentId: lane.id, depth: 1, label: a.label ?? a.id, detail: `${a.unit !== undefined ? a.unit + " · " : ""}${bounds}${a.side === "right" ? " · right" : ""}` });
+        for (const s of all) if (s.kind !== "digital" && this.axisIdOf(s) === a.id) rows.push({ kind: "series", id: s.id, parentId: a.id, depth: 2, label: this.seriesName(s), detail: `ch ${s.channelId}${s.visible === false ? " · hidden" : ""}` });
+      }
+      const digital = all.filter((s) => s.kind === "digital");
+      if (digital.length > 0) {
+        rows.push({ kind: "stack", id: `stack:${lane.id}`, parentId: lane.id, depth: 1, label: "logic stack", detail: `${digital.length} track${digital.length === 1 ? "" : "s"}` });
+        for (const s of digital) rows.push({ kind: "series", id: s.id, parentId: `stack:${lane.id}`, depth: 2, label: this.seriesName(s), detail: `ch ${s.channelId}${s.visible === false ? " · hidden" : ""}` });
+      }
+    }
+    for (const a of this.config.axes) if (!used.has(a.id)) rows.push({ kind: "axis", id: a.id, parentId: null, depth: 0, label: a.label ?? a.id, detail: "unused" });
+    for (const t of this.config.thresholds) rows.push({ kind: "threshold", id: t.id, parentId: null, depth: 0, label: t.label ?? t.id, detail: `${t.axisId} · ${t.to !== undefined ? `${r3(t.from)} … ${r3(t.to)}` : r3(t.from)}` });
+    for (const m of this.config.markers) rows.push({ kind: "marker", id: m.id, parentId: null, depth: 0, label: m.label ?? m.id, detail: `t = ${r3(m.time)}` });
+    return rows;
+  }
+
   // ---- cursors and measurements --------------------------------------------
   beginCursorDrag(which: "a" | "b"): void { this.cursorDrag = { which }; }
   updateCursorDrag(layout: TrendLayout, x: number): boolean {
@@ -592,6 +760,19 @@ export class TrendChartModel {
     for (const id of this.measureCache.keys()) if (!live.has(id)) this.measureCache.delete(id);
     return { t0, t1, dt, hz: Math.abs(dt) > 0 ? 1 / Math.abs(dt) : null, rows };
   }
+
+  // ---- range export ----------------------------------------------------------
+  /** The span between cursors A and B, ordered; null unless both are set. */
+  cursorRange(): { t0: number; t1: number } | null {
+    if (this.cursorA === null || this.cursorB === null) return null;
+    return { t0: Math.min(this.cursorA, this.cursorB), t1: Math.max(this.cursorA, this.cursorB) };
+  }
+  /** Channel ids of the visible series (hidden ones excluded), in series order, without duplicates. */
+  visibleChannelIds(): number[] { const ids: number[] = []; for (const s of this.visibleSeries()) if (!ids.includes(s.channelId)) ids.push(s.channelId); return ids; }
+  /** CSV (`exportRangeCsv`) of the visible series' channels between cursors A and B; null unless both cursors are set. */
+  exportCursorsCsv(options: CsvExportOptions = {}): string | null { const r = this.cursorRange(); return r ? exportRangeCsv(this.store, this.visibleChannelIds(), r.t0, r.t1, options) : null; }
+  /** MCAP recording (`exportRangeMcap`) of the visible series' channels between cursors A and B; null unless both cursors are set. */
+  exportCursorsMcap(): Uint8Array | null { const r = this.cursorRange(); return r ? exportRangeMcap(this.store, this.visibleChannelIds(), r.t0, r.t1) : null; }
 
   // ---- layout files --------------------------------------------------------
   /** The arrangement as a JSON layout file (theme and style excluded). */

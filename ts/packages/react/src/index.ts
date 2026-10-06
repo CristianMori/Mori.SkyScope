@@ -4,6 +4,7 @@
 export * from "./Button.js";
 export * from "./TrendChart.js";
 export * from "./SignalTree.js";
+export * from "./ChartEditor.js";
 export * from "./Gauges.js";
 export * from "./hooks.js";
 export { cx } from "./cx.js";

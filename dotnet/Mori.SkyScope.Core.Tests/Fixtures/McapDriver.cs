@@ -131,4 +131,51 @@ public sealed class McapGoldenTests
         Assert.Equal(side.RootElement.GetProperty("layerEvents").GetInt32(), rec.LayerEvents.Count);
         Assert.Equal(side.RootElement.GetProperty("channels").EnumerateArray().Select(x => x.GetInt32()), rec.Channels.Select(c => c.Id));
     }
+
+    /// <summary>The lz4- and zstd-chunked copies of the sample (the latter also as written by the C# writer) parse to the same records and decode to the same recording as the unchunked file.</summary>
+    [Theory]
+    [InlineData("sample-lz4.mcap")]
+    [InlineData("sample-zstd.mcap")]
+    [InlineData("sample-zstd-written.mcap")]
+    public void ChunkedSampleReadsLikeTheUnchunkedSample(string name)
+    {
+        var dir = Path.Combine(Fixtures.Directory, "..", "mcap");
+        var plain = File.ReadAllBytes(Path.Combine(dir, "sample.mcap"));
+        var chunked = File.ReadAllBytes(Path.Combine(dir, name));
+        var a = McapReader.Read(plain); var b = McapReader.Read(chunked);
+        Assert.Equal(a.Profile, b.Profile);
+        Assert.Equal(a.Library, b.Library);
+        Assert.Equal(a.Schemas.Count, b.Schemas.Count);
+        Assert.Equal(a.Channels.Values.Select(c => c.Topic), b.Channels.Values.Select(c => c.Topic));
+        Assert.Equal(a.Messages.Count, b.Messages.Count);
+        Assert.Equal(a.MessageStart, b.MessageStart);
+        Assert.Equal(a.MessageEnd, b.MessageEnd);
+        for (var i = 0; i < a.Messages.Count; i++)
+        {
+            var x = a.Messages[i]; var y = b.Messages[i];
+            Assert.Equal((x.ChannelId, x.Sequence, x.LogTime, x.PublishTime), (y.ChannelId, y.Sequence, y.LogTime, y.PublishTime));
+            Assert.Equal(x.Data, y.Data);
+        }
+
+        var ra = SkyScopeMcap.ReadRecording(plain); var rb = SkyScopeMcap.ReadRecording(chunked);
+        Assert.Equal(ra.Channels.Select(c => c.Id), rb.Channels.Select(c => c.Id));
+        Assert.Equal(ra.LayerEvents.Count, rb.LayerEvents.Count);
+        Assert.Equal(ra.Start, rb.Start);
+        Assert.Equal(ra.End, rb.End);
+        Assert.Equal(ra.Frames.Count, rb.Frames.Count);
+        Assert.NotEmpty(ra.Frames);
+        for (var i = 0; i < ra.Frames.Count; i++)
+        {
+            var x = ra.Frames[i]; var y = rb.Frames[i];
+            Assert.Equal(x.T0, y.T0);
+            Assert.Equal(x.Channels.Count, y.Channels.Count);
+            for (var c = 0; c < x.Channels.Count; c++)
+            {
+                Assert.Equal(x.Channels[c].Id, y.Channels[c].Id);
+                Assert.Equal(x.Channels[c].Encoding, y.Channels[c].Encoding);
+                Assert.Equal(x.Channels[c].Times, y.Channels[c].Times);
+                Assert.Equal(x.Channels[c].Values, y.Channels[c].Values);
+            }
+        }
+    }
 }

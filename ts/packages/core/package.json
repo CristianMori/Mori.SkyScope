@@ -19,6 +19,9 @@
     "build": "tsc -b"
   },
   "sideEffects": false,
+  "dependencies": {
+    "fzstd": "^0.1.1"
+  },
   "author": "Cristian Mori",
   "description": "Headless engine for Mori.SkyScope: ring buffers, M4 decimation, SkyScopeFrame codec, scales, painter contract, trend chart, gauges, analytic charts, scene layers, source-plugin contracts.",
   "repository": {

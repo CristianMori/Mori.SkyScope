@@ -5,9 +5,11 @@
  * Minimal MCAP (https://mcap.dev) writer and reader — enough for SkyScope recordings and for reading unchunked or
  * uncompressed-chunk files written by other tools. Writes: magic, Header, Schema/Channel/Message records, DataEnd, a
  * summary (schemas, channels, statistics, summary offsets) and the Footer; no chunks, no CRCs (zero = "not computed").
- * Reads: everything above plus Chunk records with compression "" or "lz4" (zstd chunks raise a clear error).
- * Mirrors `Mori.SkyScope.Core.Recording.Mcap`; pinned by `spec/fixtures/mcap.json` and `spec/mcap/*.mcap`.
+ * Reads: everything above plus Chunk records with compression "", "lz4" or "zstd" (zstd through the `fzstd` package;
+ * any other compression raises a clear error). Mirrors `Mori.SkyScope.Core.Recording.Mcap`; pinned by
+ * `spec/fixtures/mcap.json` and `spec/mcap/*.mcap`.
  */
+import { decompress as zstdDecompress } from "fzstd";
 import { lz4Decompress } from "./lz4.js";
 
 /** The 8-byte magic that opens and closes every MCAP file. */
@@ -197,7 +199,7 @@ export class McapWriter {
   }
 }
 
-/** Parse a whole file from memory. Summary records are ignored; chunks must be uncompressed. */
+/** Parse a whole file from memory. Summary records are ignored; chunks may be uncompressed, lz4 or zstd. */
 export function readMcap(input: Uint8Array | ArrayBuffer): McapFile {
   const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
   if (bytes.length < 16 || !MCAP_MAGIC.every((b, i) => bytes[i] === b)) throw new Error("not an MCAP file (bad magic)");
@@ -238,7 +240,10 @@ export function readMcap(input: Uint8Array | ArrayBuffer): McapFile {
           } else if (compression === "lz4") {
             const decoded = lz4Decompress(rr.bytes.subarray(body.pos, body.pos + recordsLength), uncompressedSize);
             readRecords(new ByteReader(decoded, 0, decoded.length), true);
-          } else throw new Error(`MCAP: chunk compression "${compression}" is not supported (uncompressed and lz4 chunks are)`);
+          } else if (compression === "zstd") {
+            const decoded = zstdDecompress(rr.bytes.subarray(body.pos, body.pos + recordsLength), uncompressedSize > 0 ? new Uint8Array(uncompressedSize) : undefined);
+            readRecords(new ByteReader(decoded, 0, decoded.length), true);
+          } else throw new Error(`MCAP: chunk compression "${compression}" is not supported (uncompressed, lz4 and zstd chunks are)`);
           break;
         }
         case McapOp.DataEnd: return false;

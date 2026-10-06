@@ -6,6 +6,12 @@ namespace Mori.SkyScope.Core.Signals;
 /// <summary>Regular: a fixed sample rate per run, no stored timestamps. Timestamped: one time per sample.</summary>
 public enum TimeKind { Regular, Timestamped }
 
+/// <summary>A stretch of a regular buffer with one sample period: the half-open seq range and its <paramref name="Dt"/>.</summary>
+/// <param name="FromSeq">First sequence number of the stretch.</param>
+/// <param name="ToSeq">Sequence number after the last one.</param>
+/// <param name="Dt">Sample period in seconds.</param>
+public readonly record struct RunSegment(long FromSeq, long ToSeq, double Dt);
+
 /// <summary>
 /// Append-only ring buffer for one channel. Mirrors <c>SignalBuffer</c> in <c>@mori/skyscope-core</c>;
 /// behaviour is pinned by <c>spec/fixtures/signal-buffer.json</c>.
@@ -141,7 +147,58 @@ public sealed class SignalBuffer
         }
     }
 
+    /// <summary>Regular buffers: the runs overlapping [fromSeq, toSeq) as seq ranges clipped to it, in order, each with its dt; empty for timestamped buffers or an empty range.</summary>
+    public List<RunSegment> RunsIn(long fromSeq, long toSeq)
+    {
+        var output = new List<RunSegment>();
+        if (_times is not null) return output;
+        var seq = Math.Max(fromSeq, FirstSeq);
+        var end = Math.Min(toSeq, _head);
+        while (seq < end)
+        {
+            var ri = RunIndexFor(seq);
+            var runEnd = ri + 1 < _runs.Count ? _runs[ri + 1].StartSeq : _head;
+            var to = Math.Min(runEnd, end);
+            output.Add(new RunSegment(seq, to, _runs[ri].Dt));
+            seq = to;
+        }
+        return output;
+    }
+
     private int Slot(long seq) => (int)(seq % Capacity);
+
+    /// <summary>
+    /// A new buffer of <paramref name="capacity"/> samples holding the newest retained samples of this one (all of them when
+    /// they fit), with the same time kind and the same sequence numbers; runs are carried over so regular channels keep
+    /// their 4 bytes per sample. Used by the store when a channel's observed rate asks for more history than it was given.
+    /// </summary>
+    public SignalBuffer Resized(int capacity)
+    {
+        var o = new SignalBuffer(capacity, Kind);
+        var keep = Math.Min(Length, o.Capacity);
+        var from = _head - keep;
+        o._head = from;
+        if (_times is not null)
+        {
+            var t = new double[keep]; var v = new float[keep];
+            for (var i = 0; i < keep; i++) { var s = Slot(from + i); t[i] = _times[s]; v[i] = _values[s]; }
+            if (keep > 0) o.AppendTimestamped(t, v);
+            return o;
+        }
+        var seq = from;
+        while (seq < _head)
+        {
+            var ri = RunIndexFor(seq);
+            var run = _runs[ri];
+            var end = ri + 1 < _runs.Count ? _runs[ri + 1].StartSeq : _head;
+            var v = new float[end - seq];
+            for (var i = 0; i < v.Length; i++) v[i] = _values[Slot(seq + i)];
+            o._runs.Add(new Run(seq, run.T0 + (seq - run.StartSeq) * run.Dt, run.Dt));
+            o.Write(v);
+            seq = end;
+        }
+        return o;
+    }
 
     private void Write(ReadOnlySpan<float> values)
     {

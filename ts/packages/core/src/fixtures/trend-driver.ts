@@ -7,6 +7,10 @@ import { TrendChartModel } from "../charts/trend-model.js";
 import { encodeChannelDrag, parseChannelDrag, type ChannelDragPayload } from "../charts/channel-drag.js";
 import { drawTrendChart } from "../charts/trend-draw.js";
 import { RecordingPainter } from "../paint/recording-painter.js";
+import { exportRangeCsv, exportRangeMcap } from "../recording/export.js";
+import { readRecording } from "../recording/recorder.js";
+import { channelCount } from "../streaming/frame.js";
+import { fnv1a } from "../charts/colormaps.js";
 import type { ChannelInfo } from "../sources/contracts.js";
 import type { DropTarget, TrendChartConfig, TrendLayout } from "../charts/trend-config.js";
 import type { Effect } from "../scene/interaction.js";
@@ -19,7 +23,7 @@ const opt = (v: unknown): number | null => (v === null || v === undefined ? null
 /** Canonical form of a drag payload for parity queries: every field present, null when absent. */
 const dragJson = (p: ChannelDragPayload) => ({ channels: p.channels.map((c) => ({ id: c.id, name: c.name ?? null, unit: c.unit ?? null, kind: c.kind ?? null })), group: p.group });
 
-interface State { model: TrendChartModel; width: number; height: number; layout: TrendLayout | null; queries: unknown[] }
+interface State { model: TrendChartModel; width: number; height: number; layout: TrendLayout | null; queries: unknown[]; snapshot?: string | undefined }
 
 /**
  * Trend chart model: `setup` gives channels, frames, config, chart time and size; the layout is cached until a step
@@ -56,6 +60,21 @@ export const trendDriver: FixtureDriver<State> = {
       case "setLegend": model.config.legend = step.position as TrendChartConfig["legend"]; s.layout = null; break;
       case "applyDrop": model.applyDrop(step.seriesId as string, step.target as DropTarget); s.layout = null; break;
       case "beginDrag": model.beginDrag((step.seriesIds as string[] | undefined) ?? (step.seriesId as string), num(step.x), num(step.y), step.group === true, (step.channelIds as number[] | undefined) ?? [], step.digital as boolean | undefined); break;
+      case "addLane": model.addLane(step.index === undefined ? undefined : num(step.index), step.label as string | undefined); s.layout = null; break;
+      case "updateLane": model.updateLane(step.laneId as string, step.patch as Record<string, never>); s.layout = null; break;
+      case "addAxis": model.addAxis(step.props as Record<string, never> | undefined, step.id as string | undefined); s.layout = null; break;
+      case "updateAxis": model.updateAxis(step.axisId as string, step.patch as Record<string, never>); s.layout = null; break;
+      case "removeAxis": model.removeAxis(step.axisId as string); s.layout = null; break;
+      case "updateSeries": model.updateSeries(step.seriesId as string, step.patch as Record<string, never>); s.layout = null; break;
+      case "addThreshold": model.addThreshold(step.axisId as string, num(step.from), step.to as number | null | undefined, step.color as string | null | undefined, step.label as string | null | undefined, step.id as string | undefined); s.layout = null; break;
+      case "updateThreshold": model.updateThreshold(step.id as string, step.patch as Record<string, never>); break;
+      case "removeThreshold": model.removeThreshold(step.id as string); break;
+      case "addMarker": model.addMarker(num(step.time), step.label as string | null | undefined, step.color as string | null | undefined, step.id as string | undefined); break;
+      case "updateMarker": model.updateMarker(step.id as string, step.patch as Record<string, never>); break;
+      case "removeMarker": model.removeMarker(step.id as string); break;
+      case "reorderSeries": model.reorderSeries(step.seriesId as string, num(step.index)); s.layout = null; break;
+      case "snapshotConfig": s.snapshot = model.snapshotConfig(); break;
+      case "restoreConfig": if (s.snapshot !== undefined) model.restoreConfig(s.snapshot); s.layout = null; break;
       case "addChannels": model.addChannels(step.channelIds as number[], step.target as DropTarget | undefined, step.group === true); s.layout = null; break;
       case "applyGroupDrop": model.applyGroupDrop(step.seriesIds as string[], step.target as DropTarget, step.group === true); s.layout = null; break;
       case "setSeriesVisible": model.setSeriesVisible(step.seriesId as string, step.visible !== false); s.layout = null; break;
@@ -141,10 +160,28 @@ export const trendDriver: FixtureDriver<State> = {
         else if ("lanes" in step) queries.push(model.lanes().map((l) => l.id));
         else if ("seriesLane" in step) queries.push(model.laneIdOf(model.config.series.find((x) => x.id === step.seriesLane)!));
         else if ("seriesAxis" in step) queries.push(model.config.series.find((x) => x.id === step.seriesAxis)!.axisId ?? null);
+        else if ("editorRows" in step) queries.push(model.editorRows());
+        else if ("thresholds" in step) queries.push(model.config.thresholds.map((t) => ({ id: t.id, axisId: t.axisId, from: r9(t.from), to: t.to === undefined ? null : r9(t.to), color: t.color, label: t.label ?? null })));
+        else if ("markers" in step) queries.push(model.config.markers.map((m) => ({ id: m.id, time: r9(m.time), label: m.label ?? null, color: m.color ?? null })));
+        else if ("axesConfig" in step) queries.push(model.config.axes.map((a) => ({ id: a.id, label: a.label ?? null, unit: a.unit ?? null, min: opt(a.min), max: opt(a.max), side: a.side ?? "left", color: a.color ?? null })));
+        else if ("lanesConfig" in step) queries.push(model.lanes().map((l) => ({ id: l.id, label: l.label ?? null, weight: r9(l.weight ?? 1), collapsed: l.collapsed === true, keep: l.keep === true })));
         else if ("parseChannelDrag" in step) { const p = parseChannelDrag(step.parseChannelDrag as string); queries.push(p ? dragJson(p) : null); }
         else if ("channelDragRoundTrip" in step) { const p = parseChannelDrag(encodeChannelDrag(step.channelDragRoundTrip as ChannelDragPayload)); queries.push(p ? dragJson(p) : null); }
         else if ("drag" in step) queries.push(model.drag ? { seriesId: model.drag.seriesId, x: r9(model.drag.x), y: r9(model.drag.y), target: model.drag.target } : null);
         else if ("draw" in step) { const p = new RecordingPainter(s.width, s.height); drawTrendChart(model, p, layout()); queries.push(p.ops); }
+        else if ("cursorRange" in step) { const r = model.cursorRange(); queries.push(r ? { t0: r9(r.t0), t1: r9(r.t1) } : null); }
+        else if ("exportCsv" in step) {
+          // explicit channels and range → the store function; otherwise the chart's cursor wrapper (null without both cursors)
+          const o = step.exportCsv as { channelIds?: number[]; t0?: number; t1?: number; decimals?: number; valueDecimals?: number };
+          const opts = { decimals: o.decimals, valueDecimals: o.valueDecimals };
+          queries.push(o.channelIds ? exportRangeCsv(model.store, o.channelIds, num(o.t0), num(o.t1), opts) : model.exportCursorsCsv(opts));
+        }
+        else if ("exportMcapSummary" in step) {
+          const o = step.exportMcapSummary as { channelIds?: number[]; t0?: number; t1?: number };
+          const bytes = o.channelIds ? exportRangeMcap(model.store, o.channelIds, num(o.t0), num(o.t1)) : model.exportCursorsMcap();
+          if (!bytes) queries.push(null);
+          else { const rec = readRecording(bytes); queries.push({ length: bytes.length, hash: fnv1a(bytes), channels: rec.channels.length, frames: rec.frames.length, samples: rec.frames.reduce((n, f) => n + f.channels.reduce((m, c) => m + channelCount(c), 0), 0), start: r9(rec.start), end: r9(rec.end) }); }
+        }
         else throw new Error(`unknown query ${JSON.stringify(step)}`);
         break;
       default: throw new Error(`unknown step ${String(step.type)}`);

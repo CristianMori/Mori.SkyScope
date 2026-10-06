@@ -3,64 +3,1380 @@
   "component": "signal-store",
   "description": "SignalStore: channel declaration and sizing, frame routing into buffers, auto-declare, timing conversion, drop accounting, change notifications.",
   "cases": [
-    { "name": "declared channel is sized from rate x retention",
-      "setup": { "retentionSeconds": 10, "defaultCapacity": 64 },
-      "steps": [{ "type": "declare", "id": 1, "name": "speed", "unit": "m/s", "rate": 100 }, { "type": "query", "channels": true }],
-      "expect": { "channelCount": 1, "dropped": 0, "queries": [[{ "id": 1, "name": "speed", "unit": "m/s", "kind": null, "timing": "regular", "rate": 100, "capacity": 1000, "length": 0, "latestTime": null }]] } },
-
-    { "name": "regular frame lands in the buffer and notifies once",
-      "setup": { "retentionSeconds": 10, "defaultCapacity": 64 },
-      "steps": [{ "type": "declare", "id": 1, "name": "a", "rate": 4 },
-                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 0, "dt": 0.25, "values": [1, 2, 3] }] } },
-                { "type": "query", "samples": 1 }, { "type": "query", "channels": true }],
-      "expect": { "notifications": [[1]], "queries": [[[0, 1], [0.25, 2], [0.5, 3]], [{ "id": 1, "name": "a", "unit": null, "kind": null, "timing": "regular", "rate": 4, "capacity": 40, "length": 3, "latestTime": 0.5 }]] } },
-
-    { "name": "unknown channel is auto-declared from the frame encoding",
-      "setup": { "retentionSeconds": 10, "defaultCapacity": 64 },
-      "steps": [{ "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 7, "encoding": "timestamped", "times": [1, 2], "values": [5, 6] }, { "id": 8, "encoding": "regular", "tStart": 0, "dt": 1, "values": [9] }] } },
-                { "type": "query", "channels": true }],
-      "expect": { "channelCount": 2, "notifications": [[7, 8]], "queries": [[
-        { "id": 7, "name": "ch7", "unit": null, "kind": null, "timing": "timestamped", "rate": null, "capacity": 64, "length": 2, "latestTime": 2 },
-        { "id": 8, "name": "ch8", "unit": null, "kind": null, "timing": "regular", "rate": null, "capacity": 64, "length": 1, "latestTime": 0 }]] } },
-
-    { "name": "quantized batches are dequantized",
+    {
+      "name": "declared channel is sized from rate x retention",
+      "setup": {
+        "retentionSeconds": 10,
+        "defaultCapacity": 64
+      },
+      "steps": [
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "speed",
+          "unit": "m/s",
+          "rate": 100
+        },
+        {
+          "type": "query",
+          "channels": true
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [],
+        "queries": [
+          [
+            {
+              "id": 1,
+              "name": "speed",
+              "unit": "m/s",
+              "kind": null,
+              "timing": "regular",
+              "rate": 100,
+              "capacity": 1000,
+              "length": 0,
+              "latestTime": null,
+              "observedRate": null
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "regular frame lands in the buffer and notifies once",
+      "setup": {
+        "retentionSeconds": 10,
+        "defaultCapacity": 64
+      },
+      "steps": [
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "a",
+          "rate": 4
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 0.25,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "samples": 1
+        },
+        {
+          "type": "query",
+          "channels": true
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [
+          [
+            1
+          ]
+        ],
+        "queries": [
+          [
+            [
+              0,
+              1
+            ],
+            [
+              0.25,
+              2
+            ],
+            [
+              0.5,
+              3
+            ]
+          ],
+          [
+            {
+              "id": 1,
+              "name": "a",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": 4,
+              "capacity": 40,
+              "length": 3,
+              "latestTime": 0.5,
+              "observedRate": null
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "unknown channel is auto-declared from the frame encoding",
+      "setup": {
+        "retentionSeconds": 10,
+        "defaultCapacity": 64
+      },
+      "steps": [
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 7,
+                "encoding": "timestamped",
+                "times": [
+                  1,
+                  2
+                ],
+                "values": [
+                  5,
+                  6
+                ]
+              },
+              {
+                "id": 8,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 1,
+                "values": [
+                  9
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        }
+      ],
+      "expect": {
+        "channelCount": 2,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [
+          [
+            7,
+            8
+          ]
+        ],
+        "queries": [
+          [
+            {
+              "id": 7,
+              "name": "ch7",
+              "unit": null,
+              "kind": null,
+              "timing": "timestamped",
+              "rate": null,
+              "capacity": 64,
+              "length": 2,
+              "latestTime": 2,
+              "observedRate": 1
+            },
+            {
+              "id": 8,
+              "name": "ch8",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 64,
+              "length": 1,
+              "latestTime": 0,
+              "observedRate": 1
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "quantized batches are dequantized",
       "setup": {},
-      "steps": [{ "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "quantized", "tStart": 0, "dt": 1, "scale": 0.5, "offset": 10, "q": [-2, 0, 3] }] } }, { "type": "query", "samples": 1 }],
-      "expect": { "queries": [[[0, 9], [1, 10], [2, 11.5]]] } },
-
-    { "name": "out-of-order batch is dropped, counted, and does not notify",
+      "steps": [
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "quantized",
+                "tStart": 0,
+                "dt": 1,
+                "scale": 0.5,
+                "offset": 10,
+                "q": [
+                  -2,
+                  0,
+                  3
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "samples": 1
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [
+          [
+            1
+          ]
+        ],
+        "queries": [
+          [
+            [
+              0,
+              9
+            ],
+            [
+              1,
+              10
+            ],
+            [
+              2,
+              11.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "out-of-order batch is dropped, counted, and does not notify",
       "setup": {},
-      "steps": [{ "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 10, "dt": 1, "values": [1] }] } },
-                { "type": "pushFrame", "frame": { "seq": 2, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 5, "dt": 1, "values": [2] }] } },
-                { "type": "query", "samples": 1 }],
-      "expect": { "dropped": 1, "lastDropReason": "out-of-order-time", "notifications": [[1]], "queries": [[[10, 1]]] } },
-
-    { "name": "regular batch into a timestamped channel is expanded",
+      "steps": [
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 10,
+                "dt": 1,
+                "values": [
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 2,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 5,
+                "dt": 1,
+                "values": [
+                  2
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "samples": 1
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 1,
+        "lastDropReason": "out-of-order-time",
+        "notifications": [
+          [
+            1
+          ]
+        ],
+        "queries": [
+          [
+            [
+              10,
+              1
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "regular batch into a timestamped channel is expanded",
       "setup": {},
-      "steps": [{ "type": "declare", "id": 1, "name": "ev", "timing": "timestamped" },
-                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 2, "dt": 0.5, "values": [1, 2] }] } }, { "type": "query", "samples": 1 }],
-      "expect": { "dropped": 0, "queries": [[[2, 1], [2.5, 2]]] } },
-
-    { "name": "timestamped batch into a regular channel is refused",
+      "steps": [
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "ev",
+          "timing": "timestamped"
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 2,
+                "dt": 0.5,
+                "values": [
+                  1,
+                  2
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "samples": 1
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [
+          [
+            1
+          ]
+        ],
+        "queries": [
+          [
+            [
+              2,
+              1
+            ],
+            [
+              2.5,
+              2
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "name": "timestamped batch into a regular channel is refused",
       "setup": {},
-      "steps": [{ "type": "declare", "id": 1, "name": "r", "rate": 10 },
-                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "timestamped", "times": [1], "values": [1] }] } }, { "type": "query", "samples": 1 }],
-      "expect": { "dropped": 1, "lastDropReason": "timing-mismatch", "notifications": [], "queries": [[]] } },
-
-    { "name": "re-declaring keeps data unless timing or capacity changes",
-      "setup": { "retentionSeconds": 1, "defaultCapacity": 64 },
-      "steps": [{ "type": "declare", "id": 1, "name": "a", "rate": 10 },
-                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 0, "dt": 0.1, "values": [1, 2] }] } },
-                { "type": "declare", "id": 1, "name": "renamed", "unit": "V" }, { "type": "query", "channels": true },
-                { "type": "declare", "id": 1, "name": "renamed", "timing": "timestamped" }, { "type": "query", "channels": true }],
-      "expect": { "queries": [
-        [{ "id": 1, "name": "renamed", "unit": "V", "kind": null, "timing": "regular", "rate": 10, "capacity": 16, "length": 2, "latestTime": 0.1 }],
-        [{ "id": 1, "name": "renamed", "unit": "V", "kind": null, "timing": "timestamped", "rate": 10, "capacity": 16, "length": 0, "latestTime": null }]] } },
-
-    { "name": "a partially bad frame notifies only the channels that changed",
+      "steps": [
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "r",
+          "rate": 10
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "timestamped",
+                "times": [
+                  1
+                ],
+                "values": [
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "samples": 1
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 1,
+        "lastDropReason": "timing-mismatch",
+        "notifications": [],
+        "queries": [
+          []
+        ]
+      }
+    },
+    {
+      "name": "re-declaring keeps data unless timing or capacity changes",
+      "setup": {
+        "retentionSeconds": 1,
+        "defaultCapacity": 64
+      },
+      "steps": [
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "a",
+          "rate": 10
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 0.1,
+                "values": [
+                  1,
+                  2
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "renamed",
+          "unit": "V"
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "declare",
+          "id": 1,
+          "name": "renamed",
+          "timing": "timestamped"
+        },
+        {
+          "type": "query",
+          "channels": true
+        }
+      ],
+      "expect": {
+        "channelCount": 1,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [
+          [
+            1
+          ]
+        ],
+        "queries": [
+          [
+            {
+              "id": 1,
+              "name": "renamed",
+              "unit": "V",
+              "kind": null,
+              "timing": "regular",
+              "rate": 10,
+              "capacity": 16,
+              "length": 2,
+              "latestTime": 0.1,
+              "observedRate": null
+            }
+          ],
+          [
+            {
+              "id": 1,
+              "name": "renamed",
+              "unit": "V",
+              "kind": null,
+              "timing": "timestamped",
+              "rate": 10,
+              "capacity": 16,
+              "length": 0,
+              "latestTime": null,
+              "observedRate": null
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "a partially bad frame notifies only the channels that changed",
       "setup": {},
-      "steps": [{ "type": "declare", "id": 2, "name": "r", "rate": 10 },
-                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 0, "dt": 1, "values": [1] }, { "id": 2, "encoding": "timestamped", "times": [0], "values": [1] }] } }],
-      "expect": { "dropped": 1, "notifications": [[1]] } }
+      "steps": [
+        {
+          "type": "declare",
+          "id": 2,
+          "name": "r",
+          "rate": 10
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 1,
+                "values": [
+                  1
+                ]
+              },
+              {
+                "id": 2,
+                "encoding": "timestamped",
+                "times": [
+                  0
+                ],
+                "values": [
+                  1
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "channelCount": 2,
+        "dropped": 1,
+        "lastDropReason": "timing-mismatch",
+        "notifications": [
+          [
+            1
+          ]
+        ],
+        "queries": []
+      }
+    },
+    {
+      "name": "channel without a declared rate is sized from the observed rate: a regular batch's dt sizes it, a faster timestamped stream grows it keeping its samples, the cap holds, a declared rate never grows",
+      "setup": {
+        "retentionSeconds": 10,
+        "defaultCapacity": 32,
+        "maxCapacity": 200
+      },
+      "steps": [
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 1,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 0.01,
+                "values": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12,
+                  13,
+                  14,
+                  15,
+                  16,
+                  17,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  26,
+                  27,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  34,
+                  35,
+                  36,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42,
+                  43,
+                  44,
+                  45,
+                  46,
+                  47,
+                  48,
+                  49
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "query",
+          "samples": 1
+        },
+        {
+          "type": "declare",
+          "id": 2,
+          "name": "irregular",
+          "timing": "timestamped"
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 2,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 2,
+                "encoding": "timestamped",
+                "times": [
+                  0,
+                  0.25,
+                  0.5,
+                  0.75,
+                  1
+                ],
+                "values": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 3,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 2,
+                "encoding": "timestamped",
+                "times": [
+                  2,
+                  2.011111111111111,
+                  2.022222222222222,
+                  2.033333333333333,
+                  2.0444444444444443,
+                  2.0555555555555554,
+                  2.066666666666667,
+                  2.077777777777778,
+                  2.088888888888889,
+                  2.1
+                ],
+                "values": [
+                  10,
+                  11,
+                  12,
+                  13,
+                  14,
+                  15,
+                  16,
+                  17,
+                  18,
+                  19
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "query",
+          "samples": 2
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 4,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 2,
+                "encoding": "timestamped",
+                "times": [
+                  5,
+                  6
+                ],
+                "values": [
+                  20,
+                  21
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "declare",
+          "id": 3,
+          "name": "declared",
+          "rate": 5
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 5,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 3,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 0.01,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 6,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 4,
+                "encoding": "regular",
+                "tStart": 0,
+                "dt": 1,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 7,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 4,
+                "encoding": "regular",
+                "tStart": 10,
+                "dt": 0.5,
+                "values": [
+                  4,
+                  5,
+                  6
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 8,
+            "t0": 0,
+            "channels": [
+              {
+                "id": 4,
+                "encoding": "regular",
+                "tStart": 20,
+                "dt": 0.1,
+                "values": [
+                  7,
+                  8
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "query",
+          "samples": 4
+        }
+      ],
+      "expect": {
+        "channelCount": 4,
+        "dropped": 0,
+        "lastDropReason": null,
+        "notifications": [
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [
+            2
+          ],
+          [
+            2
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ],
+          [
+            4
+          ],
+          [
+            4
+          ]
+        ],
+        "queries": [
+          [
+            {
+              "id": 1,
+              "name": "ch1",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 200,
+              "length": 50,
+              "latestTime": 0.49,
+              "observedRate": 100
+            }
+          ],
+          [
+            [
+              0,
+              0
+            ],
+            [
+              0.01,
+              1
+            ],
+            [
+              0.02,
+              2
+            ],
+            [
+              0.03,
+              3
+            ],
+            [
+              0.04,
+              4
+            ],
+            [
+              0.05,
+              5
+            ],
+            [
+              0.06,
+              6
+            ],
+            [
+              0.07,
+              7
+            ],
+            [
+              0.08,
+              8
+            ],
+            [
+              0.09,
+              9
+            ],
+            [
+              0.1,
+              10
+            ],
+            [
+              0.11,
+              11
+            ],
+            [
+              0.12,
+              12
+            ],
+            [
+              0.13,
+              13
+            ],
+            [
+              0.14,
+              14
+            ],
+            [
+              0.15,
+              15
+            ],
+            [
+              0.16,
+              16
+            ],
+            [
+              0.17,
+              17
+            ],
+            [
+              0.18,
+              18
+            ],
+            [
+              0.19,
+              19
+            ],
+            [
+              0.2,
+              20
+            ],
+            [
+              0.21,
+              21
+            ],
+            [
+              0.22,
+              22
+            ],
+            [
+              0.23,
+              23
+            ],
+            [
+              0.24,
+              24
+            ],
+            [
+              0.25,
+              25
+            ],
+            [
+              0.26,
+              26
+            ],
+            [
+              0.27,
+              27
+            ],
+            [
+              0.28,
+              28
+            ],
+            [
+              0.29,
+              29
+            ],
+            [
+              0.3,
+              30
+            ],
+            [
+              0.31,
+              31
+            ],
+            [
+              0.32,
+              32
+            ],
+            [
+              0.33,
+              33
+            ],
+            [
+              0.34,
+              34
+            ],
+            [
+              0.35000000000000003,
+              35
+            ],
+            [
+              0.36,
+              36
+            ],
+            [
+              0.37,
+              37
+            ],
+            [
+              0.38,
+              38
+            ],
+            [
+              0.39,
+              39
+            ],
+            [
+              0.4,
+              40
+            ],
+            [
+              0.41000000000000003,
+              41
+            ],
+            [
+              0.42,
+              42
+            ],
+            [
+              0.43,
+              43
+            ],
+            [
+              0.44,
+              44
+            ],
+            [
+              0.45,
+              45
+            ],
+            [
+              0.46,
+              46
+            ],
+            [
+              0.47000000000000003,
+              47
+            ],
+            [
+              0.48,
+              48
+            ],
+            [
+              0.49,
+              49
+            ]
+          ],
+          [
+            {
+              "id": 1,
+              "name": "ch1",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 200,
+              "length": 50,
+              "latestTime": 0.49,
+              "observedRate": 100
+            },
+            {
+              "id": 2,
+              "name": "irregular",
+              "unit": null,
+              "kind": null,
+              "timing": "timestamped",
+              "rate": null,
+              "capacity": 40,
+              "length": 5,
+              "latestTime": 1,
+              "observedRate": 4
+            }
+          ],
+          [
+            {
+              "id": 1,
+              "name": "ch1",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 200,
+              "length": 50,
+              "latestTime": 0.49,
+              "observedRate": 100
+            },
+            {
+              "id": 2,
+              "name": "irregular",
+              "unit": null,
+              "kind": null,
+              "timing": "timestamped",
+              "rate": null,
+              "capacity": 200,
+              "length": 15,
+              "latestTime": 2.1,
+              "observedRate": 89.99999999999991
+            }
+          ],
+          [
+            [
+              0,
+              1
+            ],
+            [
+              0.25,
+              2
+            ],
+            [
+              0.5,
+              3
+            ],
+            [
+              0.75,
+              4
+            ],
+            [
+              1,
+              5
+            ],
+            [
+              2,
+              10
+            ],
+            [
+              2.011111111111111,
+              11
+            ],
+            [
+              2.022222222222222,
+              12
+            ],
+            [
+              2.033333333333333,
+              13
+            ],
+            [
+              2.0444444444444443,
+              14
+            ],
+            [
+              2.0555555555555554,
+              15
+            ],
+            [
+              2.066666666666667,
+              16
+            ],
+            [
+              2.077777777777778,
+              17
+            ],
+            [
+              2.088888888888889,
+              18
+            ],
+            [
+              2.1,
+              19
+            ]
+          ],
+          [
+            {
+              "id": 1,
+              "name": "ch1",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 200,
+              "length": 50,
+              "latestTime": 0.49,
+              "observedRate": 100
+            },
+            {
+              "id": 2,
+              "name": "irregular",
+              "unit": null,
+              "kind": null,
+              "timing": "timestamped",
+              "rate": null,
+              "capacity": 200,
+              "length": 17,
+              "latestTime": 6,
+              "observedRate": 89.99999999999991
+            }
+          ],
+          [
+            {
+              "id": 1,
+              "name": "ch1",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 200,
+              "length": 50,
+              "latestTime": 0.49,
+              "observedRate": 100
+            },
+            {
+              "id": 2,
+              "name": "irregular",
+              "unit": null,
+              "kind": null,
+              "timing": "timestamped",
+              "rate": null,
+              "capacity": 200,
+              "length": 17,
+              "latestTime": 6,
+              "observedRate": 89.99999999999991
+            },
+            {
+              "id": 3,
+              "name": "declared",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": 5,
+              "capacity": 50,
+              "length": 3,
+              "latestTime": 0.02,
+              "observedRate": null
+            }
+          ],
+          [
+            {
+              "id": 1,
+              "name": "ch1",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 200,
+              "length": 50,
+              "latestTime": 0.49,
+              "observedRate": 100
+            },
+            {
+              "id": 2,
+              "name": "irregular",
+              "unit": null,
+              "kind": null,
+              "timing": "timestamped",
+              "rate": null,
+              "capacity": 200,
+              "length": 17,
+              "latestTime": 6,
+              "observedRate": 89.99999999999991
+            },
+            {
+              "id": 3,
+              "name": "declared",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": 5,
+              "capacity": 50,
+              "length": 3,
+              "latestTime": 0.02,
+              "observedRate": null
+            },
+            {
+              "id": 4,
+              "name": "ch4",
+              "unit": null,
+              "kind": null,
+              "timing": "regular",
+              "rate": null,
+              "capacity": 100,
+              "length": 8,
+              "latestTime": 20.1,
+              "observedRate": 10
+            }
+          ],
+          [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              2,
+              3
+            ],
+            [
+              10,
+              4
+            ],
+            [
+              10.5,
+              5
+            ],
+            [
+              11,
+              6
+            ],
+            [
+              20,
+              7
+            ],
+            [
+              20.1,
+              8
+            ]
+          ]
+        ]
+      }
+    }
   ]
 }

@@ -16,6 +16,9 @@ export const OUT_OF_ORDER = "out-of-order-time";
 
 interface Run { startSeq: number; t0: number; dt: number }
 
+/** A stretch of a regular buffer with one sample period: the half-open seq range and its `dt`. */
+export interface RunSegment { fromSeq: number; toSeq: number; dt: number }
+
 /** Fixed-capacity ring of f32 samples; once full, each append overwrites the oldest. */
 export class SignalBuffer {
   /** Maximum samples retained. */
@@ -133,6 +136,52 @@ export class SignalBuffer {
       const end = Math.min(runEnd, toSeq);
       for (; seq < end; seq++) fn(seq, run.t0 + (seq - run.startSeq) * run.dt, this.values[seq % this.capacity]!);
     }
+  }
+
+  /** Regular buffers: the runs overlapping [fromSeq, toSeq) as seq ranges clipped to it, in order, each with its `dt`; empty for timestamped buffers or an empty range. */
+  runsIn(fromSeq: number, toSeq: number): RunSegment[] {
+    const out: RunSegment[] = [];
+    if (this.times) return out;
+    let seq = Math.max(fromSeq, this.firstSeq);
+    const end = Math.min(toSeq, this.head);
+    while (seq < end) {
+      const ri = this.runIndexFor(seq);
+      const runEnd = ri + 1 < this.runs.length ? this.runs[ri + 1]!.startSeq : this.head;
+      const to = Math.min(runEnd, end);
+      out.push({ fromSeq: seq, toSeq: to, dt: this.runs[ri]!.dt });
+      seq = to;
+    }
+    return out;
+  }
+
+  /**
+   * A new buffer of `capacity` samples holding the newest retained samples of this one (all of them when they fit),
+   * with the same time kind and the same sequence numbers; runs are carried over so regular channels keep their
+   * 4 bytes per sample. Used by the store when a channel's observed rate asks for more history than it was given.
+   */
+  resized(capacity: number): SignalBuffer {
+    const out = new SignalBuffer(capacity, this.kind);
+    const keep = Math.min(this.length, out.capacity);
+    const from = this.head - keep;
+    out.head = from;
+    if (this.times) {
+      const t = new Float64Array(keep), v = new Float32Array(keep);
+      for (let i = 0; i < keep; i++) { const s = (from + i) % this.capacity; t[i] = this.times[s]!; v[i] = this.values[s]!; }
+      if (keep > 0) out.appendTimestamped(t, v);
+      return out;
+    }
+    let seq = from;
+    while (seq < this.head) {
+      const ri = this.runIndexFor(seq);
+      const run = this.runs[ri]!;
+      const end = ri + 1 < this.runs.length ? this.runs[ri + 1]!.startSeq : this.head;
+      const v = new Float32Array(end - seq);
+      for (let i = 0; i < v.length; i++) v[i] = this.values[(seq + i) % this.capacity]!;
+      out.runs.push({ startSeq: seq, t0: run.t0 + (seq - run.startSeq) * run.dt, dt: run.dt });
+      out.write(v);
+      seq = end;
+    }
+    return out;
   }
 
   private write(values: ArrayLike<number>): void {

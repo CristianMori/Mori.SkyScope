@@ -1,10 +1,11 @@
 // Mori.SkyScope — Web host of the trend chart: three canvases, render loop, resize, and pointer, wheel and keyboard routing through the model's hit test.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { TrendChartModel, applyTrendOptions, drawTrendChartBackground, drawTrendChartForeground, drawTrendChartSeries, seriesGeometry, initialInteraction, reduceInteraction, LiveClock,
+import { TrendChartModel, applyTrendOptions, drawTrendChartBackground, drawTrendChartForeground, drawTrendChartSeries, seriesGeometry, initialInteraction, reduceInteraction, LiveClock, formatFixed,
   CHANNEL_DRAG_MIME, CHANNEL_DRAG_DIGITAL_MIME, parseChannelDrag, channelDragIsDigital, type ChannelDragPayload, type DropTarget,
   type InputEvent, type InteractionState, type Modifiers, type Rect, type SignalStore, type TimeSource, type Tool, type TrendChartOptions, type TrendLayout } from "@mori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
+import { saveFile } from "./download.js";
 import { showSeriesMenu } from "./series-menu.js";
 import { WebGLLineRenderer, cssToRgba } from "./webgl-lines.js";
 
@@ -117,7 +118,7 @@ export class TrendChartView {
       this.gl.clear();
       for (const g of seriesGeometry(m, layout)) {
         this.gl.setSeries(g.seriesId, g.points, g.points.length / 2, g.xOrigin);
-        this.gl.draw(g.seriesId, g.clip, { color: cssToRgba(g.color) }, g.scissor);
+        this.gl.draw(g.seriesId, g.clip, { color: cssToRgba(g.color), width: g.width }, g.scissor);
       }
     }
     const fg = Canvas2DPainter.forCanvas(this.fg, this.width, this.height, dpr);
@@ -161,6 +162,18 @@ export class TrendChartView {
   exportLayout(): string { return this.model.exportLayout(); }
   /** Replace the arrangement with a layout file; theme and style are kept. */
   importLayout(json: string): void { this.model.importLayout(json); this.selection.clear(); this.changed(); }
+  /**
+   * The visible signals between cursors A and B as a CSV or MCAP download (`exportCursorsCsv` / `exportCursorsMcap` on the
+   * model, named `skyscope-<t0>-<t1>.<format>`). Returns false, saving nothing, unless both cursors are set.
+   */
+  exportCursors(format: "csv" | "mcap"): boolean {
+    const r = this.model.cursorRange();
+    if (!r) return false;
+    const name = `skyscope-${formatFixed(r.t0, 3)}-${formatFixed(r.t1, 3)}.${format}`;
+    if (format === "csv") saveFile(new Blob([this.model.exportCursorsCsv()!], { type: "text/csv" }), name, "text/csv");
+    else saveFile(this.model.exportCursorsMcap()!, name);
+    return true;
+  }
   /** Where a drag on a label or legend row started, to tell a click (hide/show) from a drag (move). */
   private press: { x: number; y: number; seriesId: string } | null = null;
   private clientToLocal(clientX: number, clientY: number): { x: number; y: number } { const r = this.element.getBoundingClientRect(); return { x: clientX - r.left, y: clientY - r.top }; }
@@ -196,7 +209,12 @@ export class TrendChartView {
       this.addChannels(ids, ev.target, ev.group);
     });
   }
-  private changed(): void { this.layout = null; this.onConfigChanged?.(); }
+  private readonly configListeners = new Set<() => void>();
+  /** Follow configuration changes from any source (gestures, drops, layout files, an editor panel); returns a function that stops following. */
+  addConfigListener(fn: () => void): () => void { this.configListeners.add(fn); return () => { this.configListeners.delete(fn); }; }
+  /** Tell the view the configuration was changed from outside (an editor panel calling model commands): relayouts and fires `onConfigChanged` and the listeners. */
+  notifyConfigChanged(): void { this.changed(); }
+  private changed(): void { this.layout = null; this.onConfigChanged?.(); for (const fn of this.configListeners) fn(); }
   private currentLayout(): TrendLayout { return this.layout ?? (this.layout = this.model.layout(this.width, this.height)); }
   private hoverCursor = "";
   private cursorFor(hit: ReturnType<TrendChartModel["hitTest"]>): string {
@@ -278,7 +296,7 @@ export class TrendChartView {
         return;
       }
       if (m.laneDrag) { if (m.endLaneDrag(this.currentLayout(), p.x, p.y)) this.changed(); return; }
-      if (m.axisDrag) { m.endAxisDrag(); this.onConfigChanged?.(); return; }
+      if (m.axisDrag) { m.endAxisDrag(); this.changed(); return; }
       if (m.navDrag) { m.endNavigatorDrag(); return; }
       if (m.laneResize) { m.endLaneResize(); this.changed(); return; }
       if (m.cursorDrag) { m.endCursorDrag(); return; }
@@ -294,7 +312,7 @@ export class TrendChartView {
     }, { passive: false });
     on("dblclick", (e) => {
       const p = pos(e), layout = this.currentLayout(), hit = m.hitTest(layout, p.x, p.y);
-      if (hit.kind === "axis") { m.axisAutoscale(hit.axisId); this.onConfigChanged?.(); return; }
+      if (hit.kind === "axis") { m.axisAutoscale(hit.axisId); this.changed(); return; }
       if (hit.kind === "navigator" || hit.kind === "header" || hit.kind === "label" || hit.kind === "laneGap" || hit.kind === "cursor" || hit.kind === "measure") return;
       this.dispatch({ type: "dblclick", ...p });
     });

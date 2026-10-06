@@ -18,13 +18,16 @@
       <Button Content="Pause" x:Name="PauseButton" Margin="0,0,4,0" Padding="8,2" Click="OnPause" />
       <Button Content="Reset" Padding="8,2" Click="OnReset" />
       <Button Content="Save layout" Margin="16,0,4,0" Padding="8,2" Click="OnSaveLayout" />
+      <ToggleButton x:Name="BtnEditor" Content="Editor" Margin="8,0,4,0" Padding="8,2" Click="OnToggleEditor" />
       <Button Content="Load layout" Padding="8,2" Click="OnLoadLayout" />
+      <Button Content="Export A→B" Margin="8,0,0,0" Padding="8,2" Click="OnExportCursors" />
       <sky:RecorderControl x:Name="Recorder" Margin="16,0,0,0" />
       <sky:PlaybackControl x:Name="Transport" Margin="16,0,0,0" MinWidth="520" Visibility="Collapsed" />
     </StackPanel>
     <Grid Grid.Row="1">
       <Grid.ColumnDefinitions><ColumnDefinition Width="200" /><ColumnDefinition Width="8" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
       <sky:SignalTreeControl x:Name="Tree" Grid.Column="0" />
+      <sky:ChartEditorControl x:Name="Editor" Grid.Column="0" Visibility="Collapsed" />
       <sky:TrendChartControl x:Name="Chart" Grid.Column="2" />
       <DockPanel Grid.Column="4">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">

@@ -6,21 +6,41 @@ using Mori.SkyScope.Core.Scene;
 
 namespace Mori.SkyScope.Core.Scene3D;
 
-/// <summary>Loaded mesh resources by URI, shared by marker layers and robot models of one scene (via <c>LayerJson.LayerEnv.Meshes</c>).</summary>
+/// <summary>
+/// Loaded mesh resources by URI, shared by marker layers and robot models of one scene (via <c>LayerJson.LayerEnv.Meshes</c>).
+/// Besides the renderer meshes it keeps each resource's material colour (for mesh markers without one) and, for resources
+/// that reference sibling files (glTF external buffers), the files registered with <see cref="RegisterFiles"/> plus an
+/// optional <see cref="Resolver"/> consulted for anything not registered. Mirrors the TS <c>MeshRegistry</c>.
+/// </summary>
 public sealed class MeshRegistry
 {
-    private readonly Dictionary<string, Mesh3D> _meshes = [];
+    private readonly Dictionary<string, (Mesh3D Mesh, string? Color)> _meshes = [];
+    private readonly Dictionary<string, byte[]> _files = [];
     /// <summary>Incremented on every registration and clear.</summary>
     public int Version { get; private set; }
+    /// <summary>Finds the bytes of a resolved URI not registered through <see cref="RegisterFiles"/> (a package root, a cache…); null when unknown.</summary>
+    public Func<string, byte[]?>? Resolver { get; set; }
     /// <summary>Register (or replace) the mesh for a URI, converting it to a renderer mesh with normals.</summary>
-    public Mesh3D Set(string uri, ParsedMesh parsed) { var m = MeshFormats.ToMesh($"mesh:{uri}", parsed); _meshes[uri] = m; Version++; return m; }
+    public Mesh3D Set(string uri, ParsedMesh parsed) { var m = MeshFormats.ToMesh($"mesh:{uri}", parsed); _meshes[uri] = (m, parsed.Color is null ? null : MeshFormats.HexOfColor(parsed.Color)); Version++; return m; }
+    /// <summary>Parse resource bytes (format from the URI's extension or content) and store the result under <paramref name="uri"/>; sibling files are found through <see cref="Resolve"/>.</summary>
+    public Mesh3D Load(string uri, ReadOnlySpan<byte> bytes) => Set(uri, MeshFormats.ParseResource(bytes, uri, rel => Resolve(uri, rel)));
+    /// <summary>Register sibling files by path relative to <paramref name="baseUri"/> (a directory; a trailing slash is added when missing), for resources that reference them.</summary>
+    public void RegisterFiles(string baseUri, IReadOnlyDictionary<string, byte[]> files)
+    {
+        var b = baseUri.EndsWith('/') ? baseUri : baseUri + "/";
+        foreach (var (rel, bytes) in files) _files[MeshFormats.JoinUri(b, rel)] = bytes;
+    }
+    /// <summary>Bytes of <paramref name="relative"/> resolved against <paramref name="baseUri"/>: registered files first, then the <see cref="Resolver"/>.</summary>
+    public byte[]? Resolve(string baseUri, string relative) { var uri = MeshFormats.JoinUri(baseUri, relative); return _files.GetValueOrDefault(uri) ?? Resolver?.Invoke(uri); }
     /// <summary>The mesh for a URI, or null when not loaded yet.</summary>
-    public Mesh3D? Get(string uri) => _meshes.GetValueOrDefault(uri);
+    public Mesh3D? Get(string uri) => _meshes.TryGetValue(uri, out var e) ? e.Mesh : null;
+    /// <summary>The resource's own material colour as <c>#rrggbb</c>, or null when the format carried none.</summary>
+    public string? ColorOf(string uri) => _meshes.TryGetValue(uri, out var e) ? e.Color : null;
     /// <summary>True when a mesh is registered for the URI.</summary>
     public bool Has(string uri) => _meshes.ContainsKey(uri);
     /// <summary>Registered URIs, sorted ordinally.</summary>
     public List<string> Uris() => _meshes.Keys.Order(StringComparer.Ordinal).ToList();
-    /// <summary>Forget every mesh.</summary>
+    /// <summary>Forget every mesh (registered files stay).</summary>
     public void Clear() { if (_meshes.Count > 0) { _meshes.Clear(); Version++; } }
 }
 
@@ -208,8 +228,8 @@ public sealed record Marker(string Id, MarkerType Type)
     public Quat Orientation { get; init; } = Quat.Identity;
     /// <summary>cube/sphere/cylinder: size; arrow: [length, width, height]; lines: [width]; points: [size]; text: [height px].</summary>
     public Vec3 Scale { get; init; } = new(1, 1, 1);
-    /// <summary>Hex colour; multiplied with per-vertex <see cref="Colors"/> when present.</summary>
-    public string Color { get; init; } = "#ffffff";
+    /// <summary>Hex colour; multiplied with per-vertex <see cref="Colors"/> when present. Null draws white, or for mesh markers the resource's own material colour when it has one.</summary>
+    public string? Color { get; init; }
     /// <summary>0–1, multiplied with the layer opacity.</summary>
     public double Opacity { get; init; } = 1;
     /// <summary>Interleaved xyz vertices for line and point markers, relative to the pose.</summary>
@@ -310,21 +330,21 @@ public sealed class MarkerLayer(string id) : BaseLayer3D(id)
         {
             var e = _entries[key]; var m = e.Marker; var pose = ModelOf(m, ctx.Now);
             if (pose is null) continue;
-            var opacity = m.Opacity * ctx.Opacity; var s = m.Scale;
+            var color = m.Color ?? "#ffffff"; var opacity = m.Opacity * ctx.Opacity; var s = m.Scale;
             switch (m.Type)
             {
-                case MarkerType.Cube: p3.Triangles(Primitives.UnitCube(), new Material3D { Color = m.Color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
-                case MarkerType.Sphere: p3.Triangles(Primitives.UnitSphere(), new Material3D { Color = m.Color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
-                case MarkerType.Cylinder: p3.Triangles(Primitives.UnitCylinder(), new Material3D { Color = m.Color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
-                case MarkerType.Arrow: p3.Triangles(Primitives.UnitArrow(), new Material3D { Color = m.Color, Opacity = opacity, Lit = true, Model = Mat4.Mul(pose, Mat4.Scaling(s.X, s.Y * 2, s.Z * 2)) }); break;
-                case MarkerType.Mesh: if (m.MeshResource is not null && Meshes.Get(m.MeshResource) is { } mesh) p3.Triangles(mesh, new Material3D { Color = m.Color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
-                case MarkerType.LineList: if (e.Mesh is not null) p3.Lines(e.Mesh, new Material3D { Color = m.Color, Opacity = opacity, LineWidth = s.X, Model = pose }, strip: false); break;
-                case MarkerType.LineStrip: if (e.Mesh is not null) p3.Lines(e.Mesh, new Material3D { Color = m.Color, Opacity = opacity, LineWidth = s.X, Model = pose }, strip: true); break;
-                case MarkerType.Points: if (e.Mesh is not null) p3.Points(e.Mesh, new Material3D { Color = m.Color, Opacity = opacity, PointSize = s.X, Model = pose }); break;
+                case MarkerType.Cube: p3.Triangles(Primitives.UnitCube(), new Material3D { Color = color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
+                case MarkerType.Sphere: p3.Triangles(Primitives.UnitSphere(), new Material3D { Color = color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
+                case MarkerType.Cylinder: p3.Triangles(Primitives.UnitCylinder(), new Material3D { Color = color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
+                case MarkerType.Arrow: p3.Triangles(Primitives.UnitArrow(), new Material3D { Color = color, Opacity = opacity, Lit = true, Model = Mat4.Mul(pose, Mat4.Scaling(s.X, s.Y * 2, s.Z * 2)) }); break;
+                case MarkerType.Mesh: if (m.MeshResource is not null && Meshes.Get(m.MeshResource) is { } mesh) p3.Triangles(mesh, new Material3D { Color = m.Color ?? Meshes.ColorOf(m.MeshResource) ?? color, Opacity = opacity, Lit = true, Model = ShapeModel(m, pose) }); break;
+                case MarkerType.LineList: if (e.Mesh is not null) p3.Lines(e.Mesh, new Material3D { Color = color, Opacity = opacity, LineWidth = s.X, Model = pose }, strip: false); break;
+                case MarkerType.LineStrip: if (e.Mesh is not null) p3.Lines(e.Mesh, new Material3D { Color = color, Opacity = opacity, LineWidth = s.X, Model = pose }, strip: true); break;
+                case MarkerType.Points: if (e.Mesh is not null) p3.Points(e.Mesh, new Material3D { Color = color, Opacity = opacity, PointSize = s.X, Model = pose }); break;
                 case MarkerType.Text:
                     if (m.Text is null || ctx.Projection is not Camera3D cam) break;
                     var o = Mat4.Point(pose, 0, 0, 0); var sc = cam.Project3(o.X, o.Y, o.Z);
-                    if (sc.Visible) ctx.Painter.Text(m.Text, sc.X, sc.Y, new TextStyle(m.Color) { Size = s.X > 0 && s.X != 1 ? s.X : FontSize, Align = TextAlign.Center, Baseline = TextBaseline.Middle, Opacity = opacity });
+                    if (sc.Visible) ctx.Painter.Text(m.Text, sc.X, sc.Y, new TextStyle(color) { Size = s.X > 0 && s.X != 1 ? s.X : FontSize, Align = TextAlign.Center, Baseline = TextBaseline.Middle, Opacity = opacity });
                     break;
             }
         }

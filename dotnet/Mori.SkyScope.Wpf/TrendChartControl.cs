@@ -136,6 +136,20 @@ public class TrendChartControl : SkiaElement
     /// <summary>Load a layout file from <paramref name="path"/>.</summary>
     public void LoadLayout(string path) => ImportLayout(System.IO.File.ReadAllText(path));
 
+    // ---- range export ----------------------------------------------------------
+    /// <summary>CSV of the visible signals between cursors A and B; null unless both cursors are set.</summary>
+    public string? ExportCursorsCsv() => Model.ExportCursorsCsv();
+    /// <summary>MCAP recording of the visible signals between cursors A and B; null unless both cursors are set.</summary>
+    public byte[]? ExportCursorsMcap() => Model.ExportCursorsMcap();
+    /// <summary>Write the cursor span to <paramref name="path"/>: CSV for a <c>.csv</c> extension, MCAP otherwise. Returns false, writing nothing, unless both cursors are set.</summary>
+    public bool SaveCursorsRange(string path)
+    {
+        if (Model.CursorRange() is null) return false;
+        if (string.Equals(System.IO.Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase)) System.IO.File.WriteAllText(path, ExportCursorsCsv());
+        else System.IO.File.WriteAllBytes(path, ExportCursorsMcap()!);
+        return true;
+    }
+
     private Point _pressAt;
     private string? _pressedSeries;
 
@@ -190,6 +204,8 @@ public class TrendChartControl : SkiaElement
     private static bool GroupKey() => Keyboard.Modifiers.HasFlag(ModifierKeys.Control) || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
     private TrendLayout CurrentLayout() => _layout ??= Model.Layout(ActualWidth, ActualHeight);
     private void Changed() { _layout = null; ConfigChanged?.Invoke(); InvalidateVisual(); }
+    /// <summary>Tell the control the configuration was changed from outside (an editor calling model commands): relayouts, repaints and raises <see cref="ConfigChanged"/>.</summary>
+    public void NotifyConfigChanged() => Changed();
 
     private static Cursor? CursorFor(HitRegion hit) => hit switch
     {

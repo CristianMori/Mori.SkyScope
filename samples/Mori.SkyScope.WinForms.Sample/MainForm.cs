@@ -34,6 +34,8 @@ public partial class MainForm : Form
         foreach (var c in new SkiaHostControl[] { chart, speed, temp, heading, attitude, bus, level, gain, arm, throttle }) c.Rendering = rendering;
         btnGpu.Checked = rendering == RenderingMode.Gpu;
         tree.Chart = chart; tree.RefreshRows();
+        editor.Chart = chart;
+        btnEditor.Click += (_, _) => { editor.Visible = btnEditor.Checked; tree.Visible = !btnEditor.Checked; splitLeft.SplitterDistance = btnEditor.Checked ? 330 : 200; if (editor.Visible) editor.Refresh(); };
 
         speed.Gauge = _speed; temp.Gauge = _temp; heading.Gauge = _heading; attitude.Gauge = _attitude; bus.Gauge = _bus; level.Gauge = _level;
         gain.Gauge = _gain; arm.Gauge = _arm; throttle.Gauge = _throttle;
@@ -61,6 +63,13 @@ public partial class MainForm : Form
         btnReset.Click += (_, _) => { chart.Model.Reset(); _paused = false; btnPause.Text = "Pause"; };
         btnSaveLayout.Click += (_, _) => { using var dlg = new SaveFileDialog { Filter = "Layout (*.json)|*.json", FileName = "skyscope-layout.json" }; if (dlg.ShowDialog(this) == DialogResult.OK) chart.SaveLayout(dlg.FileName); };
         btnLoadLayout.Click += (_, _) => { using var dlg = new OpenFileDialog { Filter = "Layout (*.json)|*.json" }; if (dlg.ShowDialog(this) == DialogResult.OK) { try { chart.LoadLayout(dlg.FileName); tree.RefreshRows(); } catch (Exception ex) { status.Text = $"layout: {ex.Message}"; } } };
+        // the span between cursors A and B to a CSV or MCAP file; the extension picks the format
+        btnExport.Click += (_, _) =>
+        {
+            if (chart.Model.CursorRange() is null) { status.Text = "export: set cursors A and B first (Cursor tool: click, Shift + click)"; return; }
+            using var dlg = new SaveFileDialog { Filter = "CSV (*.csv)|*.csv|MCAP recording (*.mcap)|*.mcap", FileName = "skyscope-range.csv" };
+            if (dlg.ShowDialog(this) == DialogResult.OK) { try { chart.SaveCursorsRange(dlg.FileName); status.Text = $"exported {Path.GetFileName(dlg.FileName)}"; } catch (Exception ex) { status.Text = $"export: {ex.Message}"; } }
+        };
         btnGpu.Click += (_, _) => { var mode = btnGpu.Checked ? RenderingMode.Gpu : RenderingMode.Cpu; foreach (var c in new SkiaHostControl[] { chart, speed, temp, heading, attitude, bus, level, gain, arm, throttle }) c.Rendering = mode; status.Text = $"rendering: {chart.EffectiveRendering}"; };
         btnFit.Click += (_, _) => scene3d.FitAll();
         chart.ConfigChanged += () => tree.RefreshRows();
@@ -94,6 +103,9 @@ public partial class MainForm : Form
         };
         poll.Start();
     }
+
+    /// <summary>Opens the chart editor in place of the signal tree (the toolbar's Editor button).</summary>
+    internal void ShowEditor() { if (!btnEditor.Checked) btnEditor.PerformClick(); }
 
     /// <summary>Runs <paramref name="a"/> on the UI thread once the window exists; drops it otherwise (early connection errors).</summary>
     private void Ui(Action a) { if (IsHandleCreated && !IsDisposed) BeginInvoke(a); }

@@ -1,6 +1,7 @@
 // Mori.SkyScope — Trend chart model: polylines, lane and series commands, hit test, drop rules, drags, axis manipulation, navigator.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
+using Mori.SkyScope.Core.Mcap;
 using Mori.SkyScope.Core.Signals;
 using Mori.SkyScope.Core.Sources;
 using Mori.SkyScope.Core.Scales;
@@ -119,7 +120,7 @@ public sealed partial class TrendChartModel
     {
         var lanes = Lanes();
         for (var i = lanes.Count - 1; i >= 0 && lanes.Count > 1; i--)
-            if (!Config.Series.Any(x => LaneIdOf(x) == lanes[i].Id)) lanes.RemoveAt(i);
+            if (!lanes[i].Keep && !Config.Series.Any(x => LaneIdOf(x) == lanes[i].Id)) lanes.RemoveAt(i);
     }
 
     /// <summary>Series of a lane grouped by axis (first-appearance order): shared-axis series sit together in the legend and the labels.</summary>
@@ -485,6 +486,16 @@ public sealed partial class TrendChartModel
         foreach (var id in _measureCache.Keys.Where(k => !live.Contains(k)).ToList()) _measureCache.Remove(id);
         return new Measurements(t0, t1, dt, Math.Abs(dt) > 0 ? 1 / Math.Abs(dt) : null, rows);
     }
+
+    // ---- range export ----------------------------------------------------------
+    /// <summary>The span between cursors A and B, ordered; null unless both are set.</summary>
+    public (double T0, double T1)? CursorRange() => CursorA is { } a && CursorB is { } b ? (Math.Min(a, b), Math.Max(a, b)) : null;
+    /// <summary>Channel ids of the visible series (hidden ones excluded), in series order, without duplicates.</summary>
+    public List<int> VisibleChannelIds() => VisibleSeries().Select(s => s.ChannelId).Distinct().ToList();
+    /// <summary>CSV (<see cref="RangeExport.ExportRangeCsv"/>) of the visible series' channels between cursors A and B; null unless both cursors are set.</summary>
+    public string? ExportCursorsCsv(CsvExportOptions? options = null) => CursorRange() is { } r ? RangeExport.ExportRangeCsv(Store, VisibleChannelIds(), r.T0, r.T1, options) : null;
+    /// <summary>MCAP recording (<see cref="RangeExport.ExportRangeMcap"/>) of the visible series' channels between cursors A and B; null unless both cursors are set.</summary>
+    public byte[]? ExportCursorsMcap() => CursorRange() is { } r ? RangeExport.ExportRangeMcap(Store, VisibleChannelIds(), r.T0, r.T1) : null;
 
     // ---- layout files --------------------------------------------------------
     /// <summary>The arrangement as a JSON layout file (theme and style excluded).</summary>

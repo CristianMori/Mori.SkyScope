@@ -34,7 +34,7 @@ internal static class Snapshot
     }
 
     /// <summary>Shows the live dashboard on screen, waits, captures its client area from the screen (the only way to capture OpenGL content) and exits.</summary>
-    public static bool Screen(string path, string wsUrl, RenderingMode rendering, int width, int height, double waitSeconds)
+    public static bool Screen(string path, string wsUrl, RenderingMode rendering, int width, int height, double waitSeconds, bool editor = false)
     {
         try
         {
@@ -42,6 +42,7 @@ internal static class Snapshot
             form.StartPosition = FormStartPosition.Manual; form.Location = new Point(0, 0);
             form.Show();
             form.ClientSize = new Size(width, height);
+            if (editor) form.ShowEditor();
             var until = DateTime.UtcNow.AddSeconds(waitSeconds);
             while (DateTime.UtcNow < until) { Application.DoEvents(); Thread.Sleep(10); }
             form.Activate(); Application.DoEvents();
@@ -68,7 +69,7 @@ internal static class Snapshot
     }
 
     /// <summary>Twelve seconds of the demo server's waveforms, pushed straight into the form's store.</summary>
-    private static void Fill(MainForm form)
+    internal static void Fill(MainForm form)
     {
         var chart = (TrendChartControl)FindControl(form, typeof(TrendChartControl))!;
         var store = chart.Store;
@@ -91,7 +92,7 @@ internal static class Snapshot
         foreach (Control c in root.Controls) { if (c is SkiaHostControl h) yield return h; else foreach (var n in Hosts(c)) yield return n; }
     }
 
-    private static Control? FindControl(Control root, Type type)
+    internal static Control? FindControl(Control root, Type type)
     {
         foreach (Control c in root.Controls) { if (type.IsInstanceOfType(c)) return c; if (FindControl(c, type) is { } found) return found; }
         return null;

@@ -39,6 +39,8 @@ export interface TrendChartHandle {
   importLayout(json: string): void;
   /** Hand the layout file to the browser's download machinery. */
   downloadLayout(fileName: string): void;
+  /** Download the visible signals between cursors A and B as CSV or MCAP; false, nothing saved, unless both cursors are set. */
+  exportCursors(format: "csv" | "mcap"): boolean;
   /** Add channels from code; `targetJson` is an optional DropTarget. Returns the series ids. */
   addChannels(channelIds: number[], targetJson: string | null, group: boolean): string[];
   /**
@@ -66,6 +68,7 @@ export function mountTrendChart(element: HTMLElement, options: MountOptions): Tr
     exportLayout: () => view.exportLayout(),
     importLayout: (json) => view.importLayout(json),
     downloadLayout: (fileName) => saveFile(new Blob([view.exportLayout()], { type: "application/json" }), fileName, "application/json"),
+    exportCursors: (format) => view.exportCursors(format),
     addChannels: (ids, targetJson, group) => view.addChannels(ids, targetJson ? (JSON.parse(targetJson) as DropTarget) : undefined, group),
     setDropHandler: (dotnet) => {
       view.onChannelDrop = dotnet ? (e) => {
@@ -79,6 +82,7 @@ export function mountTrendChart(element: HTMLElement, options: MountOptions): Tr
   };
 }
 export * from "./signal-tree.js";
+export * from "./chart-editor.js";
 export * from "./gauges.js";
 export * from "./charts.js";
 export * from "./scene.js";

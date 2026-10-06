@@ -239,14 +239,16 @@ public static class LayerJson
             var pos = Floats(d.GetValueOrDefault("positions"));
             if (uri is null || pos is null) return false;
             var idx = d.GetValueOrDefault("indices") switch { uint[] ua => ua, int[] ia => ia.Select(x => (uint)x).ToArray(), JsonElement { ValueKind: JsonValueKind.Array } e => ChartJson.Doubles(e).Select(x => (uint)x).ToArray(), _ => null };
-            l.Register(uri, new ParsedMesh(pos, Floats(d.GetValueOrDefault("normals")), idx));
+            l.Register(uri, new ParsedMesh(pos, Floats(d.GetValueOrDefault("normals")), idx, MeshColor(d.GetValueOrDefault("color") switch { double[] dd => dd, float[] ff => ff.Select(x => (double)x).ToArray(), JsonElement { ValueKind: JsonValueKind.Array } e => ChartJson.Doubles(e), _ => null })));
             return true;
         }
         var p = ToElement(payload);
         if (p.ValueKind != JsonValueKind.Object || ChartJson.Str(p, "uri") is not { } uriJ || ChartJson.Doubles(p, "positions") is not { } pj) return false;
-        l.Register(uriJ, new ParsedMesh(pj.Select(x => (float)x).ToArray(), ChartJson.Doubles(p, "normals")?.Select(x => (float)x).ToArray(), ChartJson.Doubles(p, "indices")?.Select(x => (uint)x).ToArray()));
+        l.Register(uriJ, new ParsedMesh(pj.Select(x => (float)x).ToArray(), ChartJson.Doubles(p, "normals")?.Select(x => (float)x).ToArray(), ChartJson.Doubles(p, "indices")?.Select(x => (uint)x).ToArray(), MeshColor(ChartJson.Doubles(p, "color"))));
         return true;
     }
+    /// <summary>An RGBA mesh colour from a payload array of 3 or 4 components; null otherwise.</summary>
+    private static double[]? MeshColor(double[]? c) => c is { Length: >= 3 } ? [c[0], c[1], c[2], c.Length > 3 ? c[3] : 1] : null;
 
     private static float[]? Floats(object? v) => v switch { float[] f => f, double[] d => d.Select(x => (float)x).ToArray(), JsonElement { ValueKind: JsonValueKind.Array } e => ChartJson.Doubles(e).Select(x => (float)x).ToArray(), _ => null };
     private static bool ApplyCloud(PointCloud3DLayer l, IReadOnlyDictionary<string, object?> d)
@@ -280,7 +282,7 @@ public static class LayerJson
         return new Marker(e.GetProperty("id").GetString()!, Marker.ParseType(ChartJson.Str(e, "type") ?? "cube"))
         {
             Frame = ChartJson.Str(e, "frame"), Position = new Vec3(pos[0], pos[1], pos[2]), Orientation = new Quat(ori[0], ori[1], ori[2], ori[3]), Scale = new Vec3(sc[0], sc[1], sc[2]),
-            Color = ChartJson.Str(e, "color") ?? "#ffffff", Opacity = ChartJson.Num(e, "opacity") ?? 1,
+            Color = ChartJson.Str(e, "color"), Opacity = ChartJson.Num(e, "opacity") ?? 1,
             Points = ChartJson.Doubles(e, "points")?.Select(v => (float)v).ToArray(), Colors = ChartJson.Doubles(e, "colors")?.Select(v => (byte)v).ToArray(),
             Text = ChartJson.Str(e, "text"), MeshResource = ChartJson.Str(e, "meshResource"), Lifetime = ChartJson.Num(e, "lifetime") ?? 0, Stamp = ChartJson.Num(e, "stamp"),
         };

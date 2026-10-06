@@ -32,8 +32,15 @@ var digitalConfig = new SyntheticSourceConfig
         .Select(d => new SyntheticChannel(d.Id, new SynthSpec(Waveform.Square) { Frequency = d.Hz, Amplitude = 0.5, Offset = 0.5, Phase = d.Phase, Noise = 0 }, d.Name, null, ChannelKind.Digital)).ToList(),
 };
 // --record out.mcap: also record everything the server streams (signals and scene layers) to an MCAP file until shutdown.
+// --record-compression zstd: write the recording as zstd-compressed chunks (default none, unchunked).
 var recordPath = app.Configuration["record"];
-var recorder = new Mori.SkyScope.Core.Mcap.McapRecorder(broadcaster, broadcaster);
+var recordCompression = app.Configuration["record-compression"]?.ToLowerInvariant() switch
+{
+    "zstd" => Mori.SkyScope.Core.Mcap.McapCompression.Zstd,
+    null or "" or "none" => Mori.SkyScope.Core.Mcap.McapCompression.None,
+    var other => throw new ArgumentException($"--record-compression {other}: expected none or zstd"),
+};
+var recorder = new Mori.SkyScope.Core.Mcap.McapRecorder(broadcaster, broadcaster, options: new Mori.SkyScope.Core.Mcap.McapRecorderOptions { Compression = recordCompression });
 var ctx = new SourceContext(recorder, recorder, new LiveClock(), (level, msg) => app.Logger.LogInformation("[{Level}] {Message}", level, msg));
 // A synthetic robot (map, lidar, pose, trail) relayed as layer messages; its pose is also streamed as channels 100–103.
 var scene = new SyntheticSceneSource();

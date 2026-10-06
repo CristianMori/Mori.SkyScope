@@ -140,7 +140,7 @@ OccupancyGrid onto these kinds.
 `parseUrdf(xml)` (TS) / `Urdf.Parse(xml)` (C#) turn a URDF into links, joints and materials. `publishUrdf(sink, model, { prefix })`
 declares the visuals as a marker set and the joints as static transforms, and returns a function that pushes the
 joint transforms for a set of joint positions — call it from a JointState. Mesh visuals name a resource URI; load the
-file (`parseMeshResource`) and push it to a `meshes` layer (`{ uri, positions, normals?, indices? }`, binary on the
+file (`parseMeshResource`) and push it to a `meshes` layer (`{ uri, positions, normals?, indices?, color? }`, binary on the
 wire) and every marker that references the URI draws it. In .NET, `Ros2SourceConfig.Urdf` plus `MeshRoots`
 (package name → folder) does all of this for a ROS 2 robot; the demo server's synthetic scene carries a two-joint arm
 the same way.

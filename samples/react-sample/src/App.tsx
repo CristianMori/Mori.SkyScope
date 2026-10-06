@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Scene3DDemo } from "./Scene3DDemo.js";
 import { DARK_THEME, LIGHT_THEME, type Tool, type TrendChartOptions } from "@mori/skyscope-core";
 import { saveFile, type TrendChartView } from "@mori/skyscope-render";
-import { AttitudeView, Button, CompassView, HeatmapView, KnobView, LedArrayView, LinearGaugeView, NumericDisplayView, PieChartView, PlaybackControls, PolarChartView, RadialGaugeView, RecordButton, SceneView, SignalTree, SliderView, SwitchView, TrendChart, XYChart, usePlayback, useSignalStore, useWebSocketSource } from "@mori/skyscope-react";
+import { AttitudeView, Button, ChartEditor, CompassView, HeatmapView, KnobView, LedArrayView, LinearGaugeView, NumericDisplayView, PieChartView, PlaybackControls, PolarChartView, RadialGaugeView, RecordButton, SceneView, SignalTree, SliderView, SwitchView, TrendChart, XYChart, usePlayback, useSignalStore, useWebSocketSource } from "@mori/skyscope-react";
 import { McapRecorder, parseCsv, readRecording, type Recording } from "@mori/skyscope-core";
 import { pickFile } from "@mori/skyscope-render";
 
@@ -68,7 +68,11 @@ export function App() {
   const [tool, setTool] = useState<Tool>("pan");
   const [span, setSpan] = useState(30);
   const [paused, setPaused] = useState(false);
+  const [editor, setEditor] = useState(false);
   const [view, setView] = useState<TrendChartView | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  /** Downloads the visible signals between cursors A and B; the chart view declines without both cursors. */
+  const exportCursors = (format: "csv" | "mcap"): void => setNote(view?.exportCursors(format) ? null : "export: set cursors A and B first (cursor tool: click, Shift + click)");
   const [latest, setLatest] = useState<Record<number, number>>({});
   const [gain, setGain] = useState(2.5);
   const [armed, setArmed] = useState(false);
@@ -151,13 +155,17 @@ export function App() {
         <span style={{ width: 8 }} />
         <Button size="sm" variant="ghost" onClick={() => { if (view) saveFile(new Blob([view.exportLayout()], { type: "application/json" }), "skyscope-layout.json", "application/json"); }}>save layout</Button>
         <Button size="sm" variant="ghost" onClick={() => { void pickFile(".json").then(async (f) => { if (f && view) view.importLayout(await f.text()); }); }}>load layout</Button>
+        <Button size="sm" variant="ghost" onClick={() => exportCursors("csv")}>export A→B</Button>
+        <Button size="sm" variant="ghost" onClick={() => exportCursors("mcap")}>export A→B mcap</Button>
+        {note && <span style={{ fontSize: 12, color: "#dc2626" }}>{note}</span>}
+        <Button size="sm" active={editor} onClick={() => setEditor(!editor)}>editor</Button>
         {mode === "live" && <RecordButton recorder={recorder} streamToFile />}
       </div>
       {/* transport bar, playback mode only */}
       {mode === "playback" && <div style={{ display: "flex", alignItems: "center", gap: 8 }}><PlaybackControls playback={playback} style={{ flex: 1 }} /><span style={{ fontSize: 12, color: "var(--skyscope-color-text-secondary)" }}>{opened?.name ?? "demo recording (generated)"}</span></div>}
       {/* main row: signal tree, trend chart and (unless focused) the 2D or 3D scene; tree and chart follow the active mode's store */}
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: FOCUS ? "220px 1fr" : "200px 2fr 1fr", gap: 8 }}>
-        <SignalTree store={mode === "playback" ? playbackStore : store} chart={view} />
+        {editor ? <ChartEditor chart={view} /> : <SignalTree store={mode === "playback" ? playbackStore : store} chart={view} />}
         <TrendChart store={mode === "playback" ? playbackStore : store} clock={mode === "playback" ? playback.source.clock : undefined} config={config} tool={tool} onReady={setView} />
         {!FOCUS && (scene3d ? <div style={{ display: "flex", flexDirection: "column", gap: 4, minHeight: 0 }}>
           <div style={{ display: "flex", gap: 4 }}><Button size="sm" active onClick={() => setScene3d(false)}>3D</Button><Button size="sm" onClick={() => setScene3d(false)}>2D</Button></div>

@@ -10,13 +10,14 @@ partial class MainForm
     private System.ComponentModel.IContainer components = null!;
     private TrendChartControl chart = null!;
     private SignalTreeControl tree = null!;
+    private ChartEditorControl editor = null!;
     private SceneControl3D scene3d = null!;
     private GaugeControl speed = null!, temp = null!, heading = null!, attitude = null!, bus = null!, level = null!, gain = null!, arm = null!, throttle = null!;
     private RecorderControl recorder = null!;
     private PlaybackControl transport = null!;
     private ToolStrip toolbar = null!;
     private ToolStripLabel status = null!;
-    private ToolStripButton btnPan = null!, btnBoxZoom = null!, btnCursor = null!, btnPause = null!, btnReset = null!, btnSaveLayout = null!, btnLoadLayout = null!, btnGpu = null!, btnFit = null!;
+    private ToolStripButton btnPan = null!, btnBoxZoom = null!, btnCursor = null!, btnPause = null!, btnReset = null!, btnSaveLayout = null!, btnLoadLayout = null!, btnExport = null!, btnGpu = null!, btnFit = null!, btnEditor = null!;
     private SplitContainer splitLeft = null!, splitRight = null!;
     private TableLayoutPanel gauges = null!;
 
@@ -35,6 +36,7 @@ partial class MainForm
         components = new System.ComponentModel.Container();
         chart = new TrendChartControl();
         tree = new SignalTreeControl();
+        editor = new ChartEditorControl();
         scene3d = new SceneControl3D();
         speed = new GaugeControl(); temp = new GaugeControl(); heading = new GaugeControl(); attitude = new GaugeControl(); bus = new GaugeControl(); level = new GaugeControl();
         gain = new GaugeControl(); arm = new GaugeControl(); throttle = new GaugeControl();
@@ -43,7 +45,7 @@ partial class MainForm
         toolbar = new ToolStrip();
         status = new ToolStripLabel();
         btnPan = new ToolStripButton(); btnBoxZoom = new ToolStripButton(); btnCursor = new ToolStripButton(); btnPause = new ToolStripButton(); btnReset = new ToolStripButton();
-        btnSaveLayout = new ToolStripButton(); btnLoadLayout = new ToolStripButton(); btnGpu = new ToolStripButton(); btnFit = new ToolStripButton();
+        btnSaveLayout = new ToolStripButton(); btnLoadLayout = new ToolStripButton(); btnExport = new ToolStripButton(); btnGpu = new ToolStripButton(); btnFit = new ToolStripButton(); btnEditor = new ToolStripButton();
         splitLeft = new SplitContainer(); splitRight = new SplitContainer();
         gauges = new TableLayoutPanel();
         SuspendLayout();
@@ -77,9 +79,9 @@ partial class MainForm
 
         // toolbar
         btnPan.Text = "Pan"; btnBoxZoom.Text = "Box zoom"; btnCursor.Text = "Cursor"; btnPause.Text = "Pause"; btnReset.Text = "Reset";
-        btnSaveLayout.Text = "Save layout"; btnLoadLayout.Text = "Load layout"; btnGpu.Text = "GPU"; btnGpu.CheckOnClick = true; btnFit.Text = "Fit 3D";
+        btnSaveLayout.Text = "Save layout"; btnLoadLayout.Text = "Load layout"; btnExport.Text = "Export A→B"; btnGpu.Text = "GPU"; btnGpu.CheckOnClick = true; btnFit.Text = "Fit 3D"; btnEditor.Text = "Editor"; btnEditor.CheckOnClick = true;
         status.Text = "connecting…"; status.ForeColor = SystemColors.GrayText;
-        toolbar.Items.AddRange([btnPan, btnBoxZoom, btnCursor, new ToolStripSeparator(), btnPause, btnReset, new ToolStripSeparator(), btnSaveLayout, btnLoadLayout, new ToolStripSeparator(), btnGpu, btnFit, new ToolStripSeparator(), status]);
+        toolbar.Items.AddRange([btnPan, btnBoxZoom, btnCursor, new ToolStripSeparator(), btnPause, btnReset, new ToolStripSeparator(), btnSaveLayout, btnLoadLayout, btnExport, btnEditor, new ToolStripSeparator(), btnGpu, btnFit, new ToolStripSeparator(), status]);
         toolbar.GripStyle = ToolStripGripStyle.Hidden;
         toolbar.Dock = DockStyle.Top;
 
@@ -88,6 +90,8 @@ partial class MainForm
         scene3d.Dock = DockStyle.Fill; scene3d.Animate = true;
         splitLeft.Dock = DockStyle.Fill; splitLeft.SplitterDistance = 200; splitLeft.FixedPanel = FixedPanel.Panel1;
         splitRight.Dock = DockStyle.Fill; splitRight.SplitterDistance = 640;
+        editor.Dock = DockStyle.Fill; editor.Visible = false;
+        splitLeft.Panel1.Controls.Add(editor);
         splitLeft.Panel1.Controls.Add(tree);
         splitLeft.Panel2.Controls.Add(splitRight);
         splitRight.Panel1.Controls.Add(chart);

@@ -1,0 +1,62 @@
+@* Mori.SkyScope — Razor component hosting the chart editor panel, attached to a TrendChart on the page. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div @ref="_host" class="@Css.Classes("skyscope-editor-host", Class)" style="@($"height:{Height};min-height:0;{Style}")" @attributes="AdditionalAttributes"></div>
+
+@code {
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private TrendChart? _attached;
+
+    /// <summary>The chart to edit (a <c>@ref</c> to a <see cref="TrendChart"/> on the page).</summary>
+    [Parameter] public TrendChart? Chart { get; set; }
+    /// <summary>Hide the chart-level settings (time span, legend, panels).</summary>
+    [Parameter] public bool HideChartSettings { get; set; }
+    /// <summary>CSS height of the host element.</summary>
+    [Parameter] public string Height { get; set; } = "100%";
+    /// <summary>Extra CSS classes for the host element.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the host element's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the host element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+            _handle = await _module.InvokeAsync<IJSObjectReference>("mountChartEditor", _host, new { hideChartSettings = HideChartSettings });
+        }
+        await AttachAsync();
+    }
+
+    private async Task AttachAsync()
+    {
+        if (_handle is null || Chart is null || ReferenceEquals(_attached, Chart)) return;
+        if (Chart.Handle is null) { Chart.Mounted -= OnChartMounted; Chart.Mounted += OnChartMounted; return; }
+        _attached = Chart;
+        await _handle.InvokeVoidAsync("attach", Chart.Handle);
+    }
+
+    private void OnChartMounted() => _ = InvokeAsync(AttachAsync);
+
+    /// <summary>Re-read the chart's configuration after a change made from .NET.</summary>
+    public ValueTask RefreshAsync() => _handle?.InvokeVoidAsync("refresh") ?? ValueTask.CompletedTask;
+
+    /// <summary>Detaches from the chart and disposes the JS panel and the module; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (Chart is not null) Chart.Mounted -= OnChartMounted;
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

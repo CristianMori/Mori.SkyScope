@@ -20,6 +20,8 @@ public sealed record Ros2TopicConfig(string Topic, string Type)
     public string? Name { get; init; }
     /// <summary>Subscribe with reliable QoS instead of best effort.</summary>
     public bool Reliable { get; init; }
+    /// <summary>Request transient-local durability: latched history (what <c>/tf_static</c> and map publishers keep) is delivered on joining. Matches transient-local publishers only, as the DDS durability rule requires.</summary>
+    public bool TransientLocal { get; init; }
 }
 
 /// <summary>Node identity, discovery settings and topic list for <see cref="Ros2Source"/>.</summary>
@@ -46,13 +48,20 @@ public sealed record Ros2SourceConfig(string NodeName = "skyscope")
     public string? Urdf { get; init; }
     /// <summary>Folders that resolve <c>package://name/…</c> mesh URIs of the URDF (package name → directory); meshes found are pushed to browsers.</summary>
     public Dictionary<string, string> MeshRoots { get; init; } = [];
+    /// <summary>
+    /// RTPS fragment size in bytes for samples that do not fit one datagram (the participant's <c>FragmentSize</c>).
+    /// Null keeps Mori.Ros2Sharp's default of 64,000, which matches Fast DDS and is accepted by Cyclone DDS; about 1,400
+    /// keeps every datagram under the Ethernet MTU on links where IP fragmentation is a problem. Incoming fragments are
+    /// reassembled whatever the publisher's size, so this only shapes what this node sends.
+    /// </summary>
+    public int? FragmentSize { get; init; }
 }
 
 /// <summary>
 /// ROS 2 source plugin: subscribes through <see cref="Ros2Node"/> (Mori.Ros2Sharp, pure managed RTPS — no ROS install)
 /// and decodes the standard messages by hand from CDR. Scalars, arrays, Twist, Imu, BatteryState and JointState become
 /// signals; LaserScan, Odometry, Pose(Stamped) and OccupancyGrid become scene layers (Odometry also yields signals).
-/// Known limit: Ros2Sharp 0.2 has no RTPS fragmentation, so payloads over ~60 KB (large maps, point clouds) never arrive.
+/// Large payloads (maps, point clouds) arrive through RTPS fragmentation, reassembled by Mori.Ros2Sharp.
 /// </summary>
 public sealed class Ros2Source : ISource, IDisposable
 {
@@ -78,11 +87,12 @@ public sealed class Ros2Source : ISource, IDisposable
     {
         _ctx = ctx; _cfg = config as Ros2SourceConfig ?? new Ros2SourceConfig(); _nextChannel = _cfg.NextChannelId;
         _node = new Ros2Node(_cfg.NodeName, _cfg.Namespace, _cfg.DomainId);
+        if (_cfg.FragmentSize is { } fragment) _node.Participant.FragmentSize = fragment;
         foreach (var peer in _cfg.Peers) _node.AddPeer(peer);
         foreach (var t in _cfg.Topics)
         {
             var topic = t; var ids = AllocateChannels(topic);
-            var sub = _node.CreateSubscription(topic.Topic, topic.Type, topic.Reliable);
+            var sub = _node.CreateSubscription(topic.Topic, topic.Type, topic.Reliable, topic.TransientLocal);
             sub.DataReceived += (_, payload, _) => OnMessage(topic, ids, payload);
         }
         if (_cfg.Urdf is { } urdf)

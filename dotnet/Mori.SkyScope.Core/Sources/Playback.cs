@@ -49,7 +49,11 @@ public sealed record CsvOptions
     public double TimeScale { get; init; } = 1;
 }
 
-/// <summary>CSV → Recording. The header row names the channels; blank lines and non-numeric cells (→ NaN) are tolerated. Mirrors <c>parseCsv</c>.</summary>
+/// <summary>
+/// CSV → Recording. The header row names the channels; blank lines and non-numeric cells (→ NaN) are tolerated. With a time column an
+/// empty (or missing) cell means "no sample" and that channel skips the row, as <see cref="Mcap.RangeExport.ExportRangeCsv"/> writes it;
+/// without a time column the rows are regular and an empty cell is NaN. Mirrors <c>parseCsv</c>.
+/// </summary>
 public static class CsvRecording
 {
     /// <summary>Parse CSV text into channels and frames; an empty file gives an empty recording. Frames are sorted by time, so an unsorted time column reorders chunks but not rows within a chunk.</summary>
@@ -67,19 +71,21 @@ public static class CsvRecording
         if (timeIdx < 0 && o.Rate is null) timeIdx = 0;
         var valueCols = Enumerable.Range(0, header.Length).Where(i => i != timeIdx).ToArray();
         var channels = valueCols.Select((c, k) => new ChannelInfo(o.FirstChannelId + k, header[c]) { Timing = timeIdx >= 0 ? ChannelTiming.Timestamped : ChannelTiming.Regular, Rate = timeIdx >= 0 ? null : o.Rate }).ToList();
-        var rows = new List<double[]>();
-        for (var i = 1; i < lines.Length; i++) rows.Add(lines[i].Split(delim).Select(c => double.TryParse(c.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v) ? v : double.NaN).ToArray());
+        var rows = new List<double?[]>();
+        for (var i = 1; i < lines.Length; i++) rows.Add(lines[i].Split(delim).Select(c => { var s = c.Trim(); return s.Length == 0 ? (double?)null : double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v) ? v : double.NaN; }).ToArray());
         var chunk = Math.Max(1, o.ChunkRows); var dt = o.Rate is { } rate ? 1 / rate : 0;
         var frames = new List<SkyScopeFrame>();
         for (int r0 = 0, seq = 0; r0 < rows.Count; r0 += chunk, seq++)
         {
             var slice = rows.GetRange(r0, Math.Min(chunk, rows.Count - r0));
-            var times = timeIdx >= 0 ? slice.Select(row => (timeIdx < row.Length ? row[timeIdx] : double.NaN) * o.TimeScale).ToArray() : null;
+            var times = timeIdx >= 0 ? slice.Select(row => (timeIdx < row.Length ? row[timeIdx] ?? double.NaN : double.NaN) * o.TimeScale).ToArray() : null;
             var t0 = times is not null ? times[0] : r0 * dt;
             var fchannels = valueCols.Select((c, k) =>
             {
-                var values = slice.Select(row => (float)(c < row.Length ? row[c] : double.NaN)).ToArray();
-                return times is not null ? FrameChannel.Timestamped((ushort)(o.FirstChannelId + k), times, values) : FrameChannel.Regular((ushort)(o.FirstChannelId + k), t0, dt, values);
+                var id = (ushort)(o.FirstChannelId + k);
+                if (times is null) return FrameChannel.Regular(id, t0, dt, slice.Select(row => (float)(c < row.Length ? row[c] ?? double.NaN : double.NaN)).ToArray());
+                var keep = Enumerable.Range(0, slice.Count).Where(i => c < slice[i].Length && slice[i][c] is not null).ToList();
+                return FrameChannel.Timestamped(id, keep.Select(i => times[i]).ToArray(), keep.Select(i => (float)slice[i][c]!.Value).ToArray());
             }).ToList();
             frames.Add(new SkyScopeFrame((uint)seq, t0, fchannels));
         }

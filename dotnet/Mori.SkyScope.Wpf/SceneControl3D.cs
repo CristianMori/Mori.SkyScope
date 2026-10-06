@@ -49,7 +49,7 @@ public class SceneControl3D : Grid
         GlAvailable = HasMonitor();
         if (GlAvailable)
         {
-            _gl.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 3, RenderContinuously = true });
+            _gl.Start(new GLWpfControlSettings { MajorVersion = 3, MinorVersion = 3, RenderContinuously = true, Samples = 4 });
             _gl.Render += OnRender;
         }
         else Children.Add(new TextBlock { Text = "3D view: OpenGL is unavailable in this session (no display).", Foreground = Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false });

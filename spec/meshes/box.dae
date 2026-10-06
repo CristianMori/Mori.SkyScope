@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mori.SkyScope fixture: a 1 x 1 x 0.5 box (polylist, authored normals, bound to an orange phong material) translated
+     by (1, 0.5, 0) in Y_UP space, and a unit quad (triangles, no normals, no material) under a matrix-translated parent
+     with a 90 degree Z rotation and a scale of 2. Read by spec/fixtures/mesh-formats.json. -->
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor><author>Cristian Mori</author></contributor>
+    <unit name="meter" meter="1"/>
+    <up_axis>Y_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="orange-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <phong>
+            <emission><color sid="emission">0 0 0 1</color></emission>
+            <ambient><color sid="ambient">0 0 0 1</color></ambient>
+            <diffuse><color sid="diffuse">0.9 0.5 0.1 1</color></diffuse>
+            <specular><color sid="specular">0.5 0.5 0.5 1</color></specular>
+            <shininess><float sid="shininess">50</float></shininess>
+          </phong>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="orange-material" name="orange">
+      <instance_effect url="#orange-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="box" name="box">
+      <mesh>
+        <source id="box-positions">
+          <float_array id="box-positions-array" count="24">
+            -0.5 0 0.25   0.5 0 0.25   0.5 1 0.25   -0.5 1 0.25
+            -0.5 0 -0.25  0.5 0 -0.25  0.5 1 -0.25  -0.5 1 -0.25
+          </float_array>
+          <technique_common>
+            <accessor source="#box-positions-array" count="8" stride="3">
+              <param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="box-normals">
+          <float_array id="box-normals-array" count="18">
+            0 0 1   0 0 -1   1 0 0   -1 0 0   0 1 0   0 -1 0
+          </float_array>
+          <technique_common>
+            <accessor source="#box-normals-array" count="6" stride="3">
+              <param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="box-vertices">
+          <input semantic="POSITION" source="#box-positions"/>
+        </vertices>
+        <polylist count="6" material="box-material">
+          <input semantic="VERTEX" source="#box-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#box-normals" offset="1"/>
+          <vcount>4 4 4 4 4 4</vcount>
+          <p>
+            0 0  1 0  2 0  3 0
+            5 1  4 1  7 1  6 1
+            1 2  5 2  6 2  2 2
+            4 3  0 3  3 3  7 3
+            3 4  2 4  6 4  7 4
+            4 5  5 5  1 5  0 5
+          </p>
+        </polylist>
+      </mesh>
+    </geometry>
+    <geometry id="quad" name="quad">
+      <mesh>
+        <source id="quad-positions">
+          <float_array id="quad-positions-array" count="12">0 0 0  1 0 0  1 0 1  0 0 1</float_array>
+          <technique_common>
+            <accessor source="#quad-positions-array" count="4" stride="3">
+              <param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="quad-vertices">
+          <input semantic="POSITION" source="#quad-positions"/>
+        </vertices>
+        <triangles count="2">
+          <input semantic="VERTEX" source="#quad-vertices" offset="0"/>
+          <p>0 2 1  0 3 2</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="box-node" name="box-node" type="NODE">
+        <translate>1 0.5 0</translate>
+        <instance_geometry url="#box">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="box-material" target="#orange-material"/>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+      <node id="quad-parent" name="quad-parent" type="NODE">
+        <matrix>1 0 0 0  0 1 0 1  0 0 1 0  0 0 0 1</matrix>
+        <node id="quad-node" name="quad-node" type="NODE">
+          <rotate>0 0 1 90</rotate>
+          <scale>2 2 2</scale>
+          <instance_geometry url="#quad"/>
+        </node>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

@@ -26,8 +26,8 @@ public static class SkyScopeMcap
     public const string FrameMessageEncoding = "skyscope-frame";
     /// <summary>MCAP message encoding of binary layer pushes.</summary>
     public const string LayerMessageEncoding = "skyscope-layer";
-    /// <summary>Web defaults (camelCase) used for every JSON written and parsed here.</summary>
-    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    /// <summary>Web defaults (camelCase) used for every JSON written and parsed here; non-ASCII text is written as is, like <c>JSON.stringify</c>, so both cores produce the same bytes.</summary>
+    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>Fixed key order and no null members, so both cores write identical catalog JSON.</summary>
     public static string ChannelInfoJson(ChannelInfo c)
@@ -122,6 +122,10 @@ public sealed record McapRecorderOptions
     public long MaxBytes { get; init; }
     /// <summary>Called (under the recorder's lock) when <see cref="MaxBytes"/> stops a recording.</summary>
     public Action? OnLimit { get; init; }
+    /// <summary>Chunk compression of the written files; <see cref="McapCompression.None"/> (the default) writes unchunked files like the TypeScript recorder.</summary>
+    public McapCompression Compression { get; init; } = McapCompression.None;
+    /// <summary>Uncompressed bytes per chunk when <see cref="Compression"/> is set (default 1 MiB).</summary>
+    public int ChunkBytes { get; init; } = 1 << 20;
 }
 
 /// <summary>Tee that forwards every sink call to the inner sinks and, while recording, writes it to MCAP. Thread-safe.</summary>
@@ -166,7 +170,7 @@ public sealed class McapRecorder(ISignalSink? signals = null, ILayerSink? layers
         lock (_lock)
         {
             if (_writer is not null) return;
-            var w = new McapWriter(output, _o.Profile, _o.Library);
+            var w = new McapWriter(output, new McapWriterOptions { Profile = _o.Profile, Library = _o.Library, Compression = _o.Compression, ChunkBytes = _o.ChunkBytes });
             var frameSchema = w.AddSchema("skyscope.Frame", "text", "SkyScopeFrame v1: binary batch of channel samples (see Mori.SkyScope streaming/frame)");
             var catalogSchema = w.AddSchema("skyscope.Channels", "jsonschema", "{}");
             _frameChannel = w.AddChannel(SkyScopeMcap.FramesTopic, frameSchema, SkyScopeMcap.FrameMessageEncoding);

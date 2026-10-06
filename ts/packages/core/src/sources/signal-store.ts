@@ -5,13 +5,14 @@ import { SignalBuffer } from "../signals/signal-buffer.js";
 import { channelValues, type SkyScopeFrame, type FrameChannel } from "../streaming/frame.js";
 import type { ChannelInfo, Log, SignalSink } from "./contracts.js";
 
-/** A declared channel together with the buffer holding its samples. */
-export interface StoreChannel { info: ChannelInfo; buffer: SignalBuffer }
+/** A declared channel together with the buffer holding its samples; `observedRate` is the highest sample rate seen in its batches when no rate was declared. */
+export interface StoreChannel { info: ChannelInfo; buffer: SignalBuffer; observedRate?: number | undefined }
 /**
- * Retention window in seconds (default 60), buffer capacity for channels without a rate (default 65536) and an
- * optional logger.
+ * Retention window in seconds (default 60), the starting buffer capacity for channels without a declared rate
+ * (default 65536; such a buffer grows to `rate × retention` once batches reveal the rate), the cap any buffer can
+ * grow to (default 1 048 576 samples) and an optional logger.
  */
-export interface SignalStoreOptions { retentionSeconds?: number | undefined; defaultCapacity?: number | undefined; log?: Log | undefined }
+export interface SignalStoreOptions { retentionSeconds?: number | undefined; defaultCapacity?: number | undefined; maxCapacity?: number | undefined; log?: Log | undefined }
 /** Called after each pushed frame with the ids that received samples; on `reset` with every id and an empty frame. */
 export type StoreListener = (changedIds: readonly number[], frame: SkyScopeFrame) => void;
 
@@ -25,8 +26,10 @@ export class SignalStore implements SignalSink {
   readonly channels = new Map<number, StoreChannel>();
   /** Seconds of history a channel with a known rate keeps. */
   readonly retentionSeconds: number;
-  /** Samples kept for channels with no declared rate. */
+  /** Starting capacity for channels with no declared rate, before their batches reveal one. */
   readonly defaultCapacity: number;
+  /** Largest capacity a buffer is given, declared or observed. */
+  readonly maxCapacity: number;
   /** Batches refused since the last reset. */
   dropped = 0;
   /** Message of the most recent drop, or null. */
@@ -38,13 +41,15 @@ export class SignalStore implements SignalSink {
   constructor(options: SignalStoreOptions = {}) {
     this.retentionSeconds = options.retentionSeconds ?? 60;
     this.defaultCapacity = options.defaultCapacity ?? 65536;
+    this.maxCapacity = Math.max(16, options.maxCapacity ?? 1048576);
     this.log = options.log ?? (() => {});
   }
 
-  /** Ring size for a channel: `rate × retention` (at least 16) when the rate is known, else `defaultCapacity`. */
+  /** Ring size for a channel: `rate × retention` (at least 16, at most `maxCapacity`) when the rate is known, else `defaultCapacity`. */
   capacityFor(info: ChannelInfo): number {
-    return info.rate && info.rate > 0 ? Math.max(16, Math.ceil(info.rate * this.retentionSeconds)) : this.defaultCapacity;
+    return info.rate && info.rate > 0 ? this.capacityForRate(info.rate) : this.defaultCapacity;
   }
+  private capacityForRate(rate: number): number { return Math.min(this.maxCapacity, Math.max(16, Math.ceil(rate * this.retentionSeconds))); }
 
   /** Re-declaring keeps the data unless timing or capacity changed. */
   declareChannel(info: ChannelInfo): void {
@@ -74,6 +79,7 @@ export class SignalStore implements SignalSink {
     for (const ch of frame.channels) {
       const entry = this.channels.get(ch.id) ?? this.autoDeclare(ch);
       try {
+        this.growForObservedRate(entry, ch);
         append(entry.buffer, ch);
         changed.push(ch.id);
       } catch (e) {
@@ -91,10 +97,33 @@ export class SignalStore implements SignalSink {
     return () => { this.listeners.delete(listener); };
   }
 
+  /**
+   * A channel declared without a rate starts at `defaultCapacity`; every batch reveals a rate (1/dt for regular and
+   * quantized batches, samples per second of span for timestamped ones), and when the highest rate seen asks for a
+   * larger buffer than the channel has, the buffer grows to `rate × retention` (capped at `maxCapacity`), keeping its samples.
+   */
+  private growForObservedRate(entry: StoreChannel, ch: FrameChannel): void {
+    if (entry.info.rate && entry.info.rate > 0) return;
+    const rate = observedRate(ch);
+    if (!(rate > 0) || rate <= (entry.observedRate ?? 0)) return;
+    entry.observedRate = rate;
+    const wanted = this.capacityForRate(rate);
+    if (wanted > entry.buffer.capacity) entry.buffer = entry.buffer.resized(wanted);
+  }
+
   private autoDeclare(ch: FrameChannel): StoreChannel {
     this.declareChannel({ id: ch.id, name: `ch${ch.id}`, timing: ch.encoding === "timestamped" ? "timestamped" : "regular" });
     return this.channels.get(ch.id)!;
   }
+}
+
+/** Sample rate a batch implies: 1/dt for regular and quantized batches, (n − 1) / span for timestamped ones with at least two samples; 0 when unknown. */
+function observedRate(ch: FrameChannel): number {
+  if (ch.encoding !== "timestamped") return ch.dt > 0 ? 1 / ch.dt : 0;
+  const n = ch.times.length;
+  if (n < 2) return 0;
+  const span = ch.times[n - 1]! - ch.times[0]!;
+  return span > 0 ? (n - 1) / span : 0;
 }
 
 /** Regular batches can be expanded into a timestamped buffer; the reverse has no dt and is refused. */

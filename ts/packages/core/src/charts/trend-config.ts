@@ -39,7 +39,14 @@ export interface LaneConfig {
   weight?: number | undefined;
   /** Folded to a thin bar (series stay configured, nothing is drawn). */
   collapsed?: boolean | undefined;
+  /** Stays when it has no series (lanes added by an editor); other empty lanes vanish. */
+  keep?: boolean | undefined;
 }
+
+/** A patch for an editor command: a key left out leaves the field alone, `null` clears it, a value sets it. */
+export type Patch<T> = { [K in keyof T]?: T[K] | null | undefined };
+/** What an editor panel shows: one row per lane, axis, logic stack, series, threshold and marker, in display order, with its parent and depth. */
+export interface EditorRow { /** lane | axis | stack | series | threshold | marker. */ kind: "lane" | "axis" | "stack" | "series" | "threshold" | "marker"; /** The configured id (`stack:<lane>` for a stack). */ id: string; /** Row this one nests under, null at the top. */ parentId: string | null; /** Nesting depth. */ depth: number; /** Display name. */ label: string; /** Secondary text (weight, unit and bounds, channel, values). */ detail: string }
 
 /** A series: one channel of the store drawn in a lane against an axis. */
 export interface SeriesConfig {

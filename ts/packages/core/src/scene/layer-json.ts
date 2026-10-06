@@ -79,7 +79,7 @@ export function poseFromJson(v: unknown): Pose3D {
  * pointCloud `{ points, intensities? } | { scan: LaserScanLike, pose? }`; pose `{ x, y, yaw }`; shapes `{ shapes } | { upsert: Shape } | { remove: id }`;
  * bitmap `{ image?, placement? }`. Any layer accepts `{ visible?, opacity? }`. Returns false when the payload was not understood.
  * 3D kinds: path3d `{ positions } | { append: [x, y, z, …] } | { clear }`; pose3d `{ pose } | { t, q } | { label }`; markers `{ markers } | { upsert } | { remove } | { clear }`;
- * laserScan3d `{ scan }`; occupancyGrid3d `{ z }` plus the occupancyGrid payloads; meshes `{ uri, positions, normals?, indices? }`; frames `{ transforms }`;
+ * laserScan3d `{ scan }`; occupancyGrid3d `{ z }` plus the occupancyGrid payloads; meshes `{ uri, positions, normals?, indices?, color? }`; frames `{ transforms }`;
  * pointCloud3d `{ positions, intensities?, colors? }`. Layers with a frame also accept `{ frame }`; `stamp` tags the update time for frame lookups.
  */
 export function applyLayerPayload(layer: Layer, payload: unknown): boolean {
@@ -121,7 +121,8 @@ export function applyLayerPayload(layer: Layer, payload: unknown): boolean {
       const pos = p.positions instanceof Float32Array ? p.positions : Float32Array.from(p.positions as number[]);
       const nor = p.normals instanceof Float32Array ? p.normals : Array.isArray(p.normals) ? Float32Array.from(p.normals as number[]) : null;
       const idx = p.indices instanceof Uint32Array ? p.indices : Array.isArray(p.indices) ? Uint32Array.from(p.indices as number[]) : null;
-      layer.register(p.uri, { positions: pos, normals: nor, indices: idx });
+      const col = ArrayBuffer.isView(p.color) || Array.isArray(p.color) ? Array.from(p.color as ArrayLike<number>) : null;
+      layer.register(p.uri, { positions: pos, normals: nor, indices: idx, ...(col && col.length >= 3 ? { color: [col[0]!, col[1]!, col[2]!, col[3] ?? 1] as [number, number, number, number] } : {}) });
       return true;
     }
     return handled;

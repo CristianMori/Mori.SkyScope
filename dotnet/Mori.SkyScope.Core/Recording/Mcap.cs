@@ -9,8 +9,10 @@ namespace Mori.SkyScope.Core.Mcap;
 /// <summary>
 /// Minimal MCAP (https://mcap.dev) writer and reader — enough for SkyScope recordings and for reading unchunked or
 /// uncompressed-chunk files written by other tools. Writes: magic, Header, Schema/Channel/Message records, DataEnd, a summary
-/// (schemas, channels, statistics, summary offsets) and the Footer; no chunks, no CRCs. Reads: everything above plus Chunk
-/// records with compression "" or "lz4" (zstd chunks raise a clear error). Mirrors <c>recording/mcap.ts</c>; pinned by
+/// (schemas, channels, statistics, summary offsets) and the Footer; no CRCs. By default no chunks (byte-identical with the
+/// TypeScript writer); with <see cref="McapWriterOptions.Compression"/> the records go into zstd chunks with message and
+/// chunk indexes. Reads: everything above plus Chunk records with compression "", "lz4" or "zstd" (zstd through the
+/// ZstdSharp.Port package; any other compression raises a clear error). Mirrors <c>recording/mcap.ts</c>; pinned by
 /// <c>spec/fixtures/mcap.json</c> and <c>spec/mcap/*.mcap</c>.
 /// </summary>
 public static class McapOp
@@ -149,7 +151,35 @@ internal sealed class StreamOutput(Stream stream) : IOutput
     public byte[] ToArray() { stream.Flush(); return []; }
 }
 
-/// <summary>Deterministic writer: the same calls produce the same bytes in both cores, whether buffered or streamed.</summary>
+/// <summary>Chunk compression of an <see cref="McapWriter"/>.</summary>
+public enum McapCompression
+{
+    /// <summary>No chunks: every record goes straight to the file, byte-identical with the TypeScript writer.</summary>
+    None,
+    /// <summary>Records are grouped into Chunk records compressed with zstd (level 3, through ZstdSharp.Port).</summary>
+    Zstd,
+}
+
+/// <summary>Header strings and chunking of an <see cref="McapWriter"/>.</summary>
+public sealed record McapWriterOptions
+{
+    /// <summary>Header profile string.</summary>
+    public string Profile { get; init; } = "skyscope";
+    /// <summary>Header library string.</summary>
+    public string Library { get; init; } = "Mori.SkyScope 0.1.0";
+    /// <summary>Chunk compression; <see cref="McapCompression.None"/> (the default) writes no chunks at all.</summary>
+    public McapCompression Compression { get; init; } = McapCompression.None;
+    /// <summary>Uncompressed bytes a chunk collects before it is compressed and written (default 1 MiB); ignored without compression.</summary>
+    public int ChunkBytes { get; init; } = 1 << 20;
+}
+
+/// <summary>
+/// Deterministic writer: the same calls produce the same bytes in both cores, whether buffered or streamed. With
+/// <see cref="McapWriterOptions.Compression"/> set, schema, channel and message records are collected into chunks of
+/// about <see cref="McapWriterOptions.ChunkBytes"/>, each written as a compressed Chunk record followed by one Message
+/// Index record per channel, with a Chunk Index per chunk in the summary section (what the MCAP specification asks of
+/// a chunked, indexed file).
+/// </summary>
 public sealed class McapWriter
 {
     /// <summary>The 8-byte MCAP magic that opens and closes a file.</summary>
@@ -157,6 +187,9 @@ public sealed class McapWriter
     private readonly IOutput _out;
     /// <summary>True when records go to a stream as they are written (the file is never held in memory).</summary>
     public bool Streaming { get; }
+    /// <summary>Chunk compression in use.</summary>
+    public McapCompression Compression { get; }
+    private readonly int _chunkBytes;
     private readonly List<McapSchema> _schemas = [];
     private readonly List<McapChannel> _channels = [];
     private readonly Dictionary<ushort, uint> _sequences = [];
@@ -164,6 +197,11 @@ public sealed class McapWriter
     private ulong _messageCount;
     private ulong _start = ulong.MaxValue, _end;
     private bool _finished;
+    // chunking state: the pending chunk's records, its message time span and per-channel (log time, offset) index
+    private ByteWriter? _chunk;
+    private ulong _chunkStart = ulong.MaxValue, _chunkEnd;
+    private readonly SortedDictionary<ushort, List<(ulong Time, ulong Offset)>> _chunkIndex = [];
+    private readonly List<ByteWriter> _chunkIndexes = [];
 
     /// <summary>Buffers the file in memory; <see cref="Finish"/> returns it.</summary>
     /// <param name="profile">Header profile string.</param>
@@ -172,23 +210,32 @@ public sealed class McapWriter
     /// <param name="stream">Write through to this stream instead of buffering; <see cref="Finish"/> then returns an empty array.</param>
     /// <param name="profile">Header profile string.</param>
     /// <param name="library">Header library string.</param>
-    public McapWriter(Stream? stream, string profile = "skyscope", string library = "Mori.SkyScope 0.1.0")
+    public McapWriter(Stream? stream, string profile = "skyscope", string library = "Mori.SkyScope 0.1.0") : this(stream, new McapWriterOptions { Profile = profile, Library = library }) { }
+    /// <param name="stream">Write through to this stream instead of buffering; <see cref="Finish"/> then returns an empty array.</param>
+    /// <param name="options">Header strings and chunking.</param>
+    public McapWriter(Stream? stream, McapWriterOptions options)
     {
         _out = stream is null ? new BufferOutput() : new StreamOutput(stream);
         Streaming = stream is not null;
+        Compression = options.Compression;
+        _chunkBytes = Math.Max(1, options.ChunkBytes);
+        if (Compression != McapCompression.None) _chunk = new ByteWriter();
         _out.Bytes(Magic);
-        var h = new ByteWriter(); h.Str(profile); h.Str(library);
+        var h = new ByteWriter(); h.Str(options.Profile); h.Str(options.Library);
         _out.Record(McapOp.Header, h);
     }
 
-    /// <summary>Bytes written so far, including those already streamed out.</summary>
-    public int Length => _out.Length;
+    /// <summary>Bytes written so far, including those already streamed out and the uncompressed records of the pending chunk.</summary>
+    public int Length => _out.Length + (_chunk?.Length ?? 0);
+
+    /// <summary>A data-section record: straight to the output, or into the pending chunk when chunking.</summary>
+    private void Emit(byte op, ByteWriter content) { if (_chunk is null) _out.Record(op, content); else _chunk.Record(op, content); }
 
     /// <summary>Writes a Schema record and returns its 1-based id.</summary>
     public ushort AddSchema(string name, string encoding, byte[] data)
     {
         var s = new McapSchema((ushort)(_schemas.Count + 1), name, encoding, data);
-        _schemas.Add(s); _out.Record(McapOp.Schema, SchemaRecord(s));
+        _schemas.Add(s); Emit(McapOp.Schema, SchemaRecord(s));
         return s.Id;
     }
     /// <summary>Writes a Schema record with UTF-8 text content and returns its 1-based id.</summary>
@@ -198,7 +245,7 @@ public sealed class McapWriter
     {
         var c = new McapChannel((ushort)_channels.Count, schemaId, topic, messageEncoding, metadata ?? new Dictionary<string, string>());
         _channels.Add(c); _sequences[c.Id] = 0; _counts[c.Id] = 0;
-        _out.Record(McapOp.Channel, ChannelRecord(c));
+        Emit(McapOp.Channel, ChannelRecord(c));
         return c.Id;
     }
     /// <summary>Writes a Message with publish time equal to log time.</summary>
@@ -212,24 +259,68 @@ public sealed class McapWriter
         if (logTimeNs < _start) _start = logTimeNs;
         if (logTimeNs > _end) _end = logTimeNs;
         var m = new ByteWriter(); m.U16(channelId); m.U32(seq); m.U64(logTimeNs); m.U64(publishTimeNs); m.Bytes(data);
-        _out.Record(McapOp.Message, m);
+        if (_chunk is null) { _out.Record(McapOp.Message, m); return; }
+        if (!_chunkIndex.TryGetValue(channelId, out var entries)) _chunkIndex[channelId] = entries = [];
+        entries.Add((logTimeNs, (ulong)_chunk.Length));
+        if (logTimeNs < _chunkStart) _chunkStart = logTimeNs;
+        if (logTimeNs > _chunkEnd) _chunkEnd = logTimeNs;
+        _chunk.Record(McapOp.Message, m);
+        if (_chunk.Length >= _chunkBytes) FlushChunk();
     }
 
-    /// <summary>DataEnd, summary section (schemas, channels, statistics), summary offsets, footer, magic. Returns the file (empty when streaming).</summary>
+    /// <summary>Compresses the pending chunk and writes it as a Chunk record, its Message Index records and remembers its Chunk Index.</summary>
+    private void FlushChunk()
+    {
+        if (_chunk is null || _chunk.Length == 0) return;
+        var records = _chunk.Span;
+        var compression = Compression switch { McapCompression.Zstd => "zstd", _ => "" };
+        var compressed = Compression switch { McapCompression.Zstd => ZstdCompress(records), _ => records.ToArray() };
+        var start = _chunkStart == ulong.MaxValue ? 0 : _chunkStart;
+        var c = new ByteWriter(); c.U64(start); c.U64(_chunkEnd); c.U64((ulong)records.Length); c.U32(0); c.Str(compression); c.U64((ulong)compressed.Length); c.Bytes(compressed);
+        var chunkOffset = (ulong)_out.Length;
+        _out.Record(McapOp.Chunk, c);
+        var chunkLength = (ulong)_out.Length - chunkOffset;
+        var indexOffsets = new ByteWriter();
+        var indexStart = _out.Length;
+        foreach (var (channel, entries) in _chunkIndex)
+        {
+            indexOffsets.U16(channel); indexOffsets.U64((ulong)_out.Length);
+            var mi = new ByteWriter(); mi.U16(channel);
+            var list = new ByteWriter(); foreach (var (time, offset) in entries) { list.U64(time); list.U64(offset); }
+            mi.Data(list.Span);
+            _out.Record(McapOp.MessageIndex, mi);
+        }
+        var ci = new ByteWriter();
+        ci.U64(start); ci.U64(_chunkEnd); ci.U64(chunkOffset); ci.U64(chunkLength); ci.Data(indexOffsets.Span); ci.U64((ulong)(_out.Length - indexStart));
+        ci.Str(compression); ci.U64((ulong)compressed.Length); ci.U64((ulong)records.Length);
+        _chunkIndexes.Add(ci);
+        _chunk = new ByteWriter(); _chunkStart = ulong.MaxValue; _chunkEnd = 0; _chunkIndex.Clear();
+    }
+
+    /// <summary>One zstd frame (level 3) holding the chunk's records.</summary>
+    private static byte[] ZstdCompress(ReadOnlySpan<byte> records)
+    {
+        using var compressor = new ZstdSharp.Compressor(3);
+        return compressor.Wrap(records).ToArray();
+    }
+
+    /// <summary>Flushes the pending chunk, then writes DataEnd, the summary section (schemas, channels, chunk indexes, statistics), summary offsets, footer and magic. Returns the file (empty when streaming).</summary>
     public byte[] Finish()
     {
         if (_finished) return _out.ToArray();
         _finished = true;
+        FlushChunk();
         var de = new ByteWriter(); de.U32(0); _out.Record(McapOp.DataEnd, de);
         var summaryStart = (ulong)_out.Length;
         var groups = new List<(byte Op, ulong Start, ulong Length)>();
         void Group(byte op, Action write) { var s = _out.Length; write(); if (_out.Length > s) groups.Add((op, (ulong)s, (ulong)(_out.Length - s))); }
         Group(McapOp.Schema, () => { foreach (var s in _schemas) _out.Record(McapOp.Schema, SchemaRecord(s)); });
         Group(McapOp.Channel, () => { foreach (var c in _channels) _out.Record(McapOp.Channel, ChannelRecord(c)); });
+        Group(McapOp.ChunkIndex, () => { foreach (var ci in _chunkIndexes) _out.Record(McapOp.ChunkIndex, ci); });
         Group(McapOp.Statistics, () =>
         {
             var st = new ByteWriter();
-            st.U64(_messageCount); st.U16((ushort)_schemas.Count); st.U32((uint)_channels.Count); st.U32(0); st.U32(0); st.U32(0);
+            st.U64(_messageCount); st.U16((ushort)_schemas.Count); st.U32((uint)_channels.Count); st.U32(0); st.U32(0); st.U32((uint)_chunkIndexes.Count);
             st.U64(_start == ulong.MaxValue ? 0 : _start); st.U64(_end);
             var cm = new ByteWriter(); foreach (var c in _channels) { cm.U16(c.Id); cm.U64(_counts[c.Id]); }
             st.Data(cm.Span);
@@ -256,7 +347,7 @@ public sealed class McapWriter
 /// <summary>Reads whole MCAP files from memory into an <see cref="McapFile"/>.</summary>
 public static class McapReader
 {
-    /// <summary>Parse a whole file from memory. Summary records are ignored; chunks must be uncompressed.</summary>
+    /// <summary>Parse a whole file from memory. Summary records are ignored; chunks may be uncompressed, lz4 or zstd.</summary>
     public static McapFile Read(byte[] bytes)
     {
         if (bytes.Length < 16 || !bytes.AsSpan(0, 8).SequenceEqual(McapWriter.Magic)) throw new InvalidDataException("not an MCAP file (bad magic)");
@@ -314,7 +405,11 @@ public static class McapReader
                             var decoded = Lz4.Decompress(r.Bytes.AsSpan(body.Pos, recordsLength), (int)uncompressed);
                             ReadRecords(file, new ByteReader(decoded), true);
                         }
-                        else throw new NotSupportedException($"MCAP: chunk compression \"{compression}\" is not supported (uncompressed and lz4 chunks are)");
+                        else if (compression == "zstd")
+                        {
+                            ReadRecords(file, new ByteReader(ZstdDecompress(r.Bytes.AsSpan(body.Pos, recordsLength), uncompressed)), true);
+                        }
+                        else throw new NotSupportedException($"MCAP: chunk compression \"{compression}\" is not supported (uncompressed, lz4 and zstd chunks are)");
                         break;
                     }
                 case McapOp.DataEnd: return;
@@ -322,5 +417,16 @@ public static class McapReader
             }
             r.Pos = end;
         }
+    }
+
+    /// <summary>Decodes a zstd-compressed chunk into a buffer of <paramref name="uncompressedSize"/> bytes (the frame's own content size when the chunk header says 0).</summary>
+    private static byte[] ZstdDecompress(ReadOnlySpan<byte> src, long uncompressedSize)
+    {
+        using var decompressor = new ZstdSharp.Decompressor();
+        if (uncompressedSize <= 0) return decompressor.Unwrap(src).ToArray();
+        var dst = new byte[uncompressedSize];
+        var n = decompressor.Unwrap(src, dst);
+        if (n != dst.Length) throw new InvalidDataException("MCAP: chunk size mismatch");
+        return dst;
     }
 }

@@ -45,7 +45,11 @@ export interface CsvOptions {
   timeScale?: number | undefined;
 }
 
-/** CSV → Recording. The header row names the channels; blank lines and non-numeric cells (→ NaN) are tolerated. */
+/**
+ * CSV → Recording. The header row names the channels; blank lines and non-numeric cells (→ NaN) are tolerated. With a
+ * time column an empty (or missing) cell means "no sample" and that channel skips the row, as `exportRangeCsv` writes
+ * it; without a time column the rows are regular and an empty cell is NaN.
+ */
 export function parseCsv(text: string, o: CsvOptions = {}): Recording {
   const delim = o.delimiter ?? (text.includes(";") && !text.includes(",") ? ";" : ",");
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
@@ -58,8 +62,8 @@ export function parseCsv(text: string, o: CsvOptions = {}): Recording {
   const valueCols = header.map((_, i) => i).filter((i) => i !== timeIdx);
   const firstId = o.firstChannelId ?? 1, rate = o.rate, timeScale = o.timeScale ?? 1;
   const channels: ChannelInfo[] = valueCols.map((c, k) => ({ id: firstId + k, name: header[c]!, timing: timeIdx >= 0 ? "timestamped" : "regular", rate: timeIdx >= 0 ? undefined : rate }));
-  const rows: number[][] = [];
-  for (let i = 1; i < lines.length; i++) rows.push(lines[i]!.split(delim).map((c) => { const v = Number(c.trim()); return Number.isFinite(v) ? v : NaN; }));
+  const rows: (number | null)[][] = [];
+  for (let i = 1; i < lines.length; i++) rows.push(lines[i]!.split(delim).map((c) => { const s = c.trim(); if (s.length === 0) return null; const v = Number(s); return Number.isFinite(v) ? v : NaN; }));
   const chunk = Math.max(1, o.chunkRows ?? 256), dt = rate ? 1 / rate : 0;
   const frames: SkyScopeFrame[] = [];
   for (let r0 = 0, seq = 0; r0 < rows.length; r0 += chunk, seq++) {
@@ -67,8 +71,10 @@ export function parseCsv(text: string, o: CsvOptions = {}): Recording {
     const times = timeIdx >= 0 ? Float64Array.from(slice, (row) => (row[timeIdx] ?? NaN) * timeScale) : null;
     const t0 = times ? times[0]! : r0 * dt;
     const fchannels: FrameChannel[] = valueCols.map((c, k) => {
-      const values = Float32Array.from(slice, (row) => row[c] ?? NaN);
-      return times ? { id: firstId + k, encoding: "timestamped", times, values } : { id: firstId + k, encoding: "regular", tStart: t0, dt, values };
+      if (!times) return { id: firstId + k, encoding: "regular", tStart: t0, dt, values: Float32Array.from(slice, (row) => row[c] ?? NaN) };
+      const keep: number[] = [];
+      for (let i = 0; i < slice.length; i++) if (slice[i]![c] != null) keep.push(i);
+      return { id: firstId + k, encoding: "timestamped", times: Float64Array.from(keep, (i) => times[i]!), values: Float32Array.from(keep, (i) => slice[i]![c] as number) };
     });
     frames.push({ seq, t0, channels: fchannels });
   }

@@ -7,7 +7,7 @@ import {
   CHANNEL_DRAG_DIGITAL_MIME, CHANNEL_DRAG_MIME, Compass, LinearGauge, LiveClock, NumericDisplay, RadialGauge, SignalStore, encodeChannelDrag,
   type DropTarget, type Tool, type TrendChartOptions,
 } from "@mori/skyscope-core";
-import { GaugeView, SignalTreePanel, TrendChartView, pickFile, saveFile, type ChannelDropEvent } from "@mori/skyscope-render";
+import { ChartEditorPanel, GaugeView, SignalTreePanel, TrendChartView, pickFile, saveFile, type ChannelDropEvent } from "@mori/skyscope-render";
 import { WebSocketFrameSource } from "@mori/skyscope-sources";
 
 // ---- page skeleton -------------------------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ const app = document.getElementById("app")!;
 app.innerHTML = `
   <div class="bar" id="toolbar"><strong>Mori.SkyScope</strong> <span id="conn">○ connecting…</span><span style="flex:1"></span></div>
   <div class="main">
-    <div class="panel"><h3>signal tree (shipped)</h3><div id="tree" style="flex:1;min-height:0"></div></div>
+    <div class="panel"><h3 id="left-title">signal tree (shipped)</h3><div id="tree" style="flex:1;min-height:0"></div><div id="editor" style="flex:1;min-height:0;display:none"></div></div>
     <div id="chart" style="min-height:0"></div>
     <div class="panel"><h3>my own list (any drag source)</h3><ul class="mylist" id="mylist"></ul><button id="add">add ch7 + ch8 from code</button></div>
   </div>
@@ -104,6 +104,18 @@ const pause = button("pause", () => { paused = !paused; if (paused) view.model.p
 button("reset", () => { view.model.reset(); paused = false; pause.textContent = "pause"; });
 button("save layout", () => saveFile(new Blob([view.exportLayout()], { type: "application/json" }), "skyscope-layout.json", "application/json"));
 button("load layout", () => { void pickFile(".json").then(async (f) => { if (f) view.importLayout(await f.text()); }); });
+// The span between cursors A and B as a download; the view declines (false) until both cursors are set.
+button("export A→B", () => { if (!view.exportCursors("csv")) status("export: set cursors A and B first (cursor tool: click, Shift + click)"); });
+button("export A→B mcap", () => { if (!view.exportCursors("mcap")) status("export: set cursors A and B first (cursor tool: click, Shift + click)"); });
+// The editor panel: the same chart edited as a tree of lanes, axes, signals, thresholds and markers; swaps with the signal tree.
+let editor: ChartEditorPanel | null = null;
+const editorButton = button("editor", () => {
+  const on = $("editor").style.display === "none";
+  $("editor").style.display = on ? "" : "none"; $("tree").style.display = on ? "none" : "";
+  $("left-title").textContent = on ? "chart editor" : "signal tree (shipped)";
+  editorButton.classList.toggle("active", on);
+  if (on && !editor) editor = new ChartEditorPanel($("editor"), { chart: view });
+});
 
 // ---- gauges: the latest sample of a channel drives each one ----------------------------------------------------
 const speed = new RadialGauge({ min: -4, max: 4, unit: "m/s", label: "sine", decimals: 2 });

@@ -153,7 +153,7 @@ public static class Urdf
         sink.DeclareLayer(mid, "markers", LayerJson.ToMeta(new { markers = Markers(model, prefix, defaultColor).Select(MarkerJson).ToArray() }));
         return (positions, time) => sink.Push(fid, new { transforms = Transforms(model, positions, prefix, time).Select(TfJson).ToArray() });
     }
-    /// <summary>Push mesh resources a model references, resolved by <paramref name="resolve"/> (URI → file bytes, or null when unavailable), into a <c>meshes</c> layer.</summary>
+    /// <summary>Push mesh resources a model references, resolved by <paramref name="resolve"/> (URI → file bytes, or null when unavailable), into a <c>meshes</c> layer. Files a resource refers to (glTF external buffers) are resolved the same way, relative to the resource's URI; the material colour travels with the mesh.</summary>
     public static int PublishMeshes(ILayerSink sink, RobotModel model, Func<string, byte[]?> resolve, string layerId = "meshes")
     {
         var n = 0; var declared = false;
@@ -161,11 +161,12 @@ public static class Urdf
         {
             var bytes = resolve(uri);
             if (bytes is null) continue;
-            var parsed = MeshFormats.ParseResource(bytes, uri);
+            var parsed = MeshFormats.ParseResource(bytes, uri, rel => resolve(MeshFormats.JoinUri(uri, rel)));
             if (!declared) { sink.DeclareLayer(layerId, "meshes"); declared = true; }
             var payload = new Dictionary<string, object?> { ["uri"] = uri, ["positions"] = parsed.Positions };
             if (parsed.Normals is not null) payload["normals"] = parsed.Normals;
             if (parsed.Indices is not null) payload["indices"] = parsed.Indices;
+            if (parsed.Color is not null) payload["color"] = parsed.Color;
             sink.Push(layerId, payload); n++;
         }
         return n;

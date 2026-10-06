@@ -138,6 +138,20 @@ public class TrendChartControl : SkiaHostControl
     /// <summary>Load a layout file from <paramref name="path"/>.</summary>
     public void LoadLayout(string path) => ImportLayout(File.ReadAllText(path));
 
+    // ---- range export ------------------------------------------------------------
+    /// <summary>CSV of the visible signals between cursors A and B; null unless both cursors are set.</summary>
+    public string? ExportCursorsCsv() => Model.ExportCursorsCsv();
+    /// <summary>MCAP recording of the visible signals between cursors A and B; null unless both cursors are set.</summary>
+    public byte[]? ExportCursorsMcap() => Model.ExportCursorsMcap();
+    /// <summary>Write the cursor span to <paramref name="path"/>: CSV for a <c>.csv</c> extension, MCAP otherwise. Returns false, writing nothing, unless both cursors are set.</summary>
+    public bool SaveCursorsRange(string path)
+    {
+        if (Model.CursorRange() is null) return false;
+        if (string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase)) File.WriteAllText(path, ExportCursorsCsv());
+        else File.WriteAllBytes(path, ExportCursorsMcap()!);
+        return true;
+    }
+
     // ---- adding channels: from code or from a native drag and drop --------------------
     /// <summary>
     /// Add channels from code: a series per channel not in the chart yet, placed at <paramref name="target"/> with the drop
@@ -199,6 +213,8 @@ public class TrendChartControl : SkiaHostControl
     private static bool GroupKey() => ModifierKeys.HasFlag(Keys.Control) || ModifierKeys.HasFlag(Keys.Shift);
     private TrendLayout CurrentLayout() => _layout ??= Model.Layout(LogicalWidth, LogicalHeight);
     private void Changed() { _layout = null; ConfigChanged?.Invoke(); Redraw(); }
+    /// <summary>Tell the control the configuration was changed from outside (an editor calling model commands): relayouts, repaints and raises <see cref="ConfigChanged"/>.</summary>
+    public void NotifyConfigChanged() => Changed();
 
     private static Cursor CursorFor(HitRegion hit) => hit switch
     {

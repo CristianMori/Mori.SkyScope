@@ -429,23 +429,26 @@ public sealed class Scene3DControllerDriver : IFixtureDriver
     public JsonNode Snapshot(object state) => JsonSerializer.SerializeToNode(new { queries = ((State)state).Queries }, Fixtures.Json)!;
 }
 
-/// <summary>Mesh resource parsers: base64 STL/GLB in, counts, bounds and buffer hashes out. Mirrors the TS <c>meshFormatsDriver</c>.</summary>
+/// <summary>Mesh resource parsers: base64 STL/GLB/glTF/Collada in, counts, bounds, buffer hashes and the material colour out. Mirrors the TS <c>meshFormatsDriver</c>.</summary>
 public sealed class MeshFormatsDriver : IFixtureDriver
 {
     /// <summary>Handles the <c>meshFormats</c> fixtures.</summary>
     public string Component => "meshFormats";
     /// <summary>No setup; the state is the query list.</summary>
     public object Create(JsonElement setup) => new List<object?>();
-    /// <summary>Parses one base64 resource and records vertex and triangle counts, indexing, bounds and buffer hashes, or the parse error message.</summary>
+    /// <summary>Parses one base64 resource (with optional <c>files</c>: sibling files as base64 by path relative to the resource, served to the parser's resolver) and records vertex and triangle counts, indexing, bounds, buffer hashes and the colour, or the parse error message.</summary>
     public object Step(object state, JsonElement step)
     {
         var q = (List<object?>)state;
         if (!step.TryGetProperty("parse", out var pe)) throw new InvalidOperationException($"unknown query {step}");
         try
         {
-            var p = MeshFormats.ParseResource(Convert.FromBase64String(pe.GetProperty("data").GetString()!), ChartJson.Str(pe, "name") ?? "");
+            var name = ChartJson.Str(pe, "name") ?? "";
+            var siblings = new Dictionary<string, byte[]>();
+            if (pe.TryGetProperty("files", out var files) && files.ValueKind == JsonValueKind.Object) foreach (var f in files.EnumerateObject()) siblings[MeshFormats.JoinUri(name, f.Name)] = Convert.FromBase64String(f.Value.GetString()!);
+            var p = MeshFormats.ParseResource(Convert.FromBase64String(pe.GetProperty("data").GetString()!), name, uri => siblings.GetValueOrDefault(MeshFormats.JoinUri(name, uri)));
             var mesh = MeshFormats.ToMesh("fixture", p); var h = mesh.Hash();
-            q.Add(new { vertices = p.Positions.Length / 3, triangles = (p.Indices is null ? p.Positions.Length / 3 : p.Indices.Length) / 3, indexed = p.Indices is not null, bounds = J3.RBox(Box3.FromPositions(p.Positions)), hash = new { positions = h.Positions, colors = h.Colors, normals = h.Normals, indices = h.Indices } });
+            q.Add(new { vertices = p.Positions.Length / 3, triangles = (p.Indices is null ? p.Positions.Length / 3 : p.Indices.Length) / 3, indexed = p.Indices is not null, bounds = J3.RBox(Box3.FromPositions(p.Positions)), hash = new { positions = h.Positions, colors = h.Colors, normals = h.Normals, indices = h.Indices }, color = p.Color?.Select(Round.R9).ToArray() });
         }
         catch (Exception e) when (e is InvalidDataException or NotSupportedException) { q.Add(new { error = e.Message }); }
         return state;

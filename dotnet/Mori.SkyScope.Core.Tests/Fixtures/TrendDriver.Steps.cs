@@ -4,6 +4,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Mori.SkyScope.Core.Charts;
+using Mori.SkyScope.Core.Mcap;
 using Mori.SkyScope.Core.Scales;
 using Mori.SkyScope.Core.Paint;
 using Mori.SkyScope.Core.Sources;
@@ -49,6 +50,13 @@ public sealed partial class TrendDriver
         _ => new { kind = "none" },
     };
     private static List<string> Strings(JsonElement e) => e.EnumerateArray().Select(x => x.GetString()!).ToList();
+    /// <summary>A string patch field: absent = unset, null = clear, string = set.</summary>
+    private static Opt<string> OptStr(JsonElement p, string name) => p.TryGetProperty(name, out var v) ? (v.ValueKind == JsonValueKind.Null ? Opt<string>.Clear : (Opt<string>)v.GetString()) : default;
+    /// <summary>A numeric patch field: absent = unset, null = clear, number = set.</summary>
+    private static Opt<double?> OptNum(JsonElement p, string name) => p.TryGetProperty(name, out var v) ? (v.ValueKind == JsonValueKind.Null ? Opt<double?>.Clear : (Opt<double?>)v.GetDouble()) : default;
+    /// <summary>A boolean patch field: absent = unset, null or false = clear, true = set.</summary>
+    private static Opt<bool> OptBool(JsonElement p, string name) => p.TryGetProperty(name, out var v) ? (Opt<bool>)(v.ValueKind == JsonValueKind.True) : default;
+    private static AxisPatch AxisPatchOf(JsonElement p) => new() { Label = OptStr(p, "label"), Unit = OptStr(p, "unit"), Min = OptNum(p, "min"), Max = OptNum(p, "max"), Side = p.TryGetProperty("side", out var sd) ? (Opt<AxisSide>)(sd.ValueKind == JsonValueKind.String && sd.GetString() == "right" ? AxisSide.Right : AxisSide.Left) : default, Color = OptStr(p, "color") };
     private static object DragJson(ChannelDragPayload p) => new { channels = p.Channels.Select(c => new { id = c.Id, name = c.Name, unit = c.Unit, kind = c.Kind is { } k ? (k == ChannelKind.Digital ? "digital" : "analog") : null }).ToList(), group = p.Group };
     private static ChannelDragPayload ParsePayload(JsonElement e) => new(e.GetProperty("channels").EnumerateArray().Select(c => new ChannelDragItem(c.GetProperty("id").GetInt32(), Str(c, "name"), Str(c, "unit"), Str(c, "kind") switch { "digital" => ChannelKind.Digital, "analog" => ChannelKind.Analog, _ => (ChannelKind?)null })).ToList(), Bool(e, "group") ?? false);
     private static object Ro(Readout r) => new { time = Round.R9(r.Time), values = r.Values.Select(v => new { seriesId = v.SeriesId, time = Round.R9(v.Time), value = Round.R9(v.Value) }).ToList() };
@@ -77,6 +85,27 @@ public sealed partial class TrendDriver
                     m.BeginDrag(ids, step.GetProperty("x").GetDouble(), step.GetProperty("y").GetDouble(), Bool(step, "group") ?? false, chs, Bool(step, "digital"));
                     break;
                 }
+            case "addLane": m.AddLane(step.TryGetProperty("index", out var li) ? li.GetInt32() : null, Str(step, "label")); s.Layout = null; break;
+            case "updateLane": m.UpdateLane(step.GetProperty("laneId").GetString()!, new LanePatch { Label = OptStr(step.GetProperty("patch"), "label"), Weight = OptNum(step.GetProperty("patch"), "weight"), Collapsed = OptBool(step.GetProperty("patch"), "collapsed"), Keep = OptBool(step.GetProperty("patch"), "keep") }); s.Layout = null; break;
+            case "addAxis": m.AddAxis(step.TryGetProperty("props", out var ap) ? AxisPatchOf(ap) : null, Str(step, "id")); s.Layout = null; break;
+            case "updateAxis": m.UpdateAxis(step.GetProperty("axisId").GetString()!, AxisPatchOf(step.GetProperty("patch"))); s.Layout = null; break;
+            case "removeAxis": m.RemoveAxis(step.GetProperty("axisId").GetString()!); s.Layout = null; break;
+            case "updateSeries":
+                {
+                    var p = step.GetProperty("patch");
+                    var kind = p.TryGetProperty("kind", out var kv) ? (Opt<SeriesKind>)(kv.ValueKind == JsonValueKind.String && kv.GetString() == "digital" ? SeriesKind.Digital : SeriesKind.Analog) : default;
+                    m.UpdateSeries(step.GetProperty("seriesId").GetString()!, new SeriesPatch { Name = OptStr(p, "name"), Color = OptStr(p, "color"), Width = OptNum(p, "width"), Visible = OptBool(p, "visible"), LaneId = OptStr(p, "laneId"), AxisId = OptStr(p, "axisId"), Kind = kind });
+                    s.Layout = null; break;
+                }
+            case "addThreshold": m.AddThreshold(step.GetProperty("axisId").GetString()!, step.GetProperty("from").GetDouble(), Num(step, "to"), Str(step, "color"), Str(step, "label"), Str(step, "id")); s.Layout = null; break;
+            case "updateThreshold": { var p = step.GetProperty("patch"); m.UpdateThreshold(step.GetProperty("id").GetString()!, new ThresholdPatch { AxisId = OptStr(p, "axisId"), From = OptNum(p, "from"), To = OptNum(p, "to"), Color = OptStr(p, "color"), Label = OptStr(p, "label") }); break; }
+            case "removeThreshold": m.RemoveThreshold(step.GetProperty("id").GetString()!); break;
+            case "addMarker": m.AddMarker(step.GetProperty("time").GetDouble(), Str(step, "label"), Str(step, "color"), Str(step, "id")); break;
+            case "updateMarker": { var p = step.GetProperty("patch"); m.UpdateMarker(step.GetProperty("id").GetString()!, new MarkerPatch { Time = OptNum(p, "time"), Label = OptStr(p, "label"), Color = OptStr(p, "color") }); break; }
+            case "removeMarker": m.RemoveMarker(step.GetProperty("id").GetString()!); break;
+            case "reorderSeries": m.ReorderSeries(step.GetProperty("seriesId").GetString()!, step.GetProperty("index").GetInt32()); s.Layout = null; break;
+            case "snapshotConfig": s.Snapshot = m.SnapshotConfig(); break;
+            case "restoreConfig": if (s.Snapshot is { } snap) m.RestoreConfig(snap); s.Layout = null; break;
             case "addChannels": m.AddChannels(step.GetProperty("channelIds").EnumerateArray().Select(x => x.GetInt32()).ToList(), step.TryGetProperty("target", out var at) ? ParseTarget(at) : null, Bool(step, "group") ?? false); s.Layout = null; break;
             case "applyGroupDrop": m.ApplyGroupDrop(Strings(step.GetProperty("seriesIds")), ParseTarget(step.GetProperty("target")), Bool(step, "group") ?? false); s.Layout = null; break;
             case "setSeriesVisible": m.SetSeriesVisible(step.GetProperty("seriesId").GetString()!, Bool(step, "visible") ?? true); s.Layout = null; break;
@@ -172,6 +201,11 @@ public sealed partial class TrendDriver
                 else if (step.TryGetProperty("tracks", out var tr)) q.Add(m.DigitalTracks(tr.GetString()!).Select(x => x.Id).ToList());
                 else if (step.TryGetProperty("seriesRange", out var sr)) { var sc = m.Config.Series.First(x => x.Id == sr.GetString()); var lane = s.Ensure().Lanes.First(l => l.LaneId == m.LaneIdOf(sc)); var sc2 = m.SeriesScale(sc, lane); q.Add(new[] { Round.R9(sc2.R0), Round.R9(sc2.R1) }); }
                 else if (step.TryGetProperty("legendRect", out _)) q.Add(Round.Rect(s.Ensure().Legend));
+                else if (step.TryGetProperty("editorRows", out _)) q.Add(m.EditorRows().Select(r => new { kind = r.Kind, id = r.Id, parentId = r.ParentId, depth = r.Depth, label = r.Label, detail = r.Detail }).ToList());
+                else if (step.TryGetProperty("thresholds", out _)) q.Add(m.Config.Thresholds.Select(t => new { id = t.Id, axisId = t.AxisId, from = Round.R9(t.From), to = Opt(t.To), color = t.Color, label = t.Label }).ToList());
+                else if (step.TryGetProperty("markers", out _)) q.Add(m.Config.Markers.Select(x => new { id = x.Id, time = Round.R9(x.Time), label = x.Label, color = x.Color }).ToList());
+                else if (step.TryGetProperty("axesConfig", out _)) q.Add(m.Config.Axes.Select(a => new { id = a.Id, label = a.Label, unit = a.Unit, min = Opt(a.Min), max = Opt(a.Max), side = a.Side == AxisSide.Right ? "right" : "left", color = a.Color }).ToList());
+                else if (step.TryGetProperty("lanesConfig", out _)) q.Add(m.Lanes().Select(l => new { id = l.Id, label = l.Label, weight = Round.R9(l.Weight), collapsed = l.Collapsed, keep = l.Keep }).ToList());
                 else if (step.TryGetProperty("parseChannelDrag", out var pcd)) q.Add(ChannelDragData.TryParse(pcd.GetString(), out var pp) ? DragJson(pp) : null);
                 else if (step.TryGetProperty("channelDragRoundTrip", out var rt)) q.Add(ChannelDragData.TryParse(ChannelDragData.Encode(ParsePayload(rt)), out var rp) ? DragJson(rp) : null);
                 else if (step.TryGetProperty("dropTarget", out var dt)) { var a = SignalSteps.Doubles(dt); q.Add(TargetJson(m.DropTargetAt(s.Ensure(), a[0], a[1]))); }
@@ -182,6 +216,19 @@ public sealed partial class TrendDriver
                 else if (step.TryGetProperty("seriesAxis", out var sa)) q.Add(m.Config.Series.First(x => x.Id == sa.GetString()).AxisId);
                 else if (step.TryGetProperty("drag", out _)) q.Add(m.Drag is { } d ? new { seriesId = d.SeriesId, x = Round.R9(d.X), y = Round.R9(d.Y), target = TargetJson(d.Target) } : null);
                 else if (step.TryGetProperty("draw", out _)) { var p = new RecordingPainter(s.Width, s.Height); TrendChartRenderer.Draw(m, p, s.Ensure()); q.Add(JsonNode.Parse(p.Ops.ToJsonString())); }
+                else if (step.TryGetProperty("cursorRange", out _)) q.Add(m.CursorRange() is { } cr ? new { t0 = Round.R9(cr.T0), t1 = Round.R9(cr.T1) } : null);
+                else if (step.TryGetProperty("exportCsv", out var ec))
+                {
+                    // explicit channels and range → the store function; otherwise the chart's cursor wrapper (null without both cursors)
+                    var o = new CsvExportOptions { Decimals = (int?)Num(ec, "decimals") ?? 6, ValueDecimals = (int?)Num(ec, "valueDecimals") ?? 6 };
+                    q.Add(ec.TryGetProperty("channelIds", out var ids) ? RangeExport.ExportRangeCsv(m.Store, ids.EnumerateArray().Select(x => x.GetInt32()), ec.GetProperty("t0").GetDouble(), ec.GetProperty("t1").GetDouble(), o) : m.ExportCursorsCsv(o));
+                }
+                else if (step.TryGetProperty("exportMcapSummary", out var em))
+                {
+                    var bytes = em.TryGetProperty("channelIds", out var ids) ? RangeExport.ExportRangeMcap(m.Store, ids.EnumerateArray().Select(x => x.GetInt32()), em.GetProperty("t0").GetDouble(), em.GetProperty("t1").GetDouble()) : m.ExportCursorsMcap();
+                    if (bytes is null) q.Add(null);
+                    else { var rec = SkyScopeMcap.ReadRecording(bytes); q.Add(new { length = bytes.Length, hash = RecordingPainter.Fnv1a(bytes), channels = rec.Channels.Count, frames = rec.Frames.Count, samples = rec.Frames.Sum(f => f.Channels.Sum(c => c.Count)), start = Round.R9(rec.Start), end = Round.R9(rec.End) }); }
+                }
                 else throw new InvalidOperationException($"unknown query {step}");
                 break;
             case var t: throw new InvalidOperationException($"unknown step {t}");

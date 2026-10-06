@@ -119,6 +119,8 @@ public sealed class LaneConfig(string id)
     public double Weight { get; set; } = 1;
     /// <summary>Folded to a thin bar (series stay configured, nothing is drawn).</summary>
     public bool Collapsed { get; set; }
+    /// <summary>Stays when it has no series (lanes added by an editor); other empty lanes vanish.</summary>
+    public bool Keep { get; set; }
 }
 
 /// <summary>A channel plotted in a lane.</summary>

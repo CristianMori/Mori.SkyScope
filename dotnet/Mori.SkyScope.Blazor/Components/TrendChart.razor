@@ -79,6 +79,8 @@
     public ValueTask ImportLayoutAsync(string json) => _handle?.InvokeVoidAsync("importLayout", json) ?? ValueTask.CompletedTask;
     /// <summary>Let the browser download the layout file under <paramref name="fileName"/>.</summary>
     public ValueTask DownloadLayoutAsync(string fileName = "layout.json") => _handle?.InvokeVoidAsync("downloadLayout", fileName) ?? ValueTask.CompletedTask;
+    /// <summary>Let the browser download the visible signals between cursors A and B as <c>"csv"</c> or <c>"mcap"</c>; false, nothing saved, unless both cursors are set.</summary>
+    public ValueTask<bool> ExportCursorsAsync(string format = "csv") => _handle?.InvokeAsync<bool>("exportCursors", format) ?? ValueTask.FromResult(false);
     /// <summary>
     /// Add channels from code: a series per channel not in the chart yet, placed at <paramref name="target"/> with the drop rules
     /// (default: the first lane, analog on an own axis, digital in the logic stack). Returns the series ids.

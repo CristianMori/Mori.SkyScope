@@ -10,26 +10,45 @@ import type { FrameTree } from "./frame-tree.js";
 import { box3FromPositions, box3Sphere, box3Union, mat4FromPose, mat4Mul, mat4Point, mat4Scaling, raySphere, v3, v3sub, MAT4_IDENTITY, QUAT_IDENTITY, type Box3, type Mat4, type Quat } from "./math3.js";
 import { createMesh, type Mesh3D } from "./painter3d.js";
 import { unitArrow, unitCube, unitCylinder, unitSphere } from "./primitives.js";
-import { meshFromParsed, type ParsedMesh } from "./mesh-formats.js";
+import { hexOfColor, joinUri, meshFromParsed, parseMeshResource, type ParsedMesh } from "./mesh-formats.js";
 
-/** Loaded mesh resources by URI, shared by marker layers and robot models of one scene (via `LayerEnv.meshes`). */
+/**
+ * Loaded mesh resources by URI, shared by marker layers and robot models of one scene (via `LayerEnv.meshes`). Besides
+ * the renderer meshes it keeps each resource's material colour (for mesh markers without one) and, for resources
+ * that reference sibling files (glTF external buffers), the files registered with `registerFiles` plus an optional
+ * `resolver` consulted for anything not registered.
+ */
 export class MeshRegistry {
-  private readonly meshes = new Map<string, Mesh3D>();
+  private readonly meshes = new Map<string, { mesh: Mesh3D; color: string | null }>();
+  private readonly files = new Map<string, Uint8Array>();
   private _version = 0;
+  /** Finds the bytes of a resolved URI not registered through `registerFiles` (a fetch cache, a package root…); undefined when unknown. */
+  resolver: ((uri: string) => Uint8Array | undefined) | undefined;
   /** Bumped on every `set` and on a non-empty `clear`. */
   get version(): number { return this._version; }
   /**
    * Build a renderer mesh (key `mesh:<uri>`) from a parsed resource and store it under `uri`, replacing any previous
    * one.
    */
-  set(uri: string, parsed: ParsedMesh): Mesh3D { const m = meshFromParsed(`mesh:${uri}`, parsed); this.meshes.set(uri, m); this._version++; return m; }
+  set(uri: string, parsed: ParsedMesh): Mesh3D { const m = meshFromParsed(`mesh:${uri}`, parsed); this.meshes.set(uri, { mesh: m, color: parsed.color ? hexOfColor(parsed.color) : null }); this._version++; return m; }
+  /** Parse resource bytes (format from the URI's extension or content) and store the result under `uri`; sibling files are found through `resolve`. */
+  load(uri: string, bytes: Uint8Array): Mesh3D { return this.set(uri, parseMeshResource(bytes, uri, { resolve: (rel) => this.resolve(uri, rel) })); }
+  /** Register sibling files by path relative to `baseUri` (a directory; a trailing slash is added when missing), for resources that reference them. */
+  registerFiles(baseUri: string, files: Record<string, Uint8Array>): void {
+    const base = baseUri.endsWith("/") ? baseUri : baseUri + "/";
+    for (const [rel, bytes] of Object.entries(files)) this.files.set(joinUri(base, rel), bytes);
+  }
+  /** Bytes of `relative` resolved against `baseUri`: registered files first, then the `resolver`. */
+  resolve(baseUri: string, relative: string): Uint8Array | undefined { const uri = joinUri(baseUri, relative); return this.files.get(uri) ?? this.resolver?.(uri); }
   /** The mesh for a URI, or undefined when not loaded. */
-  get(uri: string): Mesh3D | undefined { return this.meshes.get(uri); }
+  get(uri: string): Mesh3D | undefined { return this.meshes.get(uri)?.mesh; }
+  /** The resource's own material colour as `#rrggbb`, or undefined when the format carried none. */
+  color(uri: string): string | undefined { return this.meshes.get(uri)?.color ?? undefined; }
   /** True when a mesh is registered for the URI. */
   has(uri: string): boolean { return this.meshes.has(uri); }
   /** Registered URIs, sorted. */
   uris(): string[] { return [...this.meshes.keys()].sort(); }
-  /** Drop every mesh. */
+  /** Drop every mesh (registered files stay). */
   clear(): void { if (this.meshes.size) { this.meshes.clear(); this._version++; } }
 }
 
@@ -312,7 +331,7 @@ export class MarkerLayer extends BaseLayer3D {
         case "sphere": p3.triangles(unitSphere(), { color, opacity, lit: true, model: MarkerLayer.shapeModel(m, pose) }); break;
         case "cylinder": p3.triangles(unitCylinder(), { color, opacity, lit: true, model: MarkerLayer.shapeModel(m, pose) }); break;
         case "arrow": p3.triangles(unitArrow(), { color, opacity, lit: true, model: mat4Mul(pose, mat4Scaling(s[0], s[1] * 2, s[2] * 2)) }); break;
-        case "mesh": { const mesh = m.meshResource ? this.meshes.get(m.meshResource) : undefined; if (mesh) p3.triangles(mesh, { color, opacity, lit: true, model: MarkerLayer.shapeModel(m, pose) }); break; }
+        case "mesh": { const mesh = m.meshResource ? this.meshes.get(m.meshResource) : undefined; if (mesh) p3.triangles(mesh, { color: m.color ?? this.meshes.color(m.meshResource!) ?? color, opacity, lit: true, model: MarkerLayer.shapeModel(m, pose) }); break; }
         case "lineList": if (e.mesh) p3.lines(e.mesh, { color, opacity, lineWidth: s[0], model: pose }, false); break;
         case "lineStrip": if (e.mesh) p3.lines(e.mesh, { color, opacity, lineWidth: s[0], model: pose }, true); break;
         case "points": if (e.mesh) p3.points(e.mesh, { color, opacity, pointSize: s[0], model: pose }); break;
@@ -379,7 +398,7 @@ export class MarkerLayer extends BaseLayer3D {
   }
 }
 
-/** An invisible layer whose pushes register mesh resources in the sink's shared `MeshRegistry`: `{ uri, positions, normals?, indices? }`. */
+/** An invisible layer whose pushes register mesh resources in the sink's shared `MeshRegistry`: `{ uri, positions, normals?, indices?, color? }`. */
 export class MeshesLayer extends BaseLayer3D {
   /** Always "meshes". */
   readonly kind = "meshes";

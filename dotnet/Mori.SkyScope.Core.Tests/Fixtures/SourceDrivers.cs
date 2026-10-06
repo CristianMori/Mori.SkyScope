@@ -20,7 +20,8 @@ public sealed class SignalStoreDriver : IFixtureDriver
     {
         var retention = setup.TryGetProperty("retentionSeconds", out var r) ? r.GetDouble() : 60;
         var capacity = setup.TryGetProperty("defaultCapacity", out var c) ? c.GetInt32() : 65536;
-        var store = new SignalStore(retention, capacity);
+        var max = setup.TryGetProperty("maxCapacity", out var mx) ? mx.GetInt32() : 1048576;
+        var store = new SignalStore(retention, capacity, null, max);
         var s = new State(store, [], []);
         store.Subscribe((ids, _) => s.Notifications.Add([.. ids]));
         return s;
@@ -50,7 +51,7 @@ public sealed class SignalStoreDriver : IFixtureDriver
                     {
                         id = c.Info.Id, name = c.Info.Name, unit = c.Info.Unit, kind = c.Info.Kind?.ToString().ToLowerInvariant(),
                         timing = (c.Info.Timing ?? ChannelTiming.Regular) == ChannelTiming.Timestamped ? "timestamped" : "regular", rate = c.Info.Rate,
-                        capacity = c.Buffer.Capacity, length = c.Buffer.Length, latestTime = c.Buffer.IsEmpty ? null : (double?)c.Buffer.LatestTime(),
+                        capacity = c.Buffer.Capacity, length = c.Buffer.Length, latestTime = c.Buffer.IsEmpty ? null : (double?)c.Buffer.LatestTime(), observedRate = c.ObservedRate,
                     }).ToList());
                 else if (step.TryGetProperty("samples", out var id))
                 {

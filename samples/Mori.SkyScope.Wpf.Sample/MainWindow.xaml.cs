@@ -60,6 +60,7 @@ public partial class MainWindow : Window
         cfg.Navigator = true;
         Chart.Configure(cfg);
         Tree.Chart = Chart; Tree.Refresh();
+        Editor.Chart = Chart;
 
         Speed.Gauge = _speed; Temp.Gauge = _temp; Heading.Gauge = _heading; Attitude.Gauge = _attitude; Bus.Gauge = _bus; Level.Gauge = _level;
         Gain.Gauge = _gain; Arm.Gauge = _arm; Throttle.Gauge = _throttle;
@@ -182,6 +183,15 @@ public partial class MainWindow : Window
     /// <summary>Resets the trend chart view and returns to live time.</summary>
     private void OnReset(object sender, RoutedEventArgs e) { Chart.Model.Reset(); _paused = false; PauseButton.Content = "Pause"; }
     /// <summary>Writes the chart arrangement to a JSON layout file chosen in a save dialog.</summary>
+    /// <summary>Swaps the signal tree for the chart editor in the left column and back.</summary>
+    private void OnToggleEditor(object sender, RoutedEventArgs e)
+    {
+        var on = BtnEditor.IsChecked == true;
+        Editor.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        Tree.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
+        if (on) Editor.Refresh();
+    }
+
     private void OnSaveLayout(object sender, RoutedEventArgs e)
     {
         var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "Layout (*.json)|*.json", FileName = "skyscope-layout.json" };
@@ -192,5 +202,12 @@ public partial class MainWindow : Window
     {
         var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Layout (*.json)|*.json" };
         if (dlg.ShowDialog(this) == true) { try { Chart.LoadLayout(dlg.FileName); Tree.Refresh(); } catch (Exception ex) { Status.Text = $"layout: {ex.Message}"; } }
+    }
+    /// <summary>Writes the visible signals between cursors A and B to a CSV or MCAP file chosen in a save dialog (the extension picks the format).</summary>
+    private void OnExportCursors(object sender, RoutedEventArgs e)
+    {
+        if (Chart.Model.CursorRange() is null) { Status.Text = "export: set cursors A and B first (Cursor tool: click, Shift + click)"; return; }
+        var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "CSV (*.csv)|*.csv|MCAP recording (*.mcap)|*.mcap", FileName = "skyscope-range.csv" };
+        if (dlg.ShowDialog(this) == true) { try { Chart.SaveCursorsRange(dlg.FileName); Status.Text = $"exported {System.IO.Path.GetFileName(dlg.FileName)}"; } catch (Exception ex) { Status.Text = $"export: {ex.Message}"; } }
     }
 }

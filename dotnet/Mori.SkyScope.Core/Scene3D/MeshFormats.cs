@@ -1,4 +1,4 @@
-// Mori.SkyScope — Mesh resource loaders for marker and robot-model meshes: binary and ASCII STL, and glTF binary.
+// Mori.SkyScope — Mesh resource loaders for marker and robot-model meshes: binary and ASCII STL, glTF binary and COLLADA.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 using System.Buffers.Binary;
@@ -6,21 +6,58 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using Mori.SkyScope.Core.Charts;
 
 namespace Mori.SkyScope.Core.Scene3D;
 
-/// <summary>A loaded mesh resource: positions (xyz), normals, optional triangle indices.</summary>
+/// <summary>A loaded mesh resource: positions (xyz), normals, optional triangle indices and the material colour of its first primitive.</summary>
 /// <param name="Positions">Interleaved xyz, three floats per vertex.</param>
 /// <param name="Normals">Interleaved unit normals per vertex, or null when the format carried none.</param>
 /// <param name="Indices">Triangle list into the vertices, or null when consecutive vertex triples form the triangles.</param>
-public sealed record ParsedMesh(float[] Positions, float[]? Normals, uint[]? Indices);
+/// <param name="Color">RGBA 0..1 of the first primitive's material (glTF base colour factor, Collada diffuse), or null when the format carried none; mesh markers without a colour of their own use it.</param>
+public sealed record ParsedMesh(float[] Positions, float[]? Normals, uint[]? Indices, double[]? Color = null);
 
 /// <summary>
-/// Mesh resource loaders: binary and ASCII STL, and glTF 2.0 binary (GLB) with triangle primitives (node transforms
-/// applied, one merged mesh). Mirrors <c>scene3d/mesh-formats.ts</c>; pinned by <c>spec/fixtures/mesh-formats.json</c>.
+/// Mesh resource loaders: binary and ASCII STL, glTF 2.0 (binary <c>.glb</c> and JSON <c>.gltf</c>; buffers embedded, as
+/// <c>data:</c> URIs or external files through a resolver) with triangle primitives (node transforms applied, one merged
+/// mesh, the first material's base colour) and COLLADA. Mirrors <c>scene3d/mesh-formats.ts</c>; pinned by
+/// <c>spec/fixtures/mesh-formats.json</c>.
 /// </summary>
 public static partial class MeshFormats
 {
+    /// <summary>
+    /// Resolves <paramref name="relative"/> against <paramref name="base"/> like a URL: absolute references (a scheme such as
+    /// <c>package:</c> or <c>file:</c>, or a leading <c>/</c>) are returned as given; otherwise the last path segment of the base
+    /// is replaced and <c>.</c>/<c>..</c> segments are collapsed (never above the scheme or the root). Same rules as the TS <c>joinUri</c>.
+    /// </summary>
+    public static string JoinUri(string @base, string relative)
+    {
+        if (SchemeRegex().IsMatch(relative) || relative.StartsWith('/')) return relative;
+        var scheme = SchemeAuthorityRegex().Match(@base).Value;
+        var rest = @base[scheme.Length..];
+        var slash = rest.LastIndexOf('/');
+        var dir = slash >= 0 ? rest[..(slash + 1)] : "";
+        var outSegs = new List<string>();
+        foreach (var seg in (dir + relative).Split('/'))
+        {
+            if (seg is "." or "") continue;
+            if (seg == "..") { if (outSegs.Count > 0) outSegs.RemoveAt(outSegs.Count - 1); continue; }
+            outSegs.Add(seg);
+        }
+        return (scheme.EndsWith('/') || scheme.Length == 0 ? scheme : scheme + "/") + string.Join('/', outSegs);
+    }
+    [GeneratedRegex("^[a-zA-Z][a-zA-Z0-9+.-]*:")]
+    private static partial Regex SchemeRegex();
+    [GeneratedRegex("^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]*/?")]
+    private static partial Regex SchemeAuthorityRegex();
+
+    /// <summary><c>#rrggbb</c> of an RGBA 0..1 colour (alpha ignored), channels clamped and rounded.</summary>
+    public static string HexOfColor(double[] c)
+    {
+        static int H(double v) => (int)Math.Round(Math.Clamp(v, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        return $"#{H(c[0]):x2}{H(c[1]):x2}{H(c[2]):x2}";
+    }
     /// <summary>Binary or ASCII STL, detected from the header. Returns unindexed triangles with flat normals; throws <see cref="InvalidDataException"/> when a binary file is truncated.</summary>
     public static ParsedMesh ParseStl(ReadOnlySpan<byte> bytes)
     {
@@ -76,11 +113,11 @@ public static partial class MeshFormats
         return o;
     }
 
-    /// <summary>glTF 2.0 binary container. Triangle primitives of the default scene are merged into one indexed mesh with node transforms baked into positions and normals; other primitive modes are skipped. Throws <see cref="InvalidDataException"/> on a bad magic or missing JSON chunk.</summary>
-    public static ParsedMesh ParseGlb(ReadOnlySpan<byte> bytes)
+    /// <summary>glTF 2.0 binary container. Triangle primitives of the default scene are merged into one indexed mesh with node transforms baked into positions and normals; other primitive modes are skipped. Buffers come from the BIN chunk, <c>data:</c> URIs or <paramref name="resolve"/>. Throws <see cref="InvalidDataException"/> on a bad magic, a missing JSON chunk or an unresolvable buffer.</summary>
+    public static ParsedMesh ParseGlb(ReadOnlySpan<byte> bytes, Func<string, byte[]?>? resolve = null)
     {
         if (bytes.Length < 20 || BinaryPrimitives.ReadUInt32LittleEndian(bytes) != 0x46546c67) throw new InvalidDataException("glb: bad magic");
-        var p = 12; JsonDocument? json = null; byte[] bin = [];
+        var p = 12; JsonDocument? json = null; byte[]? bin = null;
         while (p + 8 <= bytes.Length)
         {
             var len = (int)BinaryPrimitives.ReadUInt32LittleEndian(bytes[p..]); var type = BinaryPrimitives.ReadUInt32LittleEndian(bytes[(p + 4)..]);
@@ -89,17 +126,45 @@ public static partial class MeshFormats
             p += 8 + len;
         }
         if (json is null) throw new InvalidDataException("glb: no JSON chunk");
-        using (json) return Assemble(json.RootElement, bin);
+        using (json) return Assemble(json.RootElement, bin, resolve);
     }
 
-    private static ParsedMesh Assemble(JsonElement doc, byte[] bin)
+    /// <summary>glTF 2.0 JSON (<c>.gltf</c>). Like <see cref="ParseGlb"/>, with every buffer a <c>data:</c> URI (decoded here) or an external file fetched through <paramref name="resolve"/> (URI as written in the file). Throws <see cref="InvalidDataException"/> when the bytes are not a JSON object or a buffer cannot be resolved.</summary>
+    public static ParsedMesh ParseGltf(ReadOnlySpan<byte> bytes, Func<string, byte[]?>? resolve = null)
     {
-        var pos = new List<float>(); var nor = new List<float>(); var idx = new List<uint>(); var hasNormals = true;
+        JsonDocument json;
+        try { json = JsonDocument.Parse(bytes.ToArray()); }
+        catch (JsonException) { throw new InvalidDataException("gltf: not JSON"); }
+        using (json)
+        {
+            if (json.RootElement.ValueKind != JsonValueKind.Object) throw new InvalidDataException("gltf: not JSON");
+            return Assemble(json.RootElement, null, resolve);
+        }
+    }
+
+    private static ParsedMesh Assemble(JsonElement doc, byte[]? bin, Func<string, byte[]?>? resolve)
+    {
+        var pos = new List<float>(); var nor = new List<float>(); var idx = new List<uint>(); var hasNormals = true; double[]? color = null;
         var accessors = doc.TryGetProperty("accessors", out var acs) ? acs.EnumerateArray().ToArray() : [];
         var views = doc.TryGetProperty("bufferViews", out var bvs) ? bvs.EnumerateArray().ToArray() : [];
         var nodes = doc.TryGetProperty("nodes", out var nds) ? nds.EnumerateArray().ToArray() : [];
         var meshes = doc.TryGetProperty("meshes", out var mss) ? mss.EnumerateArray().ToArray() : [];
+        var materials = doc.TryGetProperty("materials", out var mts) ? mts.EnumerateArray().ToArray() : [];
+        var bufferDefs = doc.TryGetProperty("buffers", out var bfs) ? bfs.EnumerateArray().ToArray() : [];
+        var buffers = new Dictionary<int, byte[]>();
         static int Int(JsonElement e, string n, int d) => e.TryGetProperty(n, out var v) ? v.GetInt32() : d;
+        byte[] Buffer(int i)
+        {
+            if (buffers.TryGetValue(i, out var cached)) return cached;
+            var uri = i < bufferDefs.Length ? ChartJson.Str(bufferDefs[i], "uri") : null;
+            byte[]? b;
+            if (uri is null) b = bin ?? (i < bufferDefs.Length ? null : []);
+            else if (uri.StartsWith("data:", StringComparison.Ordinal)) { var comma = uri.IndexOf(','); b = comma < 0 ? null : Convert.FromBase64String(uri[(comma + 1)..]); }
+            else b = resolve?.Invoke(uri);
+            if (b is null) throw new InvalidDataException($"gltf: cannot resolve buffer {uri ?? i.ToString(CultureInfo.InvariantCulture)}");
+            buffers[i] = b;
+            return b;
+        }
         (double[] Data, int Comps) Accessor(int i)
         {
             var a = accessors[i]; var bv = views[Int(a, "bufferView", 0)];
@@ -107,7 +172,7 @@ public static partial class MeshFormats
             var ct = a.GetProperty("componentType").GetInt32();
             var size = ct switch { 5120 or 5121 => 1, 5122 or 5123 => 2, _ => 4 };
             var stride = Int(bv, "byteStride", comps * size); var b = Int(bv, "byteOffset", 0) + Int(a, "byteOffset", 0); var count = a.GetProperty("count").GetInt32();
-            var o = new double[count * comps]; var span = bin.AsSpan();
+            var o = new double[count * comps]; var span = Buffer(Int(bv, "buffer", 0)).AsSpan();
             for (var k = 0; k < count; k++) for (var c = 0; c < comps; c++)
             {
                 var at = b + k * stride + c * size;
@@ -135,6 +200,12 @@ public static partial class MeshFormats
                 foreach (var prim in meshes[me.GetInt32()].GetProperty("primitives").EnumerateArray())
                 {
                     if (Int(prim, "mode", 4) != 4 || !prim.GetProperty("attributes").TryGetProperty("POSITION", out var pa)) continue;
+                    if (color is null && prim.TryGetProperty("material", out var mi) && mi.ValueKind == JsonValueKind.Number)
+                    {
+                        var m2 = mi.GetInt32();
+                        var f = m2 >= 0 && m2 < materials.Length && materials[m2].TryGetProperty("pbrMetallicRoughness", out var pbr) ? ChartJson.Doubles(pbr, "baseColorFactor") : null;
+                        color = f is { Length: >= 3 } ? [f[0], f[1], f[2], f.Length > 3 ? f[3] : 1] : [1, 1, 1, 1];
+                    }
                     var basev = (uint)(pos.Count / 3);
                     var (P, _) = Accessor(pa.GetInt32());
                     for (var k = 0; k < P.Length; k += 3) { double x = P[k], y = P[k + 1], z = P[k + 2]; pos.Add((float)(m[0] * x + m[4] * y + m[8] * z + m[12])); pos.Add((float)(m[1] * x + m[5] * y + m[9] * z + m[13])); pos.Add((float)(m[2] * x + m[6] * y + m[10] * z + m[14])); }
@@ -153,14 +224,198 @@ public static partial class MeshFormats
         IEnumerable<int> roots = doc.TryGetProperty("scenes", out var scs) && scs.GetArrayLength() > scene && scs[scene].TryGetProperty("nodes", out var rn) ? rn.EnumerateArray().Select(x => x.GetInt32()) : Enumerable.Range(0, nodes.Length);
         foreach (var r in roots) Visit(r, Mat4.Identity);
         var positions = pos.ToArray(); var indices = idx.ToArray();
-        return new ParsedMesh(positions, hasNormals && nor.Count == pos.Count ? nor.ToArray() : FaceNormals(positions, indices), indices);
+        return new ParsedMesh(positions, hasNormals && nor.Count == pos.Count ? nor.ToArray() : FaceNormals(positions, indices), indices, color);
     }
 
-    /// <summary>Pick the parser by extension or content.</summary>
-    public static ParsedMesh ParseResource(ReadOnlySpan<byte> bytes, string name = "")
+    private static IEnumerable<XElement> Kids(XElement e, string name) => e.Elements().Where(c => c.Name.LocalName == name);
+    private static XElement? Kid(XElement e, string name) => Kids(e, name).FirstOrDefault();
+    private static double[] Nums(string? s) => string.IsNullOrWhiteSpace(s) ? [] : s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Select(t => double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN).ToArray();
+    private static double Num(string? s, double d) => s is null ? d : double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : double.NaN;
+    private static string Ref(string? s) => s is not null && s.StartsWith('#') ? s[1..] : s ?? "";
+    private static double At(double[] a, int i) => i >= 0 && i < a.Length ? a[i] : 0;
+
+    /// <summary>Direction through the upper 3×3 of <paramref name="m"/>, renormalised (zero stays zero).</summary>
+    private static (double X, double Y, double Z) TransformNormal(double[] m, double x, double y, double z)
+    {
+        double nx = m[0] * x + m[4] * y + m[8] * z, ny = m[1] * x + m[5] * y + m[9] * z, nz = m[2] * x + m[6] * y + m[10] * z;
+        var l = Math.Sqrt(nx * nx + ny * ny + nz * nz); if (l == 0) l = 1;
+        return (nx / l, ny / l, nz / l);
+    }
+
+    private sealed record ColladaSource(double[] Data, int Stride);
+
+    /// <summary>
+    /// COLLADA 1.4/1.5 (.dae). Reads <c>library_geometries</c> meshes (<c>source</c> float arrays with accessor stride,
+    /// <c>vertices</c>, <c>triangles</c> and <c>polylist</c> with VERTEX/NORMAL inputs and offsets; polygons are triangulated as
+    /// fans), places every <c>instance_geometry</c> of the visual scene through its node <c>matrix</c>/<c>translate</c>/
+    /// <c>rotate</c>/<c>scale</c> chain (all geometries at the origin when no scene instances any), converts
+    /// <c>Y_UP</c> to Z up as ROS does (x, y, z → x, −z, y) and merges everything into one unindexed mesh. Primitives
+    /// without normals get flat face normals. The first primitive whose bound material (<c>instance_material</c> symbol →
+    /// <c>library_materials</c> → <c>instance_effect</c> → <c>profile_COMMON</c> phong/lambert/blinn <c>diffuse/color</c>) has
+    /// a colour gives the mesh its <see cref="ParsedMesh.Color"/>. Textures, controllers and animations are ignored. Throws
+    /// <see cref="InvalidDataException"/> when the document has no COLLADA root.
+    /// </summary>
+    public static ParsedMesh ParseCollada(ReadOnlySpan<byte> bytes)
+    {
+        XElement? root;
+        var text = Encoding.UTF8.GetString(bytes);
+        if (text.StartsWith('﻿')) text = text[1..];
+        try { root = XDocument.Parse(text).Root; }
+        catch (System.Xml.XmlException) { root = null; }
+        if (root is null || root.Name.LocalName != "COLLADA") throw new InvalidDataException("collada: no COLLADA root");
+        var upAxis = (Kid(Kid(root, "asset") ?? root, "up_axis")?.Value ?? "Z_UP").Trim().ToUpperInvariant();
+        double[] up = upAxis == "Y_UP" ? [1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1] : Mat4.Identity;
+
+        var geometryOrder = new List<XElement>(); var geometries = new Dictionary<string, XElement>();
+        foreach (var lib in Kids(root, "library_geometries")) foreach (var g in Kids(lib, "geometry")) { var id = g.Attribute("id")?.Value; if (id is not null) { geometries[id] = g; geometryOrder.Add(g); } }
+        var nodesById = new Dictionary<string, XElement>();
+        foreach (var lib in Kids(root, "library_nodes")) foreach (var n in Kids(lib, "node")) { var id = n.Attribute("id")?.Value; if (id is not null) nodesById[id] = n; }
+        // materials: effect id → diffuse colour, material id → effect id
+        var effectColors = new Dictionary<string, double[]>();
+        foreach (var lib in Kids(root, "library_effects")) foreach (var e in Kids(lib, "effect"))
+        {
+            var id = e.Attribute("id")?.Value;
+            if (id is null) continue;
+            foreach (var profile in Kids(e, "profile_COMMON")) foreach (var tech in Kids(profile, "technique")) foreach (var shader in tech.Elements())
+            {
+                var sn = shader.Name.LocalName;
+                if (sn != "phong" && sn != "lambert" && sn != "blinn") continue;
+                var diffuse = Kid(shader, "diffuse");
+                var v = diffuse is null ? [] : Nums(Kid(diffuse, "color")?.Value);
+                if (v.Length >= 3 && !effectColors.ContainsKey(id)) effectColors[id] = [v[0], v[1], v[2], v.Length > 3 ? v[3] : 1];
+            }
+        }
+        var materialEffects = new Dictionary<string, string>();
+        foreach (var lib in Kids(root, "library_materials")) foreach (var m in Kids(lib, "material")) { var id = m.Attribute("id")?.Value; var fx = Kid(m, "instance_effect"); if (id is not null && fx is not null) materialEffects[id] = Ref(fx.Attribute("url")?.Value); }
+        static Dictionary<string, string> Bindings(XElement? instance)
+        {
+            var o = new Dictionary<string, string>();
+            if (instance is null) return o;
+            foreach (var bm in Kids(instance, "bind_material")) foreach (var tc in Kids(bm, "technique_common")) foreach (var im in Kids(tc, "instance_material")) { var sym = im.Attribute("symbol")?.Value; if (sym is not null) o[sym] = Ref(im.Attribute("target")?.Value); }
+            return o;
+        }
+        double[]? color = null;
+
+        var pos = new List<float>(); var nor = new List<float>();
+        void EmitGeometry(XElement g, double[] world, Dictionary<string, string> bound)
+        {
+            var mesh = Kid(g, "mesh");
+            if (mesh is null) return;
+            var sources = new Dictionary<string, ColladaSource>();
+            foreach (var s in Kids(mesh, "source"))
+            {
+                var fa = Kid(s, "float_array"); var id = s.Attribute("id")?.Value;
+                if (id is null || fa is null) continue;
+                var acc = Kid(Kid(s, "technique_common") ?? s, "accessor");
+                var stride = Num(acc?.Attribute("stride")?.Value, 3); if (double.IsNaN(stride) || stride == 0) stride = 3;
+                sources[id] = new ColladaSource(Nums(fa.Value), Math.Max(1, (int)stride));
+            }
+            var verts = new Dictionary<string, (string Position, string? Normal)>();
+            foreach (var v in Kids(mesh, "vertices"))
+            {
+                var id = v.Attribute("id")?.Value;
+                var p = Kids(v, "input").FirstOrDefault(i => i.Attribute("semantic")?.Value == "POSITION"); var n = Kids(v, "input").FirstOrDefault(i => i.Attribute("semantic")?.Value == "NORMAL");
+                if (id is not null && p is not null) verts[id] = (Ref(p.Attribute("source")?.Value), n is null ? null : Ref(n.Attribute("source")?.Value));
+            }
+            foreach (var prim in mesh.Elements())
+            {
+                var kind = prim.Name.LocalName;
+                if (kind != "triangles" && kind != "polylist") continue;
+                ColladaSource? posSrc = null, norSrc = null; int posOff = 0, norOff = 0, stride = 1;
+                foreach (var inp in Kids(prim, "input"))
+                {
+                    var offD = Num(inp.Attribute("offset")?.Value, 0); var off = double.IsNaN(offD) ? 0 : (int)offD; stride = Math.Max(stride, off + 1);
+                    var semantic = inp.Attribute("semantic")?.Value;
+                    if (semantic == "VERTEX")
+                    {
+                        if (!verts.TryGetValue(Ref(inp.Attribute("source")?.Value), out var v)) continue;
+                        posSrc = sources.GetValueOrDefault(v.Position); posOff = off;
+                        if (v.Normal is not null && norSrc is null) { norSrc = sources.GetValueOrDefault(v.Normal); norOff = off; }
+                    }
+                    else if (semantic == "NORMAL") { norSrc = sources.GetValueOrDefault(Ref(inp.Attribute("source")?.Value)); norOff = off; }
+                }
+                if (posSrc is null) continue;
+                if (color is null && prim.Attribute("material")?.Value is { } sym) { var mat = bound.GetValueOrDefault(sym) ?? sym; color = effectColors.GetValueOrDefault(materialEffects.GetValueOrDefault(mat) ?? ""); }
+                ColladaSource ps = posSrc; ColladaSource? nsrc = norSrc;
+                var p = Nums(Kid(prim, "p")?.Value);
+                var corners = p.Length / stride;
+                var polys = kind == "polylist" ? Nums(Kid(prim, "vcount")?.Value).Select(x => (int)x).ToList() : [];
+                if (kind == "triangles") for (var t = 0; t + 2 < corners; t += 3) polys.Add(3);
+                var start = pos.Count;
+                var c = 0;
+                void Corner(int k)
+                {
+                    var pi = (int)p[k * stride + posOff]; var s = ps.Stride;
+                    double x = At(ps.Data, pi * s), y = At(ps.Data, pi * s + 1), z = At(ps.Data, pi * s + 2);
+                    pos.Add((float)(world[0] * x + world[4] * y + world[8] * z + world[12])); pos.Add((float)(world[1] * x + world[5] * y + world[9] * z + world[13])); pos.Add((float)(world[2] * x + world[6] * y + world[10] * z + world[14]));
+                    if (nsrc is not null)
+                    {
+                        var ni = (int)p[k * stride + norOff]; var ns = nsrc.Stride;
+                        var (nx, ny, nz) = TransformNormal(world, At(nsrc.Data, ni * ns), At(nsrc.Data, ni * ns + 1), At(nsrc.Data, ni * ns + 2));
+                        nor.Add((float)nx); nor.Add((float)ny); nor.Add((float)nz);
+                    }
+                }
+                foreach (var vc in polys)
+                {
+                    if (c + vc > corners) break;
+                    for (var i = 1; i + 1 < vc; i++) { Corner(c); Corner(c + i); Corner(c + i + 1); }
+                    c += vc;
+                }
+                if (norSrc is null) nor.AddRange(FaceNormals(pos.Skip(start).ToArray()));
+            }
+        }
+
+        static double[] NodeMatrix(XElement n)
+        {
+            var m = Mat4.Identity;
+            foreach (var e in n.Elements())
+            {
+                var name = e.Name.LocalName;
+                if (name != "matrix" && name != "translate" && name != "rotate" && name != "scale") continue;
+                var v = Nums(e.Value);
+                if (name == "matrix" && v.Length >= 16) m = Mat4.Mul(m, [v[0], v[4], v[8], v[12], v[1], v[5], v[9], v[13], v[2], v[6], v[10], v[14], v[3], v[7], v[11], v[15]]);
+                else if (name == "translate" && v.Length >= 3) m = Mat4.Mul(m, Mat4.Translation(v[0], v[1], v[2]));
+                else if (name == "scale" && v.Length >= 3) m = Mat4.Mul(m, Mat4.Scaling(v[0], v[1], v[2]));
+                else if (name == "rotate" && v.Length >= 4)
+                {
+                    var l = Math.Sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); if (l == 0) l = 1;
+                    double x = v[0] / l, y = v[1] / l, z = v[2] / l;
+                    var a = v[3] * Math.PI / 180; double s = Math.Sin(a), co = Math.Cos(a), t = 1 - co;
+                    m = Mat4.Mul(m, [t * x * x + co, t * x * y + s * z, t * x * z - s * y, 0, t * x * y - s * z, t * y * y + co, t * y * z + s * x, 0, t * x * z + s * y, t * y * z - s * x, t * z * z + co, 0, 0, 0, 0, 1]);
+                }
+            }
+            return m;
+        }
+        var instanced = 0;
+        void Visit(XElement n, double[] parent, int depth)
+        {
+            if (depth > 64) return;
+            var m = Mat4.Mul(parent, NodeMatrix(n));
+            foreach (var e in n.Elements())
+            {
+                switch (e.Name.LocalName)
+                {
+                    case "instance_geometry": if (geometries.TryGetValue(Ref(e.Attribute("url")?.Value), out var g)) { instanced++; EmitGeometry(g, m, Bindings(e)); } break;
+                    case "instance_node": if (nodesById.TryGetValue(Ref(e.Attribute("url")?.Value), out var r)) Visit(r, m, depth + 1); break;
+                    case "node": Visit(e, m, depth + 1); break;
+                }
+            }
+        }
+        var sceneUrl = Ref(Kid(Kid(root, "scene") ?? root, "instance_visual_scene")?.Attribute("url")?.Value);
+        var scenes = Kids(root, "library_visual_scenes").SelectMany(l => Kids(l, "visual_scene")).ToList();
+        var scene = scenes.FirstOrDefault(s => s.Attribute("id")?.Value == sceneUrl) ?? scenes.FirstOrDefault();
+        if (scene is not null) foreach (var n in Kids(scene, "node")) Visit(n, up, 0);
+        if (instanced == 0) foreach (var g in geometryOrder) EmitGeometry(g, up, Bindings(null));
+        return new ParsedMesh(pos.ToArray(), nor.ToArray(), null, color);
+    }
+
+    /// <summary>Pick the parser by extension or content (<c>.glb</c>, <c>.gltf</c>, <c>.dae</c>, <c>.stl</c>); <paramref name="resolve"/> serves glTF external buffers (URI as written → bytes, or null).</summary>
+    public static ParsedMesh ParseResource(ReadOnlySpan<byte> bytes, string name = "", Func<string, byte[]?>? resolve = null)
     {
         var lower = name.ToLowerInvariant();
-        if (lower.EndsWith(".glb", StringComparison.Ordinal) || (bytes.Length >= 4 && bytes[0] == 0x67 && bytes[1] == 0x6c && bytes[2] == 0x54 && bytes[3] == 0x46)) return ParseGlb(bytes);
+        if (lower.EndsWith(".glb", StringComparison.Ordinal) || (bytes.Length >= 4 && bytes[0] == 0x67 && bytes[1] == 0x6c && bytes[2] == 0x54 && bytes[3] == 0x46)) return ParseGlb(bytes, resolve);
+        if (lower.EndsWith(".gltf", StringComparison.Ordinal)) return ParseGltf(bytes, resolve);
+        if (lower.EndsWith(".dae", StringComparison.Ordinal) || (bytes.Length > 0 && bytes[0] == 0x3c && Encoding.UTF8.GetString(bytes[..Math.Min(bytes.Length, 1024)]).Contains("COLLADA", StringComparison.Ordinal))) return ParseCollada(bytes);
         if (lower.EndsWith(".stl", StringComparison.Ordinal) || lower.Length == 0) return ParseStl(bytes);
         throw new NotSupportedException($"mesh: unsupported resource {name}");
     }
