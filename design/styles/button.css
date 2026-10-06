@@ -1,0 +1,54 @@
+.skyscope-button {
+  --_h: var(--skyscope-control-height-md);
+  --_px: var(--skyscope-control-padding-x-md);
+  --_fs: var(--skyscope-control-font-size-md);
+  --_bg: var(--skyscope-color-control-bg);
+  --_bg-hover: var(--skyscope-color-control-bg-hover);
+  --_bg-active: var(--skyscope-color-bg-muted);
+  --_fg: var(--skyscope-color-text-primary);
+  --_border: var(--skyscope-color-control-border);
+  --_ring: var(--skyscope-focus-ring);
+
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--skyscope-space-2);
+  height: var(--_h); padding: 0 var(--_px);
+  font: inherit; font-size: var(--_fs); font-weight: var(--skyscope-font-weight-medium); line-height: 1;
+  color: var(--_fg); background: var(--_bg);
+  border: var(--skyscope-control-border-width) solid var(--_border);
+  border-radius: var(--skyscope-control-radius);
+  cursor: pointer; user-select: none; white-space: nowrap; text-decoration: none;
+  transition: background-color var(--skyscope-motion-duration-fast) var(--skyscope-motion-easing-standard),
+              border-color var(--skyscope-motion-duration-fast) var(--skyscope-motion-easing-standard),
+              box-shadow var(--skyscope-motion-duration-fast) var(--skyscope-motion-easing-standard);
+}
+.skyscope-button:hover { background: var(--_bg-hover); }
+.skyscope-button:active { background: var(--_bg-active); }
+.skyscope-button:focus-visible { outline: none; box-shadow: var(--_ring); }
+.skyscope-button:disabled, .skyscope-button[aria-disabled="true"] { cursor: not-allowed; opacity: 0.55; background: var(--_bg); }
+
+.skyscope-button--sm { --_h: var(--skyscope-control-height-sm); --_px: var(--skyscope-control-padding-x-sm); --_fs: var(--skyscope-control-font-size-sm); }
+.skyscope-button--lg { --_h: var(--skyscope-control-height-lg); --_px: var(--skyscope-control-padding-x-lg); --_fs: var(--skyscope-control-font-size-lg); }
+
+.skyscope-button--primary {
+  --_bg: var(--skyscope-color-primary-default); --_bg-hover: var(--skyscope-color-primary-hover); --_bg-active: var(--skyscope-color-primary-active);
+  --_fg: var(--skyscope-color-primary-text); --_border: transparent;
+}
+.skyscope-button--danger {
+  --_bg: var(--skyscope-color-danger-default); --_bg-hover: var(--skyscope-color-danger-hover); --_bg-active: var(--skyscope-color-danger-active);
+  --_fg: var(--skyscope-color-danger-text); --_border: transparent; --_ring: var(--skyscope-focus-ring-danger);
+}
+.skyscope-button--subtle {
+  --_bg: transparent; --_bg-hover: var(--skyscope-color-primary-subtle); --_bg-active: var(--skyscope-color-primary-subtle-hover);
+  --_fg: var(--skyscope-color-primary-default); --_border: transparent;
+}
+.skyscope-button--ghost {
+  --_bg: transparent; --_bg-hover: var(--skyscope-color-bg-subtle); --_bg-active: var(--skyscope-color-bg-muted); --_border: transparent;
+}
+.skyscope-button--block { display: flex; width: 100%; }
+.skyscope-button--icon { padding: 0; width: var(--_h); }
+
+.skyscope-button__spinner {
+  width: 1em; height: 1em; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: skyscope-spin 0.7s linear infinite;
+}
+@keyframes skyscope-spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>WPF controls for Mori.SkyScope: TrendChartControl, GaugeControl, ChartControl, SceneControl on SkiaSharp, SceneControl3D on OpenGL.</Description>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mori.SkyScope.Core/Mori.SkyScope.Core.csproj" />
+    <ProjectReference Include="../Mori.SkyScope.Render.Skia/Mori.SkyScope.Render.Skia.csproj" />
+    <ProjectReference Include="../Mori.SkyScope.Render.OpenTK/Mori.SkyScope.Render.OpenTK.csproj" />
+    <PackageReference Include="OpenTK.GLWpfControl" Version="4.3.6" />
+  </ItemGroup>
+</Project>

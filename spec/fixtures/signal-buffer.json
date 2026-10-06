@@ -1,0 +1,69 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "signal-buffer",
+  "description": "Per-channel ring buffer: regular-rate runs vs explicit timestamps, overwrite, time lookups.",
+  "cases": [
+    { "name": "empty buffer",
+      "setup": { "capacity": 8, "kind": "regular" },
+      "steps": [{ "type": "query", "indexOfTime": 0 }],
+      "expect": { "head": 0, "length": 0, "firstSeq": 0, "earliestTime": null, "latestTime": null, "runs": 0, "samples": [], "queries": [0] } },
+
+    { "name": "regular append derives times from t0 + i*dt",
+      "setup": { "capacity": 8, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.5, "values": [1, 2, 3] }],
+      "expect": { "head": 3, "length": 3, "firstSeq": 0, "earliestTime": 0, "latestTime": 1, "runs": 1, "samples": [[0, 1], [0.5, 2], [1, 3]] } },
+
+    { "name": "contiguous regular appends merge into one run",
+      "setup": { "capacity": 8, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.5, "values": [1, 2] }, { "type": "appendRegular", "t0": 1, "dt": 0.5, "values": [3, 4] }],
+      "expect": { "runs": 1, "samples": [[0, 1], [0.5, 2], [1, 3], [1.5, 4]] } },
+
+    { "name": "a time gap starts a new run",
+      "setup": { "capacity": 8, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.5, "values": [1, 2] }, { "type": "appendRegular", "t0": 5, "dt": 0.5, "values": [3] }],
+      "expect": { "runs": 2, "samples": [[0, 1], [0.5, 2], [5, 3]] } },
+
+    { "name": "a rate change starts a new run",
+      "setup": { "capacity": 8, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.5, "values": [1, 2] }, { "type": "appendRegular", "t0": 1, "dt": 0.25, "values": [3, 4] }],
+      "expect": { "runs": 2, "samples": [[0, 1], [0.5, 2], [1, 3], [1.25, 4]] } },
+
+    { "name": "ring overwrite keeps the newest samples and prunes expired runs",
+      "setup": { "capacity": 4, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 1, "values": [0, 1] }, { "type": "appendRegular", "t0": 10, "dt": 1, "values": [2, 3, 4, 5] }],
+      "expect": { "head": 6, "length": 4, "firstSeq": 2, "runs": 1, "earliestTime": 10, "latestTime": 13, "samples": [[10, 2], [11, 3], [12, 4], [13, 5]] } },
+
+    { "name": "regular time going backwards is rejected",
+      "setup": { "capacity": 8, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 5, "dt": 1, "values": [1] }, { "type": "appendRegular", "t0": 2, "dt": 1, "values": [2] }],
+      "expect": { "head": 1, "errors": ["out-of-order-time"] } },
+
+    { "name": "timestamped append and time lookups",
+      "setup": { "capacity": 8, "kind": "timestamped" },
+      "steps": [
+        { "type": "appendTimestamped", "times": [0, 1, 2, 4], "values": [10, 11, 12, 14] },
+        { "type": "query", "indexOfTime": 2 }, { "type": "query", "indexOfTime": 3 }, { "type": "query", "indexOfTime": 5 }, { "type": "query", "indexOfTime": -1 },
+        { "type": "query", "indexAfterTime": 2 }, { "type": "query", "timeAt": 3 }, { "type": "query", "valueAt": 3 }],
+      "expect": { "runs": null, "samples": [[0, 10], [1, 11], [2, 12], [4, 14]], "queries": [2, 3, 4, 0, 3, 4, 14] } },
+
+    { "name": "timestamped out-of-order sample is rejected and nothing is written",
+      "setup": { "capacity": 8, "kind": "timestamped" },
+      "steps": [{ "type": "appendTimestamped", "times": [0, 1], "values": [1, 2] }, { "type": "appendTimestamped", "times": [3, 2], "values": [3, 4] }],
+      "expect": { "head": 2, "errors": ["out-of-order-time"] } },
+
+    { "name": "window returns a half-open seq range covering tFrom <= t <= tTo",
+      "setup": { "capacity": 16, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.5, "values": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] }, { "type": "query", "window": [1, 2] }, { "type": "query", "window": [1.1, 1.9] }, { "type": "query", "window": [20, 30] }],
+      "expect": { "queries": [{ "fromSeq": 2, "toSeq": 5 }, { "fromSeq": 3, "toSeq": 4 }, { "fromSeq": 10, "toSeq": 10 }] } },
+
+    { "name": "time lookups after overwrite use the surviving run",
+      "setup": { "capacity": 3, "kind": "regular" },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 1, "values": [0, 1, 2, 3, 4] }, { "type": "query", "timeAt": 2 }, { "type": "query", "timeAt": 4 }, { "type": "query", "indexOfTime": 3 }],
+      "expect": { "firstSeq": 2, "queries": [2, 4, 3] } },
+
+    { "name": "wrong append kind is rejected",
+      "setup": { "capacity": 4, "kind": "regular" },
+      "steps": [{ "type": "appendTimestamped", "times": [0], "values": [1] }],
+      "expect": { "head": 0, "errors": ["wrong-kind"] } }
+  ]
+}

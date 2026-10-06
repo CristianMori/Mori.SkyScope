@@ -1,0 +1,68 @@
+<Window x:Class="Mori.SkyScope.Wpf.Sample.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sky="clr-namespace:Mori.SkyScope.Wpf;assembly=Mori.SkyScope.Wpf"
+        Title="Mori.SkyScope — WPF sample" Width="1200" Height="760" Background="#F8FAFC">
+  <Grid Margin="8">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="220" />
+      <RowDefinition Height="230" />
+    </Grid.RowDefinitions>
+    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+      <TextBlock Text="Mori.SkyScope" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" />
+      <TextBlock x:Name="Status" Text="connecting…" VerticalAlignment="Center" Foreground="#64748B" />
+      <Button Content="Pan" Margin="16,0,4,0" Padding="8,2" Click="OnPan" />
+      <Button Content="Box zoom" Margin="0,0,4,0" Padding="8,2" Click="OnBoxZoom" />
+      <Button Content="Cursor" Margin="0,0,16,0" Padding="8,2" Click="OnCursor" />
+      <Button Content="Pause" x:Name="PauseButton" Margin="0,0,4,0" Padding="8,2" Click="OnPause" />
+      <Button Content="Reset" Padding="8,2" Click="OnReset" />
+      <sky:RecorderControl x:Name="Recorder" Margin="16,0,0,0" />
+      <sky:PlaybackControl x:Name="Transport" Margin="16,0,0,0" MinWidth="520" Visibility="Collapsed" />
+    </StackPanel>
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="200" /><ColumnDefinition Width="8" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="8" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+      <sky:SignalTreeControl x:Name="Tree" Grid.Column="0" />
+      <sky:TrendChartControl x:Name="Chart" Grid.Column="2" />
+      <DockPanel Grid.Column="4">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+          <Button x:Name="Btn3D" Content="3D" Padding="6,1" Margin="0,0,4,0" Click="OnScene3D" FontWeight="Bold" />
+          <Button x:Name="Btn2D" Content="2D" Padding="6,1" Margin="0,0,8,0" Click="OnScene2D" />
+          <Button Content="Pan" Padding="6,1" Margin="0,0,4,0" Click="OnScenePan" />
+          <Button Content="Measure" Padding="6,1" Margin="0,0,4,0" Click="OnSceneMeasure" />
+          <Button Content="Select" Padding="6,1" Margin="0,0,4,0" Click="OnSceneSelect" />
+          <Button Content="Fit" Padding="6,1" Margin="0,0,4,0" Click="OnSceneFit" />
+          <TextBlock x:Name="SceneHint" Text="drag orbit · middle/shift pan · wheel dolly · F fit · T top · O ortho" VerticalAlignment="Center" Foreground="#64748B" FontSize="11" />
+        </StackPanel>
+        <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4">
+          <Grid>
+            <sky:SceneControl x:Name="Map" Visibility="Collapsed" />
+            <sky:SceneControl3D x:Name="Map3D" Animate="True" />
+          </Grid>
+        </Border>
+      </DockPanel>
+    </Grid>
+    <UniformGrid Grid.Row="2" Rows="1" Columns="7" Margin="0,8,0,0">
+      <sky:GaugeControl x:Name="Speed" />
+      <sky:GaugeControl x:Name="Temp" />
+      <sky:GaugeControl x:Name="Heading" />
+      <sky:GaugeControl x:Name="Attitude" />
+      <sky:GaugeControl x:Name="Bus" />
+      <sky:GaugeControl x:Name="Level" />
+      <StackPanel>
+        <sky:GaugeControl x:Name="Gain" Height="110" />
+        <sky:GaugeControl x:Name="Arm" Height="50" />
+        <sky:GaugeControl x:Name="Throttle" Height="50" />
+      </StackPanel>
+    </UniformGrid>
+    <Grid Grid.Row="3" Margin="0,8,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="1.4*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="1.2*" />
+      </Grid.ColumnDefinitions>
+      <sky:ChartControl x:Name="Bars" Grid.Column="0" />
+      <sky:ChartControl x:Name="Pie" Grid.Column="1" />
+      <sky:ChartControl x:Name="Radar" Grid.Column="2" />
+      <sky:ChartControl x:Name="Spectrogram" Grid.Column="3" />
+    </Grid>
+  </Grid>
+</Window>

@@ -1,0 +1,873 @@
+{
+  "component": "camera3d",
+  "cases": [
+    {
+      "name": "default framing: eye, matrices, projection of the origin and a unit cube corner",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "distance": 10,
+        "yaw": 3.141592653589793,
+        "pitch": 0.6
+      },
+      "steps": [
+        {
+          "type": "query",
+          "eye": true
+        },
+        {
+          "type": "query",
+          "view": true
+        },
+        {
+          "type": "query",
+          "proj": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "project3": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "project3": [
+            0,
+            0,
+            50
+          ]
+        },
+        {
+          "type": "query",
+          "project3": [
+            -20,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "worldPerPixel": true
+        },
+        {
+          "type": "query",
+          "state": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "x": -8.253356149,
+            "y": 0,
+            "z": 5.646424734
+          },
+          [
+            0,
+            0.564642473,
+            -0.825335615,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0.825335615,
+            0.564642473,
+            0,
+            0,
+            0,
+            -10,
+            1
+          ],
+          [
+            1.810660172,
+            0,
+            0,
+            0,
+            0,
+            2.414213562,
+            0,
+            0,
+            0,
+            0,
+            -1.00002,
+            -1,
+            0,
+            0,
+            -0.100001,
+            0
+          ],
+          {
+            "x": 400,
+            "y": 300,
+            "depth": 0.9900199,
+            "visible": true
+          },
+          {
+            "x": 329.413728807,
+            "y": 201.886629707,
+            "depth": 0.990273972,
+            "visible": true
+          },
+          {
+            "x": 400,
+            "y": 1939.306921494,
+            "depth": 1.00550488,
+            "visible": false
+          },
+          {
+            "x": 400,
+            "y": -957.010411424,
+            "depth": 1.015388899,
+            "visible": false
+          },
+          0.013807119,
+          {
+            "target": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "unproject and rays: centre pixel hits the target, ground point under a pixel, project ∘ unproject",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "distance": 10,
+        "yaw": 3.141592653589793,
+        "pitch": 0.6
+      },
+      "steps": [
+        {
+          "type": "query",
+          "unproject3": [
+            400,
+            300,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "ray": [
+            400,
+            300
+          ]
+        },
+        {
+          "type": "query",
+          "ray": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "groundPoint": [
+            400,
+            300
+          ]
+        },
+        {
+          "type": "query",
+          "groundPoint": [
+            500,
+            400
+          ]
+        },
+        {
+          "type": "query",
+          "groundPoint": [
+            400,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "project": [
+            3,
+            -2
+          ]
+        },
+        {
+          "type": "query",
+          "unproject": [
+            568.421,
+            371.052
+          ]
+        },
+        {
+          "type": "query",
+          "unproject": [
+            400,
+            5
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "x": -8.170823413,
+            "y": 0,
+            "z": 5.589961051
+          },
+          {
+            "origin": {
+              "x": -8.212089368,
+              "y": 0,
+              "z": 5.61819261
+            },
+            "dir": {
+              "x": 0.825335615,
+              "y": 0,
+              "z": -0.564642473
+            }
+          },
+          {
+            "origin": {
+              "x": -8.20039524,
+              "y": 0.027614237,
+              "z": 5.635285871
+            },
+            "dir": {
+              "x": 0.87167637,
+              "y": 0.454498962,
+              "z": -0.183333031
+            }
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          {
+            "x": -2.03465499,
+            "y": -1.148852626,
+            "z": 0
+          },
+          {
+            "x": 18.593170019,
+            "y": 0,
+            "z": 0
+          },
+          {
+            "x": 516.105109227,
+            "y": 201.663185928
+          },
+          {
+            "x": -1.519529842,
+            "y": -2.033774097
+          },
+          {
+            "x": 17.827331851,
+            "y": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "orbit, pan, dolly, dollyAt keep the ground point under the cursor",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "distance": 10,
+        "yaw": 3.141592653589793,
+        "pitch": 0.6
+      },
+      "steps": [
+        {
+          "type": "orbit",
+          "dyaw": 0.5,
+          "dpitch": 0.2
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "query",
+          "eye": true
+        },
+        {
+          "type": "orbit",
+          "dyaw": 0,
+          "dpitch": 5
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "setOrbit",
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        {
+          "type": "pan",
+          "dx": 100,
+          "dy": -50
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "dolly",
+          "factor": 0.5
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "dolly",
+          "factor": 1e-9
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "setDistance",
+          "distance": 10
+        },
+        {
+          "type": "setTarget",
+          "target": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "groundPoint": [
+            500,
+            400
+          ]
+        },
+        {
+          "type": "dollyAt",
+          "x": 500,
+          "y": 400,
+          "factor": 0.5
+        },
+        {
+          "type": "query",
+          "groundPoint": [
+            500,
+            400
+          ]
+        },
+        {
+          "type": "query",
+          "state": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "target": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 3.641592654,
+            "pitch": 0.8,
+            "ortho": false,
+            "version": 1
+          },
+          {
+            "x": -6.114176589,
+            "y": -3.340189894,
+            "z": 7.173560909
+          },
+          {
+            "target": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 3.641592654,
+            "pitch": 1.569796327,
+            "ortho": false,
+            "version": 2
+          },
+          {
+            "target": {
+              "x": -0.389804284,
+              "y": 1.380711875,
+              "z": -0.569775342
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 4
+          },
+          {
+            "x": 500,
+            "y": 250,
+            "depth": 0.9900199,
+            "visible": true
+          },
+          {
+            "target": {
+              "x": -0.389804284,
+              "y": 1.380711875,
+              "z": -0.569775342
+            },
+            "distance": 5,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 5
+          },
+          {
+            "target": {
+              "x": -0.389804284,
+              "y": 1.380711875,
+              "z": -0.569775342
+            },
+            "distance": 0.001,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 6
+          },
+          {
+            "x": -2.03465499,
+            "y": -1.148852626,
+            "z": 0
+          },
+          {
+            "x": -2.03465499,
+            "y": -1.148852626,
+            "z": 0
+          },
+          {
+            "target": {
+              "x": -1.017327495,
+              "y": -0.574426313,
+              "z": 0
+            },
+            "distance": 5,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 9
+          }
+        ]
+      }
+    },
+    {
+      "name": "orthographic: same framing, parallel rays, fit",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "distance": 10,
+        "yaw": 3.141592653589793,
+        "pitch": 0.6,
+        "ortho": true
+      },
+      "steps": [
+        {
+          "type": "query",
+          "proj": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "project3": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "ray": [
+            400,
+            300
+          ]
+        },
+        {
+          "type": "query",
+          "ray": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "worldPerPixel": true
+        },
+        {
+          "type": "fitSphere",
+          "center": [
+            5,
+            5,
+            1
+          ],
+          "radius": 3
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            5,
+            5,
+            4
+          ]
+        },
+        {
+          "type": "query",
+          "project3": [
+            5,
+            5,
+            -2
+          ]
+        },
+        {
+          "type": "setOrtho",
+          "ortho": false
+        },
+        {
+          "type": "fitSphere",
+          "center": [
+            5,
+            5,
+            1
+          ],
+          "radius": 3
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            8,
+            5,
+            1
+          ]
+        },
+        {
+          "type": "setViewport",
+          "width": 300,
+          "height": 600
+        },
+        {
+          "type": "fitBox",
+          "box": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              4,
+              4,
+              4
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            2,
+            2,
+            5.464
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            0.181066017,
+            0,
+            0,
+            0,
+            0,
+            0.241421356,
+            0,
+            0,
+            0,
+            0,
+            -0.0002,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          {
+            "x": 400,
+            "y": 300,
+            "depth": 0.002,
+            "visible": true
+          },
+          {
+            "x": 327.573593129,
+            "y": 199.328881434,
+            "depth": 0.002052139,
+            "visible": true
+          },
+          {
+            "origin": {
+              "x": -4134.931430697,
+              "y": 0,
+              "z": 2828.858791709
+            },
+            "dir": {
+              "x": 0.825335615,
+              "y": 0,
+              "z": -0.564642473
+            }
+          },
+          {
+            "origin": {
+              "x": -4132.592604994,
+              "y": 5.522847498,
+              "z": 2832.277443761
+            },
+            "dir": {
+              "x": 0.825335615,
+              "y": 0,
+              "z": -0.564642473
+            }
+          },
+          0.013807119,
+          {
+            "target": {
+              "x": 5,
+              "y": 5,
+              "z": 1
+            },
+            "distance": 7.242640687,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": true,
+            "version": 1
+          },
+          {
+            "x": 400,
+            "y": 52.399315527,
+            "depth": 0.001109743,
+            "visible": true
+          },
+          {
+            "x": 400,
+            "y": 547.600684473,
+            "depth": 0.001787314,
+            "visible": true
+          },
+          {
+            "target": {
+              "x": 5,
+              "y": 5,
+              "z": 1
+            },
+            "distance": 7.839377789,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 3
+          },
+          {
+            "x": 400,
+            "y": 181.065921536,
+            "depth": 0.990325645,
+            "visible": true
+          },
+          {
+            "target": {
+              "x": 2,
+              "y": 2,
+              "z": 2
+            },
+            "distance": 18.104267508,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 5
+          },
+          {
+            "x": 150,
+            "y": 171.773625245,
+            "depth": 0.993827354,
+            "visible": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "fov, viewport and clamping",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "distance": 10,
+        "yaw": 3.141592653589793,
+        "pitch": 0.6
+      },
+      "steps": [
+        {
+          "type": "setFov",
+          "fov": 1.2
+        },
+        {
+          "type": "query",
+          "proj": true
+        },
+        {
+          "type": "query",
+          "project3": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "type": "setViewport",
+          "width": 1920,
+          "height": 1080
+        },
+        {
+          "type": "query",
+          "project3": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "worldPerPixel": true
+        },
+        {
+          "type": "setFov",
+          "fov": 10
+        },
+        {
+          "type": "query",
+          "state": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1.09627196,
+            0,
+            0,
+            0,
+            0,
+            1.461695947,
+            0,
+            0,
+            0,
+            0,
+            -1.00002,
+            -1,
+            0,
+            0,
+            -0.100001,
+            0
+          ],
+          {
+            "x": 357.26323962,
+            "y": 240.596839506,
+            "depth": 0.990273972,
+            "visible": true
+          },
+          {
+            "x": 883.073831316,
+            "y": 433.074311112,
+            "depth": 0.990273972,
+            "visible": true
+          },
+          0.0126692,
+          {
+            "target": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 3
+          }
+        ]
+      }
+    }
+  ]
+}

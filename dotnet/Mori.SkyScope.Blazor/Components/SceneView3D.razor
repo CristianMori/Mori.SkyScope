@@ -1,0 +1,86 @@
+@* Mori.SkyScope — Razor component hosting the 3D scene view. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div @ref="_host" class="@Css.Classes("skyscope-scene3d-host", Class)" style="@($"width:{Width};height:{Height};{Style}")" @attributes="AdditionalAttributes"></div>
+
+@code {
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private string? _lastTool;
+    private readonly List<Func<Task>> _pending = [];
+
+    /// <summary>Scene3DView options (camera, tool, theme, unit, fixedFrame…) with the TS option shape; serialised camelCase.</summary>
+    [Parameter] public object? Options { get; set; }
+    /// <summary>SkyScope stream to subscribe to for relayed layers, JSON and binary (shared with charts on the same page).</summary>
+    [Parameter] public string? WsUrl { get; set; }
+    /// <summary>orbit | measure | select.</summary>
+    [Parameter] public string Tool { get; set; } = "orbit";
+    /// <summary>Called once the JS scene exists — declare the initial layers here.</summary>
+    [Parameter] public EventCallback<SceneView3D> OnReady { get; set; }
+    /// <summary>CSS width of the host element.</summary>
+    [Parameter] public string Width { get; set; } = "100%";
+    /// <summary>CSS height of the host element.</summary>
+    [Parameter] public string Height { get; set; } = "360px";
+    /// <summary>Extra CSS classes for the host element.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the host element's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the host element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>Declare (or replace) a layer: kind = grid3d | axes | pointCloud3d | path3d | pose3d | markers | laserScan3d | occupancyGrid3d | frames; meta with the TS option shape.</summary>
+    public ValueTask DeclareLayerAsync(string id, string kind, object? meta = null) => Invoke("declareLayer", id, kind, meta is null ? null : TrendChartJson.SerializeLoose(meta));
+    /// <summary>Update a layer with a push payload (see <c>applyLayerPayload</c>): pointCloud3d {positions,intensities|colors,stamp}, path3d {positions}|{append}, pose3d {t,q}, markers {markers}|{upsert}|{remove}, laserScan3d {scan}, occupancyGrid3d {data}|{cells}|{z}.</summary>
+    public ValueTask PushAsync(string id, object payload) => Invoke("push", id, TrendChartJson.SerializeLoose(payload));
+    /// <summary>Remove a layer by id. Calls made before the JS scene exists are queued and replayed at mount.</summary>
+    public ValueTask RemoveLayerAsync(string id) => Invoke("removeLayer", id);
+    /// <summary>Record transforms in the view's frame tree: [{child, parent, t:[x,y,z], q:[x,y,z,w], time?}].</summary>
+    public ValueTask SetTransformsAsync(object transforms) => Invoke("setTransforms", TrendChartJson.SerializeLoose(transforms));
+    /// <summary>Select the frame the camera and all layers are expressed in.</summary>
+    public ValueTask SetFixedFrameAsync(string frame) => Invoke("setFixedFrame", frame);
+    /// <summary>Fit the camera to every layer.</summary>
+    public ValueTask FitAllAsync() => Invoke("fitAll");
+    /// <summary>Reset the camera to its initial orbit and distance.</summary>
+    public ValueTask ResetViewAsync() => Invoke("resetView");
+    /// <summary>Look straight down at the scene.</summary>
+    public ValueTask TopDownAsync() => Invoke("topDown");
+    /// <summary>Switch between orthographic (true) and perspective (false) projection.</summary>
+    public ValueTask SetOrthoAsync(bool ortho) => Invoke("setOrtho", ortho);
+
+    private ValueTask Invoke(string method, params object?[] args)
+    {
+        if (_handle is null) { _pending.Add(() => _handle!.InvokeVoidAsync(method, args).AsTask()); return ValueTask.CompletedTask; }
+        return _handle.InvokeVoidAsync(method, args);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+            _handle = await _module.InvokeAsync<IJSObjectReference>("mountScene3D", _host, Options is null ? null : TrendChartJson.SerializeLoose(Options), WsUrl);
+            _lastTool = Tool;
+            await _handle.InvokeVoidAsync("setTool", Tool);
+            foreach (var p in _pending) await p();
+            _pending.Clear();
+            await OnReady.InvokeAsync(this);
+            return;
+        }
+        if (_handle is not null && Tool != _lastTool) { _lastTool = Tool; await _handle.InvokeVoidAsync("setTool", Tool); }
+    }
+
+    /// <summary>Disposes the JS scene and the module; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

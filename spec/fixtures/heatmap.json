@@ -1,0 +1,1492 @@
+{
+  "component": "heatmap",
+  "cases": [
+    {
+      "name": "matrix: range, colours, raster hash, cell lookup, layout",
+      "setup": {
+        "options": {
+          "cols": 6,
+          "rows": 4,
+          "xMin": 0,
+          "xMax": 6,
+          "yMin": 0,
+          "yMax": 4,
+          "colormap": "viridis"
+        },
+        "values": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "width": 300,
+        "height": 200
+      },
+      "steps": [
+        {
+          "type": "query",
+          "range": true
+        },
+        {
+          "type": "query",
+          "color": 0
+        },
+        {
+          "type": "query",
+          "color": 11.5
+        },
+        {
+          "type": "query",
+          "color": 23
+        },
+        {
+          "type": "query",
+          "hash": true
+        },
+        {
+          "type": "query",
+          "pixel": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "pixel": [
+            5,
+            3
+          ]
+        },
+        {
+          "type": "query",
+          "layout": true
+        },
+        {
+          "type": "query",
+          "cell": [
+            100,
+            100
+          ]
+        },
+        {
+          "type": "query",
+          "get": [
+            3,
+            5
+          ]
+        },
+        {
+          "type": "query",
+          "cell": [
+            10,
+            10
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            0,
+            23
+          ],
+          "#440154",
+          "#23908c",
+          "#fde725",
+          {
+            "width": 6,
+            "height": 4,
+            "hash": 3810373357
+          },
+          [
+            114,
+            207,
+            85,
+            255
+          ],
+          [
+            63,
+            71,
+            136,
+            255
+          ],
+          {
+            "plot": {
+              "x": 56,
+              "y": 8,
+              "w": 170,
+              "h": 160
+            },
+            "yAxis": {
+              "x": 8,
+              "y": 8,
+              "w": 48,
+              "h": 160
+            },
+            "xAxis": {
+              "x": 56,
+              "y": 168,
+              "w": 170,
+              "h": 24
+            },
+            "colorbar": {
+              "x": 234,
+              "y": 8,
+              "w": 14,
+              "h": 160
+            },
+            "title": null
+          },
+          {
+            "col": 1,
+            "row": 1,
+            "value": 7
+          },
+          23,
+          null
+        ]
+      }
+    },
+    {
+      "name": "colormaps: interpolation at stops and between",
+      "setup": {
+        "options": {},
+        "width": 10,
+        "height": 10
+      },
+      "steps": [
+        {
+          "type": "query",
+          "colormap": {
+            "map": "grayscale",
+            "t": 0.5
+          }
+        },
+        {
+          "type": "query",
+          "colormap": {
+            "map": "jet",
+            "t": 0
+          }
+        },
+        {
+          "type": "query",
+          "colormap": {
+            "map": "jet",
+            "t": 1
+          }
+        },
+        {
+          "type": "query",
+          "colormap": {
+            "map": "turbo",
+            "t": 0.33
+          }
+        },
+        {
+          "type": "query",
+          "colormap": {
+            "map": [
+              "#000000",
+              "#ff0000",
+              "#ffffff"
+            ],
+            "t": 0.25
+          }
+        },
+        {
+          "type": "query",
+          "colormap": {
+            "map": "coolwarm",
+            "t": -1
+          }
+        },
+        {
+          "type": "query",
+          "colormap": {
+            "map": "coolwarm",
+            "t": 2
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          "#808080",
+          "#00007f",
+          "#7f0000",
+          "#1be2b8",
+          "#800000",
+          "#3b4cc0",
+          "#b40426"
+        ]
+      }
+    },
+    {
+      "name": "spectrogram: rolling columns slide the extent, NaN stays transparent",
+      "setup": {
+        "options": {
+          "cols": 3,
+          "rows": 2,
+          "xMin": 0,
+          "xMax": 3,
+          "yMin": 0,
+          "yMax": 100,
+          "rolling": true,
+          "min": 0,
+          "max": 10
+        },
+        "width": 200,
+        "height": 100
+      },
+      "steps": [
+        {
+          "type": "push",
+          "column": [
+            1,
+            2
+          ]
+        },
+        {
+          "type": "query",
+          "extent": true
+        },
+        {
+          "type": "query",
+          "get": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "get": [
+            0,
+            2
+          ]
+        },
+        {
+          "type": "push",
+          "column": [
+            3,
+            4
+          ]
+        },
+        {
+          "type": "push",
+          "column": [
+            5,
+            6
+          ]
+        },
+        {
+          "type": "push",
+          "column": [
+            7,
+            8
+          ]
+        },
+        {
+          "type": "query",
+          "extent": true
+        },
+        {
+          "type": "query",
+          "get": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "get": [
+            1,
+            2
+          ]
+        },
+        {
+          "type": "query",
+          "hash": true
+        },
+        {
+          "type": "query",
+          "pixel": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "set",
+          "row": 0,
+          "col": 0,
+          "value": 10
+        },
+        {
+          "type": "query",
+          "get": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "range": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "xMin": 1,
+            "xMax": 4
+          },
+          null,
+          1,
+          {
+            "xMin": 4,
+            "xMax": 7
+          },
+          3,
+          8,
+          {
+            "width": 3,
+            "height": 2,
+            "hash": 397396244
+          },
+          [
+            42,
+            120,
+            142,
+            255
+          ],
+          10,
+          [
+            0,
+            10
+          ]
+        ]
+      }
+    },
+    {
+      "name": "drawing parity: heatmap with colour bar",
+      "setup": {
+        "options": {
+          "title": "Heat",
+          "cols": 4,
+          "rows": 3,
+          "xMin": 0,
+          "xMax": 8,
+          "yMin": -1,
+          "yMax": 1,
+          "xLabel": "t",
+          "yLabel": "f",
+          "valueLabel": "dB",
+          "colormap": "inferno",
+          "showGrid": true
+        },
+        "values": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "width": 320,
+        "height": 220
+      },
+      "steps": [
+        {
+          "type": "hover",
+          "x": 150,
+          "y": 100
+        },
+        {
+          "type": "query",
+          "draw": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "op": "clear",
+              "color": "#ffffff"
+            },
+            {
+              "op": "text",
+              "text": "Heat",
+              "x": 160,
+              "y": 19,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 14,
+                "weight": "bold",
+                "align": "center",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 56,
+              "y": 30,
+              "w": 190,
+              "h": 143,
+              "radius": 0,
+              "fill": {
+                "color": "#f8fafc",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "image",
+              "imageWidth": 4,
+              "imageHeight": 3,
+              "x": 56,
+              "y": 30,
+              "w": 190,
+              "h": 143,
+              "opacity": 1,
+              "hash": 3066817001
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 173,
+              "x2": 246,
+              "y2": 173,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 137.25,
+              "x2": 246,
+              "y2": 137.25,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 101.5,
+              "x2": 246,
+              "y2": 101.5,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 65.75,
+              "x2": 246,
+              "y2": 65.75,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 30,
+              "x2": 246,
+              "y2": 30,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 30,
+              "x2": 56,
+              "y2": 173,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "line",
+              "x1": 174.75,
+              "y1": 30,
+              "x2": 174.75,
+              "y2": 173,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 0.6
+              }
+            },
+            {
+              "op": "rect",
+              "x": 103.5,
+              "y": 77.667,
+              "w": 47.5,
+              "h": 47.667,
+              "radius": 0,
+              "fill": null,
+              "stroke": {
+                "color": "#0f172a",
+                "width": 1.5,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 30,
+              "x2": 56,
+              "y2": 173,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 52,
+              "y1": 173,
+              "x2": 56,
+              "y2": 173,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "-1.0",
+              "x": 50,
+              "y": 173,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 52,
+              "y1": 137.25,
+              "x2": 56,
+              "y2": 137.25,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "-0.5",
+              "x": 50,
+              "y": 137.25,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 52,
+              "y1": 101.5,
+              "x2": 56,
+              "y2": 101.5,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "0.0",
+              "x": 50,
+              "y": 101.5,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 52,
+              "y1": 65.75,
+              "x2": 56,
+              "y2": 65.75,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "0.5",
+              "x": 50,
+              "y": 65.75,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 52,
+              "y1": 30,
+              "x2": 56,
+              "y2": 30,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "1.0",
+              "x": 50,
+              "y": 30,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "f",
+              "x": 10,
+              "y": 32,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "top",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 173,
+              "x2": 246,
+              "y2": 173,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 56,
+              "y1": 173,
+              "x2": 56,
+              "y2": 177,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "0",
+              "x": 56,
+              "y": 179,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "top",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 174.75,
+              "y1": 173,
+              "x2": 174.75,
+              "y2": 177,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "5",
+              "x": 174.75,
+              "y": 179,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "top",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "t",
+              "x": 151,
+              "y": 210,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "bottom",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 168.531,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#04020d",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 164.063,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#0b051e",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 159.594,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#13082f",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 155.125,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#1b0c40",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 150.656,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#270c4c",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 146.188,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#350c58",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 141.719,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#420c64",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 137.25,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#4f0e6b",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 132.781,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#5c126c",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 128.313,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#69176c",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 123.844,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#761b6d",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 119.375,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#83206a",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 114.906,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#8f2466",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 110.438,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#9c2963",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 105.969,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#a82e5e",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 101.5,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#b43557",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 97.031,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#c03b4f",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 92.563,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#cc4248",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 88.094,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#d54c3f",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 83.625,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#de5636",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 79.156,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#e6602d",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 74.688,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#ee6b24",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 70.219,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f2791b",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 65.75,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f68712",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 61.281,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f99609",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 56.813,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#faa40f",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 52.344,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f9b31f",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 47.875,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f8c32e",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 43.406,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f7d23f",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 38.938,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#f8df5c",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 34.469,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#faec79",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 30,
+              "w": 14,
+              "h": 4.969,
+              "radius": 0,
+              "fill": {
+                "color": "#fbf996",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 254,
+              "y": 30,
+              "w": 14,
+              "h": 143,
+              "radius": 0,
+              "fill": null,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 268,
+              "y1": 173,
+              "x2": 272,
+              "y2": 173,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "0",
+              "x": 274,
+              "y": 173,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 268,
+              "y1": 108,
+              "x2": 272,
+              "y2": 108,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "5",
+              "x": 274,
+              "y": 108,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 268,
+              "y1": 43,
+              "x2": 272,
+              "y2": 43,
+              "stroke": {
+                "color": "#94a3b8",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "10",
+              "x": 274,
+              "y": 43,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "dB",
+              "x": 254,
+              "y": 26,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "bottom",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 4.25,
+              "y": 113.5,
+              "w": 111,
+              "h": 46,
+              "radius": 3,
+              "fill": {
+                "color": "#ffffff",
+                "opacity": 0.95
+              },
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "t 3.00, f 0.000",
+              "x": 10.25,
+              "y": 128,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 10.25,
+              "y": 141,
+              "w": 8,
+              "h": 8,
+              "radius": 2,
+              "fill": {
+                "color": "#a92e5e",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "text",
+              "text": "dB  5.00",
+              "x": 26.25,
+              "y": 145,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

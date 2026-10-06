@@ -1,0 +1,4614 @@
+{
+  "component": "scene3d",
+  "cases": [
+    {
+      "name": "grid + axes + cloud through the JSON contract: draw records buffers, bounds, hit test, fit",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "layers": [
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 2,
+              "spacing": 1
+            }
+          },
+          {
+            "id": "axes",
+            "kind": "axes",
+            "meta": {
+              "length": 0.5
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 4,
+              "colormap": "viridis"
+            }
+          }
+        ],
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "query",
+          "order": true
+        },
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "frame": "laser",
+            "stamp": 1.5,
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                1.5,
+                -2.25,
+                0.125
+              ]
+            },
+            "intensities": {
+              "$f32": [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2,
+          "clear": "#101418"
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 400,
+            "now": 2
+          }
+        },
+        {
+          "type": "query",
+          "project3": [
+            2,
+            0,
+            0.5
+          ]
+        },
+        {
+          "type": "fit"
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 3,
+            "now": 2
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            "base_link",
+            "laser",
+            "map"
+          ],
+          [
+            "grid",
+            "axes",
+            "cloud",
+            "tf"
+          ],
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": "#101418"
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 700302021,
+                  "colors": 1988960549,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 1,
+                "count": 18,
+                "hash": {
+                  "positions": 4204855365,
+                  "colors": 1096769513,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud",
+                "version": 1,
+                "count": 5,
+                "hash": {
+                  "positions": 615012299,
+                  "colors": 3678192631,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 4,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1.5,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 8
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 3.75,
+              "y": 1.5,
+              "z": 1.5
+            }
+          },
+          {
+            "layerId": "cloud",
+            "world": {
+              "x": 0.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "distance": 49.687894616,
+            "index": 2,
+            "data": 0.5
+          },
+          {
+            "x": 400,
+            "y": 201.764022376,
+            "depth": 0.991223561,
+            "visible": true
+          },
+          {
+            "target": {
+              "x": 1.875,
+              "y": 0.75,
+              "z": 0.75
+            },
+            "distance": 5.629224603,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 1
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0.75,
+                  -1.678,
+                  -4.505,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 700302021,
+                  "colors": 1988960549,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 1,
+                "count": 18,
+                "hash": {
+                  "positions": 4204855365,
+                  "colors": 1096769513,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud",
+                "version": 1,
+                "count": 5,
+                "hash": {
+                  "positions": 615012299,
+                  "colors": 3678192631,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 4,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1.5,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 8
+          },
+          null
+        ]
+      }
+    },
+    {
+      "name": "cloud in an unknown frame is skipped; frame change and plain-array payloads; reset clears frames",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "layers": [
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 2,
+              "spacing": 1
+            }
+          },
+          {
+            "id": "axes",
+            "kind": "axes",
+            "meta": {
+              "length": 0.5
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 4,
+              "colormap": "viridis"
+            }
+          }
+        ],
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "frame": "mars",
+            "stamp": 1.5,
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                1.5,
+                -2.25,
+                0.125
+              ]
+            },
+            "intensities": {
+              "$f32": [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 400,
+            "now": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "frame": "base_link"
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "positions": [
+              0,
+              0,
+              0,
+              1,
+              1,
+              1
+            ],
+            "colors": [
+              255,
+              0,
+              0,
+              255,
+              0,
+              255,
+              0,
+              255
+            ],
+            "frame": "map"
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "declare",
+          "id": "cloud2",
+          "kind": "pointCloud3d",
+          "meta": {}
+        },
+        {
+          "type": "push",
+          "id": "cloud2",
+          "payload": {
+            "positions": {
+              "$f32": [
+                5,
+                5,
+                5
+              ]
+            }
+          }
+        },
+        {
+          "type": "draw",
+          "now": 0
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "transforms",
+          "transforms": [
+            {
+              "child": "laser",
+              "parent": "base_link",
+              "t": [
+                0,
+                0,
+                1
+              ],
+              "q": [
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "reset"
+        },
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "query",
+          "order": true
+        },
+        {
+          "type": "declare",
+          "id": "x",
+          "kind": "hologram",
+          "meta": {}
+        },
+        {
+          "type": "query",
+          "unknown": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 700302021,
+                  "colors": 1988960549,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 1,
+                "count": 18,
+                "hash": {
+                  "positions": 4204855365,
+                  "colors": 1096769513,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 8
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 2,
+              "y": 0.5,
+              "z": 1
+            }
+          },
+          null,
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 700302021,
+                  "colors": 1988960549,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 1,
+                "count": 18,
+                "hash": {
+                  "positions": 4204855365,
+                  "colors": 1096769513,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud",
+                "version": 1,
+                "count": 5,
+                "hash": {
+                  "positions": 615012299,
+                  "colors": 3678192631,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 4,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1.5,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 8
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 700302021,
+                  "colors": 1988960549,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 1,
+                "count": 18,
+                "hash": {
+                  "positions": 4204855365,
+                  "colors": 1096769513,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud",
+                "version": 2,
+                "count": 2,
+                "hash": {
+                  "positions": 2756186200,
+                  "colors": 373182075,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 4,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 8
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 2,
+              "y": 1,
+              "z": 1
+            }
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 700302021,
+                  "colors": 1988960549,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 2,
+                "count": 18,
+                "hash": {
+                  "positions": 3646448837,
+                  "colors": 1096769513,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud",
+                "version": 2,
+                "count": 2,
+                "hash": {
+                  "positions": 2756186200,
+                  "colors": 373182075,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 4,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud2",
+                "version": 1,
+                "count": 1,
+                "hash": {
+                  "positions": 585534421,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 2,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 10
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 5,
+              "y": 5,
+              "z": 5
+            }
+          },
+          [
+            "base_link",
+            "laser",
+            "map"
+          ],
+          [],
+          [],
+          [
+            "hologram"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "axes follow timed transforms and a subset of ids; grid opacity",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "layers": [
+          {
+            "id": "axes",
+            "kind": "axes",
+            "meta": {
+              "ids": [
+                "base_link",
+                "laser"
+              ],
+              "length": 1,
+              "lineWidth": 3
+            }
+          },
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 1,
+              "spacing": 0.5,
+              "majorEvery": 2,
+              "color": "#102030",
+              "majorColor": "#405060",
+              "z": -0.1
+            }
+          }
+        ],
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "draw",
+          "now": 1
+        },
+        {
+          "type": "draw",
+          "now": 3
+        },
+        {
+          "type": "push",
+          "id": "grid",
+          "payload": {
+            "opacity": 0.5
+          }
+        },
+        {
+          "type": "draw",
+          "now": 3
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 1,
+                "count": 12,
+                "hash": {
+                  "positions": 3942508536,
+                  "colors": 3465620893,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 3,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 1472475949,
+                  "colors": 4102741605,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 6
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 2,
+                "count": 12,
+                "hash": {
+                  "positions": 204315352,
+                  "colors": 3465620893,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 3,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 1472475949,
+                  "colors": 4102741605,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 6
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "axes:axes",
+                "version": 2,
+                "count": 12,
+                "hash": {
+                  "positions": 204315352,
+                  "colors": 3465620893,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 3,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "grid3d:grid",
+                "version": 0,
+                "count": 20,
+                "hash": {
+                  "positions": 1472475949,
+                  "colors": 4102741605,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 0.5,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                },
+                "strip": false
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 6
+          },
+          {
+            "min": {
+              "x": 2,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 3,
+              "y": 1,
+              "z": 1.5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "day2: path, pose and laser scan follow their frames; append keeps the newest points",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "path",
+            "kind": "path3d",
+            "meta": {
+              "frame": "map",
+              "color": "#22d3ee",
+              "maxPoints": 4
+            }
+          },
+          {
+            "id": "pose",
+            "kind": "pose3d",
+            "meta": {
+              "frame": "base_link",
+              "label": "robot",
+              "axisLength": 1
+            }
+          },
+          {
+            "id": "scan",
+            "kind": "laserScan3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 3
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "push",
+          "id": "path",
+          "payload": {
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                2,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        {
+          "type": "push",
+          "id": "path",
+          "payload": {
+            "append": [
+              3,
+              0,
+              0,
+              4,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "type": "push",
+          "id": "pose",
+          "payload": {
+            "t": [
+              0.5,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "stamp": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "scan",
+          "payload": {
+            "scan": {
+              "angleMin": -1.5707963267948966,
+              "angleIncrement": 1.5707963267948966,
+              "ranges": [
+                1,
+                2,
+                0.5,
+                30
+              ],
+              "rangeMin": 0.1,
+              "rangeMax": 10
+            },
+            "stamp": 3
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 500,
+            "now": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "path",
+          "payload": {
+            "clear": true
+          }
+        },
+        {
+          "type": "push",
+          "id": "pose",
+          "payload": {
+            "x": 1,
+            "y": 2,
+            "z": 0.25,
+            "qx": 0,
+            "qy": 0,
+            "qz": 1,
+            "qw": 0
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "lines",
+                "key": "path3d:path",
+                "version": 3,
+                "count": 4,
+                "hash": {
+                  "positions": 2844990104,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#22d3ee",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "strip": true
+              },
+              {
+                "op": "triangles",
+                "key": "unit:arrow:12",
+                "version": 0,
+                "count": 216,
+                "hash": {
+                  "positions": 1640318396,
+                  "colors": null,
+                  "normals": 2483352557,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f59e0b",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    2,
+                    0.5,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "lines",
+                "key": "pose3d:pose:axes",
+                "version": 0,
+                "count": 6,
+                "hash": {
+                  "positions": 3259937272,
+                  "colors": 482437105,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": [
+                    0,
+                    0.6,
+                    0,
+                    0,
+                    -0.6,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.6,
+                    0,
+                    2,
+                    0.5,
+                    0,
+                    1
+                  ]
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:scan",
+                "version": 1,
+                "count": 3,
+                "hash": {
+                  "positions": 2873690385,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f87171",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    3,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 9
+          },
+          {
+            "min": {
+              "x": 1,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 4,
+              "y": 2,
+              "z": 1
+            }
+          },
+          {
+            "layerId": "scan",
+            "world": {
+              "x": 2.5,
+              "y": 0,
+              "z": 0.5
+            },
+            "distance": 112.151269567,
+            "index": 2,
+            "data": null
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "triangles",
+                "key": "unit:arrow:12",
+                "version": 0,
+                "count": 216,
+                "hash": {
+                  "positions": 1640318396,
+                  "colors": null,
+                  "normals": 2483352557,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f59e0b",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    2,
+                    0.5,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "lines",
+                "key": "pose3d:pose:axes",
+                "version": 0,
+                "count": 6,
+                "hash": {
+                  "positions": 3259937272,
+                  "colors": 482437105,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": false,
+                  "lit": false,
+                  "model": [
+                    0,
+                    0.6,
+                    0,
+                    0,
+                    -0.6,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.6,
+                    0,
+                    2,
+                    0.5,
+                    0,
+                    1
+                  ]
+                },
+                "strip": false
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:scan",
+                "version": 1,
+                "count": 3,
+                "hash": {
+                  "positions": 2873690385,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f87171",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    3,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 9
+          },
+          {
+            "min": {
+              "x": 1,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 4,
+              "y": 2,
+              "z": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "day2: markers of every type, lifetime, upsert/remove, picking a sphere by ray",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "mk",
+            "kind": "markers",
+            "meta": {}
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "push",
+          "id": "mk",
+          "payload": {
+            "markers": [
+              {
+                "id": "box",
+                "type": "cube",
+                "position": [
+                  0,
+                  0,
+                  0.5
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ],
+                "color": "#f97316"
+              },
+              {
+                "id": "ball",
+                "type": "sphere",
+                "position": [
+                  2,
+                  0,
+                  0.5
+                ],
+                "scale": [
+                  1,
+                  1,
+                  1
+                ],
+                "color": "#22c55e",
+                "opacity": 0.5
+              },
+              {
+                "id": "can",
+                "type": "cylinder",
+                "frame": "base_link",
+                "position": [
+                  0,
+                  1,
+                  0
+                ],
+                "orientation": [
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                "scale": [
+                  0.5,
+                  0.5,
+                  2
+                ],
+                "color": "#3b82f6",
+                "stamp": 1
+              },
+              {
+                "id": "arrow",
+                "type": "arrow",
+                "position": [
+                  -2,
+                  0,
+                  0
+                ],
+                "orientation": [
+                  0,
+                  0,
+                  0.7071067811865476,
+                  0.7071067811865476
+                ],
+                "scale": [
+                  1,
+                  0.2,
+                  0.2
+                ],
+                "color": "#eab308"
+              },
+              {
+                "id": "ll",
+                "type": "lineList",
+                "points": [
+                  0,
+                  0,
+                  0,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  2,
+                  0,
+                  0
+                ],
+                "scale": [
+                  2,
+                  0,
+                  0
+                ],
+                "color": "#ffffff"
+              },
+              {
+                "id": "ls",
+                "type": "lineStrip",
+                "points": [
+                  0,
+                  2,
+                  0,
+                  1,
+                  2,
+                  0,
+                  1,
+                  3,
+                  0
+                ],
+                "colors": [
+                  255,
+                  0,
+                  0,
+                  255,
+                  0,
+                  255,
+                  0,
+                  255,
+                  0,
+                  0,
+                  255,
+                  255
+                ],
+                "scale": [
+                  1,
+                  0,
+                  0
+                ]
+              },
+              {
+                "id": "pts",
+                "type": "points",
+                "points": [
+                  3,
+                  3,
+                  0,
+                  3,
+                  3,
+                  1
+                ],
+                "scale": [
+                  5,
+                  0,
+                  0
+                ],
+                "color": "#a855f7"
+              },
+              {
+                "id": "label",
+                "type": "text",
+                "position": [
+                  0,
+                  0,
+                  2
+                ],
+                "text": "hello",
+                "scale": [
+                  14,
+                  0,
+                  0
+                ],
+                "color": "#ffffff"
+              },
+              {
+                "id": "brief",
+                "type": "sphere",
+                "position": [
+                  5,
+                  5,
+                  5
+                ],
+                "lifetime": 1
+              }
+            ],
+            "now": 0
+          }
+        },
+        {
+          "type": "draw",
+          "now": 0.5
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 6,
+            "now": 0.5
+          }
+        },
+        {
+          "type": "push",
+          "id": "mk",
+          "payload": {
+            "upsert": {
+              "id": "ball",
+              "type": "sphere",
+              "position": [
+                2,
+                0,
+                0.5
+              ],
+              "scale": [
+                2,
+                2,
+                2
+              ],
+              "color": "#22c55e"
+            },
+            "now": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "mk",
+          "payload": {
+            "remove": "box"
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "push",
+          "id": "mk",
+          "payload": {
+            "clear": true
+          }
+        },
+        {
+          "type": "draw",
+          "now": 2
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "triangles",
+                "key": "unit:cube",
+                "version": 0,
+                "count": 36,
+                "hash": {
+                  "positions": 1391365541,
+                  "colors": null,
+                  "normals": 4163942821,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f97316",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "unit:sphere:8:16",
+                "version": 0,
+                "count": 672,
+                "hash": {
+                  "positions": 966827826,
+                  "colors": null,
+                  "normals": 947915861,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#22c55e",
+                  "opacity": 0.5,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    2,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "unit:cylinder:16",
+                "version": 0,
+                "count": 192,
+                "hash": {
+                  "positions": 2455302026,
+                  "colors": null,
+                  "normals": 1168463429,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#3b82f6",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0,
+                    0.5,
+                    0,
+                    0,
+                    -0.5,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "unit:arrow:12",
+                "version": 0,
+                "count": 216,
+                "hash": {
+                  "positions": 1640318396,
+                  "colors": null,
+                  "normals": 2483352557,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#eab308",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -0.4,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.4,
+                    0,
+                    -2,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "lines",
+                "key": "marker:mk:ll:1",
+                "version": 0,
+                "count": 4,
+                "hash": {
+                  "positions": 2957164117,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "marker:mk:ls:2",
+                "version": 0,
+                "count": 3,
+                "hash": {
+                  "positions": 1773182501,
+                  "colors": 2849359361,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "strip": true
+              },
+              {
+                "op": "points",
+                "key": "marker:mk:pts:3",
+                "version": 0,
+                "count": 2,
+                "hash": {
+                  "positions": 96011144,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#a855f7",
+                  "opacity": 1,
+                  "pointSize": 5,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "unit:sphere:8:16",
+                "version": 0,
+                "count": 672,
+                "hash": {
+                  "positions": 966827826,
+                  "colors": null,
+                  "normals": 947915861,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    5,
+                    5,
+                    5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 5
+          },
+          {
+            "min": {
+              "x": -2.5,
+              "y": -1.060660172,
+              "z": -1.060660172
+            },
+            "max": {
+              "x": 5.866025404,
+              "y": 5.866025404,
+              "z": 5.866025404
+            }
+          },
+          {
+            "layerId": "mk",
+            "world": {
+              "x": -0.875400615,
+              "y": 0,
+              "z": 0.598893783
+            },
+            "distance": 0,
+            "index": null,
+            "data": "can"
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "triangles",
+                "key": "unit:sphere:8:16",
+                "version": 0,
+                "count": 672,
+                "hash": {
+                  "positions": 966827826,
+                  "colors": null,
+                  "normals": 947915861,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#22c55e",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    2,
+                    0,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "unit:cylinder:16",
+                "version": 0,
+                "count": 192,
+                "hash": {
+                  "positions": 2455302026,
+                  "colors": null,
+                  "normals": 1168463429,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#3b82f6",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0,
+                    0.5,
+                    0,
+                    0,
+                    -0.5,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "unit:arrow:12",
+                "version": 0,
+                "count": 216,
+                "hash": {
+                  "positions": 1640318396,
+                  "colors": null,
+                  "normals": 2483352557,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#eab308",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -0.4,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.4,
+                    0,
+                    -2,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "lines",
+                "key": "marker:mk:ll:1",
+                "version": 0,
+                "count": 4,
+                "hash": {
+                  "positions": 2957164117,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 2,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "strip": false
+              },
+              {
+                "op": "lines",
+                "key": "marker:mk:ls:2",
+                "version": 0,
+                "count": 3,
+                "hash": {
+                  "positions": 1773182501,
+                  "colors": 2849359361,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                "strip": true
+              },
+              {
+                "op": "points",
+                "key": "marker:mk:pts:3",
+                "version": 0,
+                "count": 2,
+                "hash": {
+                  "positions": 96011144,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#a855f7",
+                  "opacity": 1,
+                  "pointSize": 5,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 5
+          },
+          {
+            "min": {
+              "x": -2.5,
+              "y": -1.732050808,
+              "z": -1.232050808
+            },
+            "max": {
+              "x": 3.732050808,
+              "y": 3,
+              "z": 2.232050808
+            }
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 4
+          },
+          null
+        ]
+      }
+    },
+    {
+      "name": "day2: occupancy grid plane: textured quad corners, cells, z and frame, ray pick returns the cell",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 1.2
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "map",
+            "kind": "occupancyGrid3d",
+            "meta": {
+              "width": 4,
+              "height": 2,
+              "resolution": 0.5,
+              "origin": {
+                "x": -1,
+                "y": -0.5,
+                "yaw": 0
+              },
+              "data": [
+                0,
+                100,
+                -1,
+                0,
+                100,
+                0,
+                0,
+                0
+              ],
+              "z": -0.05
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "draw",
+          "now": 0
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 6,
+            "now": 0
+          }
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 500,
+            "y": 300,
+            "tolerance": 6,
+            "now": 0
+          }
+        },
+        {
+          "type": "push",
+          "id": "map",
+          "payload": {
+            "cells": [
+              [
+                0,
+                2,
+                100
+              ]
+            ],
+            "z": 0.5
+          }
+        },
+        {
+          "type": "push",
+          "id": "map",
+          "payload": {
+            "frame": "base_link"
+          }
+        },
+        {
+          "type": "draw",
+          "now": 1
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.932,
+                  -0.362,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.362,
+                  0.932,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "image",
+                "imageWidth": 4,
+                "imageHeight": 2,
+                "corners": [
+                  -1,
+                  -0.5,
+                  -0.05,
+                  1,
+                  -0.5,
+                  -0.05,
+                  1,
+                  0.5,
+                  -0.05,
+                  -1,
+                  0.5,
+                  -0.05
+                ],
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": null
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 4
+          },
+          {
+            "min": {
+              "x": -1,
+              "y": -0.5,
+              "z": -0.05
+            },
+            "max": {
+              "x": 1,
+              "y": 0.5,
+              "z": -0.05
+            }
+          },
+          {
+            "layerId": "map",
+            "world": {
+              "x": 0.019438978,
+              "y": 0,
+              "z": -0.05
+            },
+            "distance": 0,
+            "index": 6,
+            "data": 0
+          },
+          null,
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.932,
+                  -0.362,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.362,
+                  0.932,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "image",
+                "imageWidth": 4,
+                "imageHeight": 2,
+                "corners": [
+                  -1,
+                  -0.5,
+                  0.5,
+                  1,
+                  -0.5,
+                  0.5,
+                  1,
+                  0.5,
+                  0.5,
+                  -1,
+                  0.5,
+                  0.5
+                ],
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    0,
+                    1,
+                    0,
+                    0,
+                    -1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 4
+          },
+          {
+            "min": {
+              "x": 0.5,
+              "y": -1,
+              "z": 0.5
+            },
+            "max": {
+              "x": 1.5,
+              "y": 1,
+              "z": 0.5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "day4: static transforms and marker sets travel in declarations (late joiners, recordings)",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "layers": [
+          {
+            "id": "tf",
+            "kind": "frames",
+            "meta": {
+              "transforms": [
+                {
+                  "child": "laser",
+                  "parent": "base_link",
+                  "t": [
+                    0.2,
+                    0,
+                    0.35
+                  ],
+                  "q": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                },
+                {
+                  "child": "base_link",
+                  "parent": "map",
+                  "t": [
+                    1,
+                    0,
+                    0
+                  ],
+                  "q": [
+                    0,
+                    0,
+                    0,
+                    1
+                  ],
+                  "time": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "mk",
+            "kind": "markers",
+            "meta": {
+              "markers": [
+                {
+                  "id": "a",
+                  "type": "cube",
+                  "position": [
+                    1,
+                    1,
+                    0.5
+                  ],
+                  "color": "#ff0000"
+                },
+                {
+                  "id": "b",
+                  "type": "text",
+                  "position": [
+                    0,
+                    0,
+                    1
+                  ],
+                  "text": "hi"
+                }
+              ]
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser"
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0
+              ]
+            },
+            "stamp": 5
+          }
+        },
+        {
+          "type": "draw",
+          "now": 5
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "declare",
+          "id": "tf",
+          "kind": "frames",
+          "meta": {
+            "transforms": [
+              {
+                "child": "laser",
+                "parent": "base_link",
+                "t": [
+                  0,
+                  0,
+                  1
+                ],
+                "q": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            "base_link",
+            "laser",
+            "map"
+          ],
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "triangles",
+                "key": "unit:cube",
+                "version": 0,
+                "count": 36,
+                "hash": {
+                  "positions": 1391365541,
+                  "colors": null,
+                  "normals": 4163942821,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ff0000",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1,
+                    1,
+                    0.5,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "points",
+                "key": "pointCloud3d:cloud",
+                "version": 1,
+                "count": 2,
+                "hash": {
+                  "positions": 2240169896,
+                  "colors": null,
+                  "normals": null,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#ffffff",
+                  "opacity": 1,
+                  "pointSize": 2,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": false,
+                  "model": [
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    1.2,
+                    0,
+                    0.35,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 7
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": -0.366025404
+            },
+            "max": {
+              "x": 2.2,
+              "y": 1.866025404,
+              "z": 1.366025404
+            }
+          },
+          [
+            "base_link",
+            "laser",
+            "map"
+          ],
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": -0.366025404
+            },
+            "max": {
+              "x": 2,
+              "y": 1.866025404,
+              "z": 1.366025404
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "mesh: markers draw registered mesh resources, pick by bounding sphere, skip unknown URIs",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "layers": [
+          {
+            "id": "res",
+            "kind": "meshes",
+            "meta": {}
+          },
+          {
+            "id": "mk",
+            "kind": "markers",
+            "meta": {
+              "markers": [
+                {
+                  "id": "robot",
+                  "type": "mesh",
+                  "meshResource": "package://demo/tetra.stl",
+                  "position": [
+                    0,
+                    0,
+                    0
+                  ],
+                  "scale": [
+                    2,
+                    2,
+                    2
+                  ],
+                  "color": "#f97316"
+                },
+                {
+                  "id": "ghost",
+                  "type": "mesh",
+                  "meshResource": "package://demo/missing.stl"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "draw",
+          "now": 0
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "push",
+          "id": "res",
+          "payload": {
+            "uri": "package://demo/tetra.stl",
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                1,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "type": "draw",
+          "now": 0
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        },
+        {
+          "type": "query",
+          "hitTest": {
+            "x": 400,
+            "y": 300,
+            "tolerance": 6,
+            "now": 0
+          }
+        },
+        {
+          "type": "push",
+          "id": "res",
+          "payload": {
+            "uri": "package://demo/cube.glb",
+            "positions": {
+              "$f32": [
+                -1,
+                -1,
+                -1,
+                1,
+                -1,
+                -1,
+                1,
+                1,
+                -1,
+                -1,
+                1,
+                -1,
+                -1,
+                -1,
+                1,
+                1,
+                -1,
+                1,
+                1,
+                1,
+                1,
+                -1,
+                1,
+                1
+              ]
+            },
+            "indices": {
+              "$u32": [
+                0,
+                2,
+                1,
+                0,
+                3,
+                2,
+                4,
+                5,
+                6,
+                4,
+                6,
+                7,
+                0,
+                1,
+                5,
+                0,
+                5,
+                4,
+                2,
+                3,
+                7,
+                2,
+                7,
+                6,
+                0,
+                4,
+                7,
+                0,
+                7,
+                3,
+                1,
+                2,
+                6,
+                1,
+                6,
+                5
+              ]
+            }
+          }
+        },
+        {
+          "type": "push",
+          "id": "mk",
+          "payload": {
+            "upsert": {
+              "id": "box",
+              "type": "mesh",
+              "meshResource": "package://demo/cube.glb",
+              "position": [
+                3,
+                0,
+                0
+              ],
+              "scale": [
+                0.5,
+                0.5,
+                0.5
+              ],
+              "color": "#3b82f6"
+            }
+          }
+        },
+        {
+          "type": "draw",
+          "now": 0
+        },
+        {
+          "type": "query",
+          "bounds3": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 4
+          },
+          null,
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "triangles",
+                "key": "mesh:package://demo/tetra.stl",
+                "version": 0,
+                "count": 12,
+                "hash": {
+                  "positions": 2853992632,
+                  "colors": null,
+                  "normals": 2096606267,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f97316",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 4
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "max": {
+              "x": 2,
+              "y": 2,
+              "z": 2
+            }
+          },
+          {
+            "layerId": "mk",
+            "world": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 0,
+            "index": null,
+            "data": "robot"
+          },
+          {
+            "ops3d": [
+              {
+                "op": "begin",
+                "view": [
+                  0,
+                  0.565,
+                  -0.825,
+                  0,
+                  -1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0.825,
+                  0.565,
+                  0,
+                  0,
+                  0,
+                  -10,
+                  1
+                ],
+                "proj": [
+                  1.811,
+                  0,
+                  0,
+                  0,
+                  0,
+                  2.414,
+                  0,
+                  0,
+                  0,
+                  0,
+                  -1,
+                  -1,
+                  0,
+                  0,
+                  -0.1,
+                  0
+                ],
+                "clear": null
+              },
+              {
+                "op": "triangles",
+                "key": "mesh:package://demo/tetra.stl",
+                "version": 0,
+                "count": 12,
+                "hash": {
+                  "positions": 2853992632,
+                  "colors": null,
+                  "normals": 2096606267,
+                  "indices": null
+                },
+                "material": {
+                  "color": "#f97316",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    2,
+                    0,
+                    0,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "triangles",
+                "key": "mesh:package://demo/cube.glb",
+                "version": 0,
+                "count": 36,
+                "hash": {
+                  "positions": 3361464197,
+                  "colors": null,
+                  "normals": 2025262631,
+                  "indices": 591656245
+                },
+                "material": {
+                  "color": "#3b82f6",
+                  "opacity": 1,
+                  "pointSize": 3,
+                  "lineWidth": 1,
+                  "depthTest": true,
+                  "lit": true,
+                  "model": [
+                    0.5,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.5,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0.5,
+                    0,
+                    3,
+                    0,
+                    0,
+                    1
+                  ]
+                }
+              },
+              {
+                "op": "end"
+              }
+            ],
+            "ops2d": 4
+          },
+          {
+            "min": {
+              "x": 0,
+              "y": -0.5,
+              "z": -0.5
+            },
+            "max": {
+              "x": 3.5,
+              "y": 2,
+              "z": 2
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

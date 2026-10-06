@@ -1,0 +1,6 @@
+<Project>
+  <Import Project="../dotnet/Directory.Build.props" />
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

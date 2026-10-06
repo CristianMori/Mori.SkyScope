@@ -1,0 +1,33 @@
+{
+  "name": "@mori/skyscope-tokens",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tokens.css": "./src/tokens.css"
+  },
+  "files": [
+    "dist",
+    "src/tokens.css",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "sideEffects": false,
+  "author": "Cristian Mori",
+  "description": "Design tokens for Mori.SkyScope (CSS variables and TypeScript constants).",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CristianMori/Mori.SkyScope"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

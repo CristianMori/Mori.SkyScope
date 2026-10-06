@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>ROS 2 source plugin for Mori.SkyScope: subscribes to topics through Mori.Ros2Sharp (pure managed RTPS) and feeds signals and scene layers.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mori.Ros2Sharp" Version="0.2.0" />
+    <ProjectReference Include="..\Mori.SkyScope.Core\Mori.SkyScope.Core.csproj" />
+  </ItemGroup>
+
+</Project>

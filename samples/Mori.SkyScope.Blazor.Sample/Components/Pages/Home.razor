@@ -1,0 +1,166 @@
+@page "/"
+@using Mori.SkyScope.Blazor
+@using Mori.SkyScope.Core.Charts
+@using Mori.SkyScope.Core.Scales
+@using Mori.SkyScope.Core.Scene
+@rendermode InteractiveServer
+@implements IDisposable
+@* Mori.SkyScope — The Blazor dashboard: signal tree, trend chart, scene views, gauges, analytic charts, recording and playback. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+<PageTitle>Mori.SkyScope — Blazor sample</PageTitle>
+
+<div class="skyscope-root" data-theme="@(_dark ? "dark" : null)" style="height:100vh;display:flex;flex-direction:column;gap:8px;padding:12px;box-sizing:border-box">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <strong>Mori.SkyScope</strong>
+        <span>@WsUrl</span>
+        <span style="flex:1"></span>
+        @foreach (var t in new[] { Tool.Pan, Tool.BoxZoom, Tool.Cursor })
+        {
+            <Button Size="Core.Size.Sm" Variant="@(_tool == t ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => SetTool(t))">@t</Button>
+        }
+        <span style="width:8px"></span>
+        @foreach (var s in new[] { 5, 10, 30, 60, 300 })
+        {
+            <Button Size="Core.Size.Sm" Variant="@(_span == s ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => SetSpan(s))">@s s</Button>
+        }
+        <span style="width:8px"></span>
+        <Button Size="Core.Size.Sm" Variant="@(_paused ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="TogglePause">@(_paused ? "▶ live" : "⏸ pause")</Button>
+        <Button Size="Core.Size.Sm" OnClick="Reset">reset</Button>
+        <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => { _dark = !_dark; _config.Theme = _dark ? ChartTheme.Dark : ChartTheme.Light; })">@(_dark ? "light" : "dark")</Button>
+        <span style="width:8px"></span>
+        <Button Size="Core.Size.Sm" Variant="@(_mode == "live" ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _mode = "live")">live</Button>
+        <Button Size="Core.Size.Sm" Variant="@(_mode == "playback" ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _mode = "playback")">playback</Button>
+        @if (_mode == "live") { <Recorder WsUrl="@WsUrl" /> }
+    </div>
+    @if (_mode == "playback")
+    {
+        <Playback Key="rec" />
+    }
+    <div style="flex:1;min-height:0;display:grid;grid-template-columns:200px 2fr 1fr;gap:8px">
+        <SignalTree WsUrl="@DataUrl" Chart="_chart" />
+        <TrendChart @ref="_chart" WsUrl="@DataUrl" Config="_config" Tool="_tool" Height="100%" />
+        <div style="display:flex;flex-direction:column;gap:4px;min-height:0">
+            <div style="display:flex;gap:4px">
+                <Button Size="Core.Size.Sm" Variant="@(_scene3d ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _scene3d = true)">3D</Button>
+                <Button Size="Core.Size.Sm" Variant="@(!_scene3d ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _scene3d = false)">2D</Button>
+                @foreach (var t in _scene3d ? new[] { "orbit", "measure", "select" } : new[] { "pan", "boxZoom", "measure", "select" })
+                {
+                    <Button Size="Core.Size.Sm" Variant="@((_scene3d ? _scene3dTool : _sceneTool) == t ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => { if (_scene3d) _scene3dTool = t; else _sceneTool = t; })">@t</Button>
+                }
+                <span style="font-size:11px;align-self:center;color:var(--skyscope-color-text-secondary)">@(_scene3d ? "drag orbit · middle/shift pan · wheel dolly · F fit · T top · O ortho" : "Q/E rotate · F fit · wheel zoom")</span>
+            </div>
+            <div style="flex:1;min-height:0;border:1px solid var(--skyscope-color-border);border-radius:4px;overflow:hidden">
+                @if (_scene3d)
+                {
+                    <SceneView3D WsUrl="@DataUrl" Tool="@_scene3dTool" Height="100%" Options="@(new { unit = "m", fixedFrame = "map", animate = true, camera = new { distance = 14, pitch = 0.7, yaw = -2.2 } })" />
+                }
+                else
+                {
+                    <SceneView WsUrl="@DataUrl" Tool="@_sceneTool" Height="100%" Options="@(new { unit = "m" })" OnReady="@(s => s.DeclareLayerAsync("grid", "grid"))" />
+                }
+            </div>
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;height:200px">
+        <Gauge Kind="radial" Height="100%" Value="_v1" Options="@(new { min = -4, max = 4, unit = "m/s", label = "sine", decimals = 2, bands = new[] { new { from = 3, to = 4, color = "#dc2626" } } })" />
+        <Gauge Kind="linear" Height="100%" Value="_v2" Options="@(new { min = -4, max = 4, unit = "°C", label = "triangle", orientation = "vertical", decimals = 1 })" />
+        <Gauge Kind="compass" Height="100%" Heading="@(_v1 * 45 + 180)" Options="@(new { label = "HDG" })" />
+        <Gauge Kind="attitude" Height="100%" Pitch="@(_v1 * 8)" Roll="@(_v2 * 15)" />
+        <Gauge Kind="numeric" Height="100%" Value="_v3" Options="@(new { digits = 6, decimals = 3, unit = "V", label = "sawtooth" })" />
+        <Gauge Kind="ledArray" Height="100%" Value="_v5" Options="@(new { count = 12, min = -1.5, max = 1.5, label = "noise", orientation = "vertical" })" />
+        <div style="display:flex;flex-direction:column;gap:4px">
+            <Gauge Kind="knob" Height="110px" Value="_gain" ValueChanged="@(v => _gain = v)" Options="@(new { min = 0, max = 10, step = 0.5, label = "gain", unit = "x" })" />
+            <Gauge Kind="switch" Height="44px" On="_armed" OnChanged="@(v => _armed = v)" Options="@(new { label = "arm" })" />
+            <Gauge Kind="slider" Height="44px" Value="_throttle" ValueChanged="@(v => _throttle = v)" Options="@(new { min = 0, max = 100, label = "throttle", unit = "%" })" />
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1.2fr;gap:8px;height:230px">
+        <Chart Kind="xy" Height="100%" Options="_bars" />
+        <Chart Kind="pie" Height="100%" Options="_pie" />
+        <Chart Kind="polar" Height="100%" Options="_radar" />
+        <Chart @ref="_spec" Kind="heatmap" Height="100%" Options="_specOptions" />
+    </div>
+    <div style="font-size:12px;color:var(--skyscope-color-text-secondary)">
+        drag = pan · wheel = zoom · shift+drag = box zoom · click = cursor A · shift+click = cursor B · double-click = reset · drag a legend row onto a lane to move the series
+    </div>
+</div>
+
+@code {
+    private const string WsUrl = "ws://localhost:5055/ws";
+    private TrendChart? _chart;
+    private Tool _tool = Tool.Pan;
+    private string _sceneTool = "pan";
+    private string _scene3dTool = "orbit";
+    private bool _scene3d = true;
+    private string _mode = "live";
+    /// <summary>Charts and scenes follow the live socket or the browser-side playback registered as "rec".</summary>
+    private string DataUrl => _mode == "live" ? WsUrl : "playback:rec";
+    private int _span = 30;
+    private bool _paused, _dark;
+    private readonly TrendChartConfig _config = BuildConfig();
+    private double _v1, _v2, _v3, _v5, _gain = 2.5, _throttle = 30;
+    private bool _armed;
+    private System.Threading.Timer? _demo;
+    private Chart? _spec;
+    private static readonly object _bars = new
+    {
+        title = "Throughput by hour", legend = "top-left", xAxis = new { label = "hour" }, yAxis = new { unit = "msg/s" }, y2Axis = new { unit = "% err" },
+        series = new object[]
+        {
+            new { id = "thr", name = "throughput", kind = "bar", y = new[] { 420, 380, 350, 330, 360, 410, 520, 640, 700, 690, 660, 640, 610, 600, 620, 650, 680, 720, 700, 650, 590, 540, 490, 450 }, fillOpacity = 0.55 },
+            new { id = "avg", name = "3 h average", y = new[] { 420, 400, 383, 353, 347, 367, 430, 523, 620, 677, 683, 663, 637, 617, 610, 623, 650, 683, 700, 690, 647, 593, 540, 493 }, width = 2, color = "#dc2626" },
+            new { id = "err", name = "error rate", kind = "scatter", axis = "y2", marker = "diamond", color = "#7c3aed", y = new[] { 1.5, 1.4, 1.6, 1.5, 1.7, 1.9, 2.4, 2.8, 2.6, 2.2, 2.0, 1.9, 2.3, 2.9, 3.1, 2.7, 2.4, 2.1, 1.9, 1.8, 1.7, 1.6, 1.5, 1.5 } },
+        },
+    };
+    private static readonly object _pie = new { title = "CPU time", donut = 0.55, padAngle = 1.5, sort = true, legend = "right", slices = new[] { new { id = "perception", value = 38 }, new { id = "planning", value = 22 }, new { id = "control", value = 17 }, new { id = "telemetry", value = 12 }, new { id = "logging", value = 7 }, new { id = "other", value = 4 } } };
+    private static readonly object _radar = new { title = "Robot comparison", categories = new[] { "speed", "payload", "range", "accuracy", "autonomy", "cost" }, gridShape = "polygon", max = 10, legend = "bottom-right", series = new object[] { new { id = "a", name = "AMR-200", values = new[] { 8, 6, 7, 9, 5, 6 } }, new { id = "b", name = "Go2", values = new[] { 6, 3, 5, 6, 8, 9 }, color = "#d97706" } } };
+    private static readonly object _specOptions = new { title = "Synthetic spectrogram (server pushed)", cols = 100, rows = 32, xMin = -10, xMax = 0, yMin = 0, yMax = 500, xLabel = "s", yLabel = "Hz", valueLabel = "dB", colormap = "inferno", rolling = true, min = -60, max = 0 };
+
+    // The Blazor chart streams client-side; the server-side gauges here follow a local synthetic clock (10 Hz re-render) as a demo.
+    /// <summary>Starts the 10 Hz demo timer that animates the gauge values and pushes a spectrogram column every 100 ms.</summary>
+    protected override void OnInitialized()
+    {
+        var t0 = DateTime.UtcNow;
+        _demo = new System.Threading.Timer(_ => InvokeAsync(() =>
+        {
+            var t = (DateTime.UtcNow - t0).TotalSeconds;
+            _v1 = 2.5 * Math.Sin(t * 0.7); _v2 = 3 * (2 * Math.Abs(t * 0.47 % 1 - 0.5) - 0.5); _v3 = 2 * (t * 0.84 % 1) - 1; _v5 = Math.Sin(t * 5) * 1.2;
+            StateHasChanged();
+            // A sweeping tone over a noise floor, one 32-bin column per 100 ms.
+            if (_spec is not null)
+            {
+                var f = 8 + 20 * (0.5 + 0.5 * Math.Sin(t * 0.3));
+                var col = Enumerable.Range(0, 32).Select(k => -55 + 6 * Random.Shared.NextDouble() + 50 * Math.Exp(-Math.Pow((k - f) / 1.5, 2))).ToArray();
+                _ = _spec.PushColumnAsync(col);
+            }
+        }), null, 0, 100);
+    }
+    /// <summary>Stops the demo timer.</summary>
+    public void Dispose() => _demo?.Dispose();
+
+    /// <summary>The trend chart configuration: four lanes (analog, fast, robot, digital), their axes, the series on channels 1–9, 100–103 and 200–201, and a threshold band.</summary>
+    private static TrendChartConfig BuildConfig()
+    {
+        var c = new TrendChartConfig { TimeSpan = 30, TimeFormat = TimeFormat.Utc, Navigator = true };
+        c.Lanes.AddRange([new LaneConfig("analog") { Weight = 2 }, new LaneConfig("fast"), new LaneConfig("robot"), new LaneConfig("digital") { Weight = 0.5 }]);
+        c.Axes.AddRange([new AxisConfig("axis:analog") { Label = "sine / tri" }, new AxisConfig("axis:fast") { Label = "saw" }, new AxisConfig("axis:robot") { Label = "amr-1 pose", Unit = "m" }]);
+        c.Series.AddRange([
+            new SeriesConfig("s1", 1) { LaneId = "analog" }, new SeriesConfig("s2", 2) { LaneId = "analog" },
+            new SeriesConfig("s3", 3) { LaneId = "fast" }, new SeriesConfig("s5", 5) { LaneId = "fast", AxisId = "noise", Width = 1 },
+            new SeriesConfig("s4", 4) { LaneId = "digital", Kind = SeriesKind.Digital }, new SeriesConfig("s9", 9) { LaneId = "digital", Kind = SeriesKind.Digital },
+            new SeriesConfig("pump", 200) { LaneId = "digital", Kind = SeriesKind.Digital }, new SeriesConfig("valve", 201) { LaneId = "digital", Kind = SeriesKind.Digital },
+            new SeriesConfig("px", 100) { LaneId = "robot", Name = "x" }, new SeriesConfig("py", 101) { LaneId = "robot", Name = "y" }, new SeriesConfig("pv", 103) { LaneId = "robot", Name = "speed", AxisId = "speed" },
+        ]);
+        c.Thresholds.Add(new ThresholdConfig("hi", "axis:analog", 1.5, "#dc2626") { To = 3, Label = "high" });
+        return c;
+    }
+
+    /// <summary>Switches the trend chart's pointer tool.</summary>
+    private Task SetTool(Tool t) { _tool = t; return _chart?.SetToolAsync(t).AsTask() ?? Task.CompletedTask; }
+    /// <summary>Sets the trend chart's visible time window in seconds.</summary>
+    private Task SetSpan(int s) { _span = s; return _chart?.SetTimeSpanAsync(s).AsTask() ?? Task.CompletedTask; }
+    /// <summary>Freezes or resumes the trend chart's time window.</summary>
+    private Task TogglePause() { _paused = !_paused; return (_paused ? _chart?.PauseAsync() : _chart?.ResumeAsync())?.AsTask() ?? Task.CompletedTask; }
+    /// <summary>Resets the trend chart view and returns to live time.</summary>
+    private Task Reset() { _paused = false; return _chart?.ResetAsync().AsTask() ?? Task.CompletedTask; }
+}

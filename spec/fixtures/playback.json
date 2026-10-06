@@ -1,0 +1,428 @@
+{
+  "component": "playback",
+  "cases": [
+    {
+      "name": "csv with time column: channels, chunked frames, start and end",
+      "setup": {
+        "csv": "t,a,b\n0,1,10\n0.5,2,20\n1,3,30\n1.5,4,40\n2,5,50\n",
+        "csvOptions": {
+          "chunkRows": 2
+        },
+        "start": false
+      },
+      "steps": [
+        {
+          "type": "query",
+          "recording": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "channels": [
+              {
+                "id": 1,
+                "name": "a",
+                "timing": "timestamped",
+                "rate": null
+              },
+              {
+                "id": 2,
+                "name": "b",
+                "timing": "timestamped",
+                "rate": null
+              }
+            ],
+            "frames": [
+              {
+                "seq": 0,
+                "t0": 0,
+                "channels": [
+                  {
+                    "id": 1,
+                    "encoding": "timestamped",
+                    "count": 2,
+                    "first": 1,
+                    "t": 0
+                  },
+                  {
+                    "id": 2,
+                    "encoding": "timestamped",
+                    "count": 2,
+                    "first": 10,
+                    "t": 0
+                  }
+                ]
+              },
+              {
+                "seq": 1,
+                "t0": 1,
+                "channels": [
+                  {
+                    "id": 1,
+                    "encoding": "timestamped",
+                    "count": 2,
+                    "first": 3,
+                    "t": 1
+                  },
+                  {
+                    "id": 2,
+                    "encoding": "timestamped",
+                    "count": 2,
+                    "first": 30,
+                    "t": 1
+                  }
+                ]
+              },
+              {
+                "seq": 2,
+                "t0": 2,
+                "channels": [
+                  {
+                    "id": 1,
+                    "encoding": "timestamped",
+                    "count": 1,
+                    "first": 5,
+                    "t": 2
+                  },
+                  {
+                    "id": 2,
+                    "encoding": "timestamped",
+                    "count": 1,
+                    "first": 50,
+                    "t": 2
+                  }
+                ]
+              }
+            ],
+            "start": 0,
+            "end": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "csv regular rate without a time column, semicolon delimiter, NaN cells",
+      "setup": {
+        "csv": "a;b\n1;2\n3;x\n5;6\n",
+        "csvOptions": {
+          "rate": 10,
+          "chunkRows": 2
+        },
+        "start": false
+      },
+      "steps": [
+        {
+          "type": "query",
+          "recording": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "channels": [
+              {
+                "id": 1,
+                "name": "a",
+                "timing": "regular",
+                "rate": 10
+              },
+              {
+                "id": 2,
+                "name": "b",
+                "timing": "regular",
+                "rate": 10
+              }
+            ],
+            "frames": [
+              {
+                "seq": 0,
+                "t0": 0,
+                "channels": [
+                  {
+                    "id": 1,
+                    "encoding": "regular",
+                    "count": 2,
+                    "first": 1,
+                    "t": 0
+                  },
+                  {
+                    "id": 2,
+                    "encoding": "regular",
+                    "count": 2,
+                    "first": 2,
+                    "t": 0
+                  }
+                ]
+              },
+              {
+                "seq": 1,
+                "t0": 0.2,
+                "channels": [
+                  {
+                    "id": 1,
+                    "encoding": "regular",
+                    "count": 1,
+                    "first": 5,
+                    "t": 0.2
+                  },
+                  {
+                    "id": 2,
+                    "encoding": "regular",
+                    "count": 1,
+                    "first": 6,
+                    "t": 0.2
+                  }
+                ]
+              }
+            ],
+            "start": 0,
+            "end": 0.2
+          }
+        ]
+      }
+    },
+    {
+      "name": "ticks push the frames whose time was crossed; the end stops playback",
+      "setup": {
+        "csv": "t,a,b\n0,1,10\n0.5,2,20\n1,3,30\n1.5,4,40\n2,5,50\n",
+        "csvOptions": {
+          "chunkRows": 2
+        },
+        "autoplay": true
+      },
+      "steps": [
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "tick",
+          "dt": 0.6
+        },
+        {
+          "type": "query",
+          "buffer": 1
+        },
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "tick",
+          "dt": 1
+        },
+        {
+          "type": "query",
+          "buffer": 2
+        },
+        {
+          "type": "tick",
+          "dt": 5
+        },
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "tick",
+          "dt": 1
+        },
+        {
+          "type": "query",
+          "clock": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "position": 0,
+            "progress": 0,
+            "playing": true,
+            "finished": false,
+            "framesPushed": 0,
+            "duration": 2
+          },
+          1,
+          {
+            "length": 2,
+            "headSeq": 2,
+            "latestTime": 0.5,
+            "latest": 2
+          },
+          {
+            "position": 0.6,
+            "progress": 0.3,
+            "playing": true,
+            "finished": false,
+            "framesPushed": 1,
+            "duration": 2
+          },
+          1,
+          {
+            "length": 4,
+            "headSeq": 4,
+            "latestTime": 1.5,
+            "latest": 40
+          },
+          1,
+          {
+            "position": 2,
+            "progress": 1,
+            "playing": false,
+            "finished": true,
+            "framesPushed": 3,
+            "duration": 2
+          },
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "seek forward pushes skipped frames, seek backwards resets and replays, speed scales time",
+      "setup": {
+        "csv": "t,a,b\n0,1,10\n0.5,2,20\n1,3,30\n1.5,4,40\n2,5,50\n",
+        "csvOptions": {
+          "chunkRows": 2
+        }
+      },
+      "steps": [
+        {
+          "type": "seek",
+          "t": 1.2
+        },
+        {
+          "type": "query",
+          "buffer": 1
+        },
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "seek",
+          "t": 0.4
+        },
+        {
+          "type": "query",
+          "buffer": 1
+        },
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "setSpeed",
+          "speed": 2
+        },
+        {
+          "type": "play"
+        },
+        {
+          "type": "tick",
+          "dt": 0.3
+        },
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "query",
+          "buffer": 2
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "length": 4,
+            "headSeq": 4,
+            "latestTime": 1.5,
+            "latest": 4
+          },
+          {
+            "position": 1.2,
+            "progress": 0.6,
+            "playing": false,
+            "finished": false,
+            "framesPushed": 2,
+            "duration": 2
+          },
+          {
+            "length": 2,
+            "headSeq": 2,
+            "latestTime": 0.5,
+            "latest": 2
+          },
+          {
+            "position": 0.4,
+            "progress": 0.2,
+            "playing": false,
+            "finished": false,
+            "framesPushed": 1,
+            "duration": 2
+          },
+          1,
+          {
+            "position": 1,
+            "progress": 0.5,
+            "playing": true,
+            "finished": false,
+            "framesPushed": 2,
+            "duration": 2
+          },
+          {
+            "length": 4,
+            "headSeq": 4,
+            "latestTime": 1.5,
+            "latest": 40
+          }
+        ]
+      }
+    },
+    {
+      "name": "loop wraps around and keeps playing",
+      "setup": {
+        "csv": "t,a,b\n0,1,10\n0.5,2,20\n1,3,30\n1.5,4,40\n2,5,50\n",
+        "csvOptions": {
+          "chunkRows": 2
+        },
+        "autoplay": true,
+        "loop": true
+      },
+      "steps": [
+        {
+          "type": "tick",
+          "dt": 3
+        },
+        {
+          "type": "query",
+          "position": true
+        },
+        {
+          "type": "query",
+          "buffer": 1
+        }
+      ],
+      "expect": {
+        "queries": [
+          4,
+          {
+            "position": 1,
+            "progress": 0.5,
+            "playing": true,
+            "finished": false,
+            "framesPushed": 2,
+            "duration": 2
+          },
+          {
+            "length": 4,
+            "headSeq": 4,
+            "latestTime": 1.5,
+            "latest": 4
+          }
+        ]
+      }
+    }
+  ]
+}

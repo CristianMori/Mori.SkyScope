@@ -1,0 +1,1424 @@
+{
+  "component": "mcap",
+  "cases": [
+    {
+      "name": "record: bytes are deterministic, catalog and layers seen before start are written first",
+      "setup": {},
+      "steps": [
+        {
+          "type": "clock",
+          "t": 1000
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 1,
+            "name": "sine",
+            "unit": "V",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 2,
+            "name": "tri",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "bot",
+          "kind": "pose",
+          "meta": {
+            "pose": {
+              "x": 0,
+              "y": 0,
+              "yaw": 0
+            },
+            "label": "bot"
+          }
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 0,
+            "t0": 1000,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  10,
+                  11,
+                  12
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.1
+        },
+        {
+          "type": "push",
+          "id": "bot",
+          "payload": {
+            "x": 1,
+            "y": 2,
+            "yaw": 0.5
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.3
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 1000.3,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  4,
+                  5,
+                  6
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  40,
+                  41,
+                  42
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "scan",
+          "kind": "pointCloud",
+          "meta": {
+            "pointSize": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "scan",
+          "payload": {
+            "points": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.6
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 2,
+            "t0": 1000.6,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  7,
+                  8,
+                  9
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  70,
+                  71,
+                  72
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "push",
+          "id": "bot",
+          "payload": {
+            "x": 2,
+            "y": 3,
+            "yaw": 1
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.9
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 3,
+            "name": "late"
+          }
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "query",
+          "bytes": true
+        },
+        {
+          "type": "query",
+          "stats": true
+        },
+        {
+          "type": "query",
+          "innerLog": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "length": 2314,
+            "hash": 596706228
+          },
+          {
+            "recording": false,
+            "messages": 10,
+            "started": 1000
+          },
+          [
+            "declare:bot:pose",
+            "push:bot:{\"x\":1,\"y\":2,\"yaw\":0.5}",
+            "declare:scan:pointCloud",
+            "push:scan:{\"points\":[1,2,3,4]}",
+            "push:bot:{\"x\":2,\"y\":3,\"yaw\":1}"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "parse: header, schemas, channels, per-topic message counts, time range",
+      "setup": {},
+      "steps": [
+        {
+          "type": "clock",
+          "t": 1000
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 1,
+            "name": "sine",
+            "unit": "V",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 2,
+            "name": "tri",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "bot",
+          "kind": "pose",
+          "meta": {
+            "pose": {
+              "x": 0,
+              "y": 0,
+              "yaw": 0
+            },
+            "label": "bot"
+          }
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 0,
+            "t0": 1000,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  10,
+                  11,
+                  12
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.1
+        },
+        {
+          "type": "push",
+          "id": "bot",
+          "payload": {
+            "x": 1,
+            "y": 2,
+            "yaw": 0.5
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.3
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 1000.3,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  4,
+                  5,
+                  6
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  40,
+                  41,
+                  42
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "scan",
+          "kind": "pointCloud",
+          "meta": {
+            "pointSize": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "scan",
+          "payload": {
+            "points": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.6
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 2,
+            "t0": 1000.6,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  7,
+                  8,
+                  9
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  70,
+                  71,
+                  72
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "push",
+          "id": "bot",
+          "payload": {
+            "x": 2,
+            "y": 3,
+            "yaw": 1
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.9
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 3,
+            "name": "late"
+          }
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "query",
+          "file": true
+        },
+        {
+          "type": "query",
+          "recording": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "profile": "skyscope",
+            "library": "Mori.SkyScope 0.1.0",
+            "schemas": [
+              {
+                "id": 1,
+                "name": "skyscope.Frame",
+                "encoding": "text"
+              },
+              {
+                "id": 2,
+                "name": "skyscope.Channels",
+                "encoding": "jsonschema"
+              },
+              {
+                "id": 3,
+                "name": "skyscope.layer.pose",
+                "encoding": "jsonschema"
+              },
+              {
+                "id": 4,
+                "name": "skyscope.layer.pointCloud",
+                "encoding": "jsonschema"
+              }
+            ],
+            "channels": [
+              {
+                "id": 0,
+                "schemaId": 1,
+                "topic": "/skyscope/frames",
+                "messageEncoding": "skyscope-frame",
+                "metadata": {}
+              },
+              {
+                "id": 1,
+                "schemaId": 2,
+                "topic": "/skyscope/channels",
+                "messageEncoding": "json",
+                "metadata": {}
+              },
+              {
+                "id": 2,
+                "schemaId": 3,
+                "topic": "/layers/bot",
+                "messageEncoding": "json",
+                "metadata": {
+                  "kind": "pose"
+                }
+              },
+              {
+                "id": 3,
+                "schemaId": 4,
+                "topic": "/layers/scan",
+                "messageEncoding": "json",
+                "metadata": {
+                  "kind": "pointCloud"
+                }
+              }
+            ],
+            "messages": 10,
+            "byTopic": {
+              "/skyscope/channels": 2,
+              "/layers/bot": 3,
+              "/skyscope/frames": 3,
+              "/layers/scan": 2
+            },
+            "start": 1000,
+            "end": 1000.9
+          },
+          {
+            "channels": [
+              {
+                "id": 1,
+                "name": "sine",
+                "unit": "V",
+                "timing": "regular",
+                "rate": 10
+              },
+              {
+                "id": 2,
+                "name": "tri",
+                "timing": "regular",
+                "rate": 10
+              },
+              {
+                "id": 3,
+                "name": "late"
+              }
+            ],
+            "frames": [
+              {
+                "seq": 0,
+                "t0": 1000,
+                "ids": [
+                  1,
+                  2
+                ],
+                "first": 1
+              },
+              {
+                "seq": 1,
+                "t0": 1000.3,
+                "ids": [
+                  1,
+                  2
+                ],
+                "first": 4
+              },
+              {
+                "seq": 2,
+                "t0": 1000.6,
+                "ids": [
+                  1,
+                  2
+                ],
+                "first": 7
+              }
+            ],
+            "layerEvents": [
+              {
+                "t": 1000,
+                "id": "bot",
+                "kind": "pose",
+                "meta": {
+                  "pose": {
+                    "x": 0,
+                    "y": 0,
+                    "yaw": 0
+                  },
+                  "label": "bot"
+                },
+                "payload": null
+              },
+              {
+                "t": 1000.1,
+                "id": "bot",
+                "kind": null,
+                "meta": null,
+                "payload": {
+                  "x": 1,
+                  "y": 2,
+                  "yaw": 0.5
+                }
+              },
+              {
+                "t": 1000.3,
+                "id": "scan",
+                "kind": "pointCloud",
+                "meta": {
+                  "pointSize": 2
+                },
+                "payload": null
+              },
+              {
+                "t": 1000.3,
+                "id": "scan",
+                "kind": null,
+                "meta": null,
+                "payload": {
+                  "points": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ]
+                }
+              },
+              {
+                "t": 1000.6,
+                "id": "bot",
+                "kind": null,
+                "meta": null,
+                "payload": {
+                  "x": 2,
+                  "y": 3,
+                  "yaw": 1
+                }
+              }
+            ],
+            "start": 1000,
+            "end": 1000.8
+          }
+        ]
+      }
+    },
+    {
+      "name": "playback: frames and layer events interleave in time order; seeking back resets both sinks",
+      "setup": {},
+      "steps": [
+        {
+          "type": "clock",
+          "t": 1000
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 1,
+            "name": "sine",
+            "unit": "V",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 2,
+            "name": "tri",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "bot",
+          "kind": "pose",
+          "meta": {
+            "pose": {
+              "x": 0,
+              "y": 0,
+              "yaw": 0
+            },
+            "label": "bot"
+          }
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 0,
+            "t0": 1000,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  10,
+                  11,
+                  12
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.1
+        },
+        {
+          "type": "push",
+          "id": "bot",
+          "payload": {
+            "x": 1,
+            "y": 2,
+            "yaw": 0.5
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.3
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 1000.3,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  4,
+                  5,
+                  6
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  40,
+                  41,
+                  42
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "scan",
+          "kind": "pointCloud",
+          "meta": {
+            "pointSize": 2
+          }
+        },
+        {
+          "type": "push",
+          "id": "scan",
+          "payload": {
+            "points": [
+              1,
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.6
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 2,
+            "t0": 1000.6,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  7,
+                  8,
+                  9
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  70,
+                  71,
+                  72
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "push",
+          "id": "bot",
+          "payload": {
+            "x": 2,
+            "y": 3,
+            "yaw": 1
+          }
+        },
+        {
+          "type": "clock",
+          "t": 1000.9
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 3,
+            "name": "late"
+          }
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "load"
+        },
+        {
+          "type": "tick",
+          "dt": 0.35
+        },
+        {
+          "type": "query",
+          "playLog": true
+        },
+        {
+          "type": "query",
+          "playBuffer": 1
+        },
+        {
+          "type": "query",
+          "playState": true
+        },
+        {
+          "type": "tick",
+          "dt": 1
+        },
+        {
+          "type": "query",
+          "playState": true
+        },
+        {
+          "type": "query",
+          "playBuffer": 2
+        },
+        {
+          "type": "seek",
+          "t": 1000.2
+        },
+        {
+          "type": "query",
+          "playLog": true
+        },
+        {
+          "type": "query",
+          "playBuffer": 1
+        },
+        {
+          "type": "query",
+          "playState": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          2,
+          [
+            "declare:bot:pose",
+            "push:bot:{\"x\":1,\"y\":2,\"yaw\":0.5}",
+            "declare:scan:pointCloud",
+            "push:scan:{\"points\":[1,2,3,4]}"
+          ],
+          {
+            "length": 6,
+            "latest": 6
+          },
+          {
+            "position": 1000.35,
+            "finished": false,
+            "playing": true,
+            "framesPushed": 2
+          },
+          1,
+          {
+            "position": 1000.8,
+            "finished": true,
+            "playing": false,
+            "framesPushed": 3
+          },
+          {
+            "length": 9,
+            "latest": 72
+          },
+          [
+            "declare:bot:pose",
+            "push:bot:{\"x\":1,\"y\":2,\"yaw\":0.5}",
+            "declare:scan:pointCloud",
+            "push:scan:{\"points\":[1,2,3,4]}",
+            "push:bot:{\"x\":2,\"y\":3,\"yaw\":1}",
+            "reset",
+            "declare:bot:pose",
+            "push:bot:{\"x\":1,\"y\":2,\"yaw\":0.5}"
+          ],
+          {
+            "length": 3,
+            "latest": 3
+          },
+          {
+            "position": 1000.2,
+            "finished": false,
+            "playing": false,
+            "framesPushed": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "record: size limit stops the recording",
+      "setup": {
+        "maxBytes": 900
+      },
+      "steps": [
+        {
+          "type": "clock",
+          "t": 1000
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 1,
+            "name": "sine",
+            "unit": "V",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 2,
+            "name": "tri",
+            "timing": "regular",
+            "rate": 10
+          }
+        },
+        {
+          "type": "declareLayer",
+          "id": "bot",
+          "kind": "pose",
+          "meta": {
+            "pose": {
+              "x": 0,
+              "y": 0,
+              "yaw": 0
+            },
+            "label": "bot"
+          }
+        },
+        {
+          "type": "start"
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 0,
+            "t0": 1000,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000,
+                "dt": 0.1,
+                "values": [
+                  10,
+                  11,
+                  12
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "stats": true
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 1,
+            "t0": 1000.3,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  4,
+                  5,
+                  6
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.3,
+                "dt": 0.1,
+                "values": [
+                  40,
+                  41,
+                  42
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 2,
+            "t0": 1000.6,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  7,
+                  8,
+                  9
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.6,
+                "dt": 0.1,
+                "values": [
+                  70,
+                  71,
+                  72
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "pushFrame",
+          "frame": {
+            "seq": 3,
+            "t0": 1000.9,
+            "channels": [
+              {
+                "id": 1,
+                "tStart": 1000.9,
+                "dt": 0.1,
+                "values": [
+                  9,
+                  10,
+                  11
+                ]
+              },
+              {
+                "id": 2,
+                "tStart": 1000.9,
+                "dt": 0.1,
+                "values": [
+                  90,
+                  91,
+                  92
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "stats": true
+        },
+        {
+          "type": "query",
+          "bytes": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "recording": true,
+            "messages": 3,
+            "started": 1000
+          },
+          {
+            "recording": false,
+            "messages": 4,
+            "started": 1000
+          },
+          {
+            "length": 1584,
+            "hash": 4168383189
+          }
+        ]
+      }
+    },
+    {
+      "name": "record: nothing recorded when stopped without start",
+      "setup": {},
+      "steps": [
+        {
+          "type": "declareChannel",
+          "info": {
+            "id": 1,
+            "name": "a"
+          }
+        },
+        {
+          "type": "stop"
+        },
+        {
+          "type": "query",
+          "bytes": true
+        },
+        {
+          "type": "query",
+          "stats": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          null,
+          {
+            "recording": false,
+            "messages": 0,
+            "started": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "lz4: block with literals, an overlapping match and trailing literals",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "lz4Block": {
+            "data": "QGFiY2QEADB4eXo=",
+            "size": 11
+          }
+        },
+        {
+          "type": "query",
+          "lz4Block": {
+            "data": "EEEBAAA=",
+            "size": 20
+          }
+        },
+        {
+          "type": "query",
+          "lz4Block": {
+            "data": "H0EBAAUA",
+            "size": 30
+          }
+        },
+        {
+          "type": "query",
+          "lz4Block": {
+            "data": "EEEAAAA=",
+            "size": 20
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          "616263646162636478797a",
+          "4141414141",
+          "41414141414141414141414141414141414141414141414141",
+          "error"
+        ]
+      }
+    },
+    {
+      "name": "lz4: frame round trip through the sample's records",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "lz4": {
+            "data": "BCJNGGBwALUDAAAyA3UAAQDwFQEADgAAAHNreXNjb3BlLkZyYW1lBAAAAHRleHRVAAAAU2t5UxoAARkA9CAgdjE6IGJpbmFyeSBiYXRjaCBvZiBjaGFubmVsIHNhbXBsZXMgKHNlZSBNb3JpLjwAwCBzdHJlYW1pbmcvZmAAMikDK30ASAACABF+ABJDSwDzCHMKAAAAanNvbnNjaGVtYQIAAAB7fQQuNACUAAABABAAAAAvtQACVQAYc8gAES1oAAAxACAEJgYAEAA1ADkCABI3AAO5ABBz7wAAbgAAKQAgBZYGAAEvAAEJAEAQpdToCQADCAAkeyI1APAYIjpbeyJpZCI6MSwibmFtZSI6InNpbmUiLCJ1bml0IjoiViIsInRp9QDyCCI6InJlZ3VsYXIiLCJyYXRlIjoxMH0sPwAVMj8AP3RyaTMADEBdfQMtjQBoAAAAAwATOQGvbGF5ZXIucG9zZTsBAhMvNgBQAgADAAsEAQEwAFRzL2JvdP0AAFIBAAwAQGtpbmQIAABMACUFZTgAAQkAAwUBEwAIANB7ImRlY2xhcmUiOnsiOAAwIjoiNwBwIiwibWV0YRYAAQ8Aojp7IngiOjAsInkGAPEKYXciOjB9LCJsYWJlbCI6ImJvdCJ9fX0FfmUABQUAA2YABG4AU1NLU0YBHQAAEgIBCwCBQI9AAQABAAMNAIAAAABAj0CamQEAYLk/AACAPxIAQAAAQEAfAB8CKAAGoCBBAAAwQQAAQEEoACAFNgYAMAAAADEAYQAAAPGa2gICAwgAYHsicHVzaNwAEXj8AXF5IjoyLCJ51AApLjXGAAGuADGzhuY/AAMIAATGAAAcAADGABBmAQAWQsYAAA8AKWZCxgCJQAAAoEAAAMDGAA4oAKAgQgAAJEIAAChCwAAgAzMGAG8AAAAEABkpAgGPaW50Q2xvdWQvAgIEAgFXAwAEAAwvAkBzY2FuHAIALQMRFlwAIAAA+AEARQAkcG9TACMFTnsAA5YBA/oAEwAIAA82AgMEPQAJPAKgaW50U2l6ZSI6Mh8CBNIAIAMAPQEETwAECAAGmAEBigDJcyI6WzEsMiwzLDRdlQEAdQFBAFZo+JUBAwgABJUBABwAAAQAZs3MzMzMRJUBBBAABlsCEOCNAUFBAAAQMwIAKgIA7QAOKACRjEIAAI5CAACQlQEjBTQaASACAGcADIcABsMAEnhVAjMiOjNbAlMxfX0FOz0AAPECcAAAAPlJCukSAAMIAA+aBAAVM1sEgGxhdGUifV19AAAAAA==",
+            "size": 1526
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          "03750000000000000001000e000000736b7973636f70652e4672616d65040000007465787455000000536b7953636f70654672616d652076313a2062696e617279206261746368206f66206368616e6e656c2073616d706c65732028736565204d6f72692e536b7953636f70652073747265616d696e672f6672616d6529032b00000000000000020011000000736b7973636f70652e4368616e6e656c730a0000006a736f6e736368656d61020000007b7d042e0000000000000000000100100000002f736b7973636f70652f6672616d65730e000000736b7973636f70652d6672616d650000000004260000000000000001000200120000002f736b7973636f70652f6368616e6e656c73040000006a736f6e000000000596000000000000000100000000000010a5d4e80000000010a5d4e80000007b226368616e6e656c73223a5b7b226964223a312c226e616d65223a2273696e65222c22756e6974223a2256222c2274696d696e67223a22726567756c6172222c2272617465223a31307d2c7b226964223a322c226e616d65223a22747269222c2274696d696e67223a22726567756c6172222c2272617465223a31307d5d7d032d00000000000000030013000000736b7973636f70652e6c617965722e706f73650a0000006a736f6e736368656d61020000007b7d042f00000000000000020003000b0000002f6c61796572732f626f74040000006a736f6e10000000040000006b696e6404000000706f73650565000000000000000200000000000010a5d4e80000000010a5d4e80000007b226465636c617265223a7b226b696e64223a22706f7365222c226d657461223a7b22706f7365223a7b2278223a302c2279223a302c22796177223a307d2c226c6162656c223a22626f74227d7d7d057e000000000000000000000000000010a5d4e80000000010a5d4e8000000534b53460100000000000000020000000000000000408f4001000100030000000000000000408f409a9999999999b93f0000803f00000040000040400000000002000100030000000000000000408f409a9999999999b93f0000204100003041000040410000000005360000000000000002000100000000f19adae800000000f19adae80000007b2270757368223a7b2278223a312c2279223a322c22796177223a302e357d7d057e0000000000000000000100000000b386e6e800000000b386e6e8000000534b53460100000001000000020000006666666666428f4001000100030000006666666666428f409a9999999999b93f000080400000a0400000c0400000000002000100030000006666666666428f409a9999999999b93f00002042000024420000284200000000033300000000000000040019000000736b7973636f70652e6c617965722e706f696e74436c6f75640a0000006a736f6e736368656d61020000007b7d043600000000000000030004000c0000002f6c61796572732f7363616e040000006a736f6e16000000040000006b696e640a000000706f696e74436c6f7564054e0000000000000003000000000000b386e6e800000000b386e6e80000007b226465636c617265223a7b226b696e64223a22706f696e74436c6f7564222c226d657461223a7b22706f696e7453697a65223a327d7d7d05330000000000000003000100000000b386e6e800000000b386e6e80000007b2270757368223a7b22706f696e7473223a5b312c322c332c345d7d7d057e00000000000000000002000000005668f8e8000000005668f8e8000000534b5346010000000200000002000000cdcccccccc448f400100010003000000cdcccccccc448f409a9999999999b93f0000e0400000004100001041000000000200010003000000cdcccccccc448f409a9999999999b93f00008c4200008e420000904200000000053400000000000000020002000000005668f8e8000000005668f8e80000007b2270757368223a7b2278223a322c2279223a332c22796177223a317d7d053b0000000000000001000100000000f9490ae900000000f9490ae90000007b226368616e6e656c73223a5b7b226964223a332c226e616d65223a226c617465227d5d7d"
+        ]
+      }
+    },
+    {
+      "name": "lz4: chunked file reads like the unchunked sample",
+      "setup": {
+        "base64": "iU1DQVAwDQoBIwAAAAAAAAAIAAAAc2t5c2NvcGUTAAAATW9yaS5Ta3lTY29wZSAwLjEuMAbvAwAAAAAAAAAQpdToAAAAAPlJCukAAAD2BQAAAAAAAAAAAAADAAAAbHo0xAMAAAAAAAAEIk0YYHAAtQMAADIDdQABAPAVAQAOAAAAc2t5c2NvcGUuRnJhbWUEAAAAdGV4dFUAAABTa3lTGgABGQD0ICB2MTogYmluYXJ5IGJhdGNoIG9mIGNoYW5uZWwgc2FtcGxlcyAoc2VlIE1vcmkuPADAIHN0cmVhbWluZy9mYAAyKQMrfQBIAAIAEX4AEkNLAPMIcwoAAABqc29uc2NoZW1hAgAAAHt9BC40AJQAAAEAEAAAAC+1AAJVABhzyAARLWgAADEAIAQmBgAQADUAOQIAEjcAA7kAEHPvAABuAAApACAFlgYAAS8AAQkAQBCl1OgJAAMIACR7IjUA8BgiOlt7ImlkIjoxLCJuYW1lIjoic2luZSIsInVuaXQiOiJWIiwidGn1APIIIjoicmVndWxhciIsInJhdGUiOjEwfSw/ABUyPwA/dHJpMwAMQF19Ay2NAGgAAAADABM5Aa9sYXllci5wb3NlOwECEy82AFACAAMACwQBATAAVHMvYm90/QAAUgEADABAa2luZAgAAEwAJQVlOAABCQADBQETAAgA0HsiZGVjbGFyZSI6eyI4ADAiOiI3AHAiLCJtZXRhFgABDwCiOnsieCI6MCwieQYA8QphdyI6MH0sImxhYmVsIjoiYm90In19fQV+ZQAFBQADZgAEbgBTU0tTRgEdAAASAgELAIFAj0ABAAEAAw0AgAAAAECPQJqZAQBguT8AAIA/EgBAAABAQB8AHwIoAAagIEEAADBBAABAQSgAIAU2BgAwAAAAMQBhAAAA8ZraAgIDCABgeyJwdXNo3AARePwBcXkiOjIsInnUACkuNcYAAa4AMbOG5j8AAwgABMYAABwAAMYAEGYBABZCxgAADwApZkLGAIlAAACgQAAAwMYADigAoCBCAAAkQgAAKELAACADMwYAbwAAAAQAGSkCAY9pbnRDbG91ZC8CAgQCAVcDAAQADC8CQHNjYW4cAgAtAxEWXAAgAAD4AQBFACRwb1MAIwVOewADlgED+gATAAgADzYCAwQ9AAk8AqBpbnRTaXplIjoyHwIE0gAgAwA9AQRPAAQIAAaYAQGKAMlzIjpbMSwyLDMsNF2VAQB1AUEAVmj4lQEDCAAElQEAHAAABABmzczMzMxElQEEEAAGWwIQ4I0BQUEAABAzAgAqAgDtAA4oAJGMQgAAjkIAAJCVASMFNBoBIAIAZwAMhwAGwwASeFUCMyI6M1sCUzF9fQU7PQAA8QJwAAAA+UkK6RIAAwgAD5oEABUzWwSAbGF0ZSJ9XX0AAAAADwQAAAAAAAAAAAAAAAIUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiU1DQVAwDQo="
+      },
+      "steps": [
+        {
+          "type": "query",
+          "file": true
+        },
+        {
+          "type": "query",
+          "recording": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "profile": "skyscope",
+            "library": "Mori.SkyScope 0.1.0",
+            "schemas": [
+              {
+                "id": 1,
+                "name": "skyscope.Frame",
+                "encoding": "text"
+              },
+              {
+                "id": 2,
+                "name": "skyscope.Channels",
+                "encoding": "jsonschema"
+              },
+              {
+                "id": 3,
+                "name": "skyscope.layer.pose",
+                "encoding": "jsonschema"
+              },
+              {
+                "id": 4,
+                "name": "skyscope.layer.pointCloud",
+                "encoding": "jsonschema"
+              }
+            ],
+            "channels": [
+              {
+                "id": 0,
+                "schemaId": 1,
+                "topic": "/skyscope/frames",
+                "messageEncoding": "skyscope-frame",
+                "metadata": {}
+              },
+              {
+                "id": 1,
+                "schemaId": 2,
+                "topic": "/skyscope/channels",
+                "messageEncoding": "json",
+                "metadata": {}
+              },
+              {
+                "id": 2,
+                "schemaId": 3,
+                "topic": "/layers/bot",
+                "messageEncoding": "json",
+                "metadata": {
+                  "kind": "pose"
+                }
+              },
+              {
+                "id": 3,
+                "schemaId": 4,
+                "topic": "/layers/scan",
+                "messageEncoding": "json",
+                "metadata": {
+                  "kind": "pointCloud"
+                }
+              }
+            ],
+            "messages": 10,
+            "byTopic": {
+              "/skyscope/channels": 2,
+              "/layers/bot": 3,
+              "/skyscope/frames": 3,
+              "/layers/scan": 2
+            },
+            "start": 1000,
+            "end": 1000.9
+          },
+          {
+            "channels": [
+              {
+                "id": 1,
+                "name": "sine",
+                "unit": "V",
+                "timing": "regular",
+                "rate": 10
+              },
+              {
+                "id": 2,
+                "name": "tri",
+                "timing": "regular",
+                "rate": 10
+              },
+              {
+                "id": 3,
+                "name": "late"
+              }
+            ],
+            "frames": [
+              {
+                "seq": 0,
+                "t0": 1000,
+                "ids": [
+                  1,
+                  2
+                ],
+                "first": 1
+              },
+              {
+                "seq": 1,
+                "t0": 1000.3,
+                "ids": [
+                  1,
+                  2
+                ],
+                "first": 4
+              },
+              {
+                "seq": 2,
+                "t0": 1000.6,
+                "ids": [
+                  1,
+                  2
+                ],
+                "first": 7
+              }
+            ],
+            "layerEvents": [
+              {
+                "t": 1000,
+                "id": "bot",
+                "kind": "pose",
+                "meta": {
+                  "pose": {
+                    "x": 0,
+                    "y": 0,
+                    "yaw": 0
+                  },
+                  "label": "bot"
+                },
+                "payload": null
+              },
+              {
+                "t": 1000.1,
+                "id": "bot",
+                "kind": null,
+                "meta": null,
+                "payload": {
+                  "x": 1,
+                  "y": 2,
+                  "yaw": 0.5
+                }
+              },
+              {
+                "t": 1000.3,
+                "id": "scan",
+                "kind": "pointCloud",
+                "meta": {
+                  "pointSize": 2
+                },
+                "payload": null
+              },
+              {
+                "t": 1000.3,
+                "id": "scan",
+                "kind": null,
+                "meta": null,
+                "payload": {
+                  "points": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ]
+                }
+              },
+              {
+                "t": 1000.6,
+                "id": "bot",
+                "kind": null,
+                "meta": null,
+                "payload": {
+                  "x": 2,
+                  "y": 3,
+                  "yaw": 1
+                }
+              }
+            ],
+            "start": 1000,
+            "end": 1000.8
+          }
+        ]
+      }
+    },
+    {
+      "name": "zstd: chunk compression is reported, not silently skipped",
+      "setup": {
+        "base64": "iU1DQVAwDQoBIwAAAAAAAAAIAAAAc2t5c2NvcGUTAAAATW9yaS5Ta3lTY29wZSAwLjEuMAbwAwAAAAAAAAAQpdToAAAAAPlJCukAAAD2BQAAAAAAAAAAAAAEAAAAenN0ZMQDAAAAAAAABCJNGGBwALUDAAAyA3UAAQDwFQEADgAAAHNreXNjb3BlLkZyYW1lBAAAAHRleHRVAAAAU2t5UxoAARkA9CAgdjE6IGJpbmFyeSBiYXRjaCBvZiBjaGFubmVsIHNhbXBsZXMgKHNlZSBNb3JpLjwAwCBzdHJlYW1pbmcvZmAAMikDK30ASAACABF+ABJDSwDzCHMKAAAAanNvbnNjaGVtYQIAAAB7fQQuNACUAAABABAAAAAvtQACVQAYc8gAES1oAAAxACAEJgYAEAA1ADkCABI3AAO5ABBz7wAAbgAAKQAgBZYGAAEvAAEJAEAQpdToCQADCAAkeyI1APAYIjpbeyJpZCI6MSwibmFtZSI6InNpbmUiLCJ1bml0IjoiViIsInRp9QDyCCI6InJlZ3VsYXIiLCJyYXRlIjoxMH0sPwAVMj8AP3RyaTMADEBdfQMtjQBoAAAAAwATOQGvbGF5ZXIucG9zZTsBAhMvNgBQAgADAAsEAQEwAFRzL2JvdP0AAFIBAAwAQGtpbmQIAABMACUFZTgAAQkAAwUBEwAIANB7ImRlY2xhcmUiOnsiOAAwIjoiNwBwIiwibWV0YRYAAQ8Aojp7IngiOjAsInkGAPEKYXciOjB9LCJsYWJlbCI6ImJvdCJ9fX0FfmUABQUAA2YABG4AU1NLU0YBHQAAEgIBCwCBQI9AAQABAAMNAIAAAABAj0CamQEAYLk/AACAPxIAQAAAQEAfAB8CKAAGoCBBAAAwQQAAQEEoACAFNgYAMAAAADEAYQAAAPGa2gICAwgAYHsicHVzaNwAEXj8AXF5IjoyLCJ51AApLjXGAAGuADGzhuY/AAMIAATGAAAcAADGABBmAQAWQsYAAA8AKWZCxgCJQAAAoEAAAMDGAA4oAKAgQgAAJEIAAChCwAAgAzMGAG8AAAAEABkpAgGPaW50Q2xvdWQvAgIEAgFXAwAEAAwvAkBzY2FuHAIALQMRFlwAIAAA+AEARQAkcG9TACMFTnsAA5YBA/oAEwAIAA82AgMEPQAJPAKgaW50U2l6ZSI6Mh8CBNIAIAMAPQEETwAECAAGmAEBigDJcyI6WzEsMiwzLDRdlQEAdQFBAFZo+JUBAwgABJUBABwAAAQAZs3MzMzMRJUBBBAABlsCEOCNAUFBAAAQMwIAKgIA7QAOKACRjEIAAI5CAACQlQEjBTQaASACAGcADIcABsMAEnhVAjMiOjNbAlMxfX0FOz0AAPECcAAAAPlJCukSAAMIAA+aBAAVM1sEgGxhdGUifV19AAAAAA8EAAAAAAAAAAAAAAACFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIlNQ0FQMA0K"
+      },
+      "steps": [
+        {
+          "type": "query",
+          "readError": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          "MCAP: chunk compression \"zstd\" is not supported (uncompressed and lz4 chunks are)"
+        ]
+      }
+    }
+  ]
+}

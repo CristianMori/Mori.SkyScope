@@ -1,0 +1,223 @@
+{
+  "component": "meshFormats",
+  "cases": [
+    {
+      "name": "binary STL: 4 faces, flat normals, bounds",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "parse": {
+            "data": "c2t5c2NvcGUgZml4dHVyZSB0ZXRyYWhlZHJvbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAA=",
+            "name": "tetra.stl"
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "vertices": 12,
+            "triangles": 4,
+            "indexed": false,
+            "bounds": {
+              "min": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "max": {
+                "x": 1,
+                "y": 1,
+                "z": 1
+              }
+            },
+            "hash": {
+              "positions": 2853992632,
+              "colors": null,
+              "normals": 2096606267,
+              "indices": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ASCII STL is detected by content and parsed by vertex lines",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "parse": {
+            "data": "c29saWQgc3F1YXJlCiAgZmFjZXQgbm9ybWFsIDAgMCAxCiAgICBvdXRlciBsb29wCiAgICAgIHZlcnRleCAwIDAgMAogICAgICB2ZXJ0ZXggMSAwIDAKICAgICAgdmVydGV4IDEgMSAwCiAgICBlbmRsb29wCiAgZW5kZmFjZXQKICBmYWNldCBub3JtYWwgMCAwIDEKICAgIG91dGVyIGxvb3AKICAgICAgdmVydGV4IDAgMCAwCiAgICAgIHZlcnRleCAxIDEgMAogICAgICB2ZXJ0ZXggMCAxIDAKICAgIGVuZGxvb3AKICBlbmRmYWNldAplbmRzb2xpZCBzcXVhcmUK",
+            "name": "square.stl"
+          }
+        },
+        {
+          "type": "query",
+          "parse": {
+            "data": "c29saWQgc3F1YXJlCiAgZmFjZXQgbm9ybWFsIDAgMCAxCiAgICBvdXRlciBsb29wCiAgICAgIHZlcnRleCAwIDAgMAogICAgICB2ZXJ0ZXggMSAwIDAKICAgICAgdmVydGV4IDEgMSAwCiAgICBlbmRsb29wCiAgZW5kZmFjZXQKICBmYWNldCBub3JtYWwgMCAwIDEKICAgIG91dGVyIGxvb3AKICAgICAgdmVydGV4IDAgMCAwCiAgICAgIHZlcnRleCAxIDEgMAogICAgICB2ZXJ0ZXggMCAxIDAKICAgIGVuZGxvb3AKICBlbmRmYWNldAplbmRzb2xpZCBzcXVhcmUK"
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "vertices": 6,
+            "triangles": 2,
+            "indexed": false,
+            "bounds": {
+              "min": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "max": {
+                "x": 1,
+                "y": 1,
+                "z": 0
+              }
+            },
+            "hash": {
+              "positions": 2104917365,
+              "colors": null,
+              "normals": 3001788693,
+              "indices": null
+            }
+          },
+          {
+            "vertices": 6,
+            "triangles": 2,
+            "indexed": false,
+            "bounds": {
+              "min": {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              "max": {
+                "x": 1,
+                "y": 1,
+                "z": 0
+              }
+            },
+            "hash": {
+              "positions": 2104917365,
+              "colors": null,
+              "normals": 3001788693,
+              "indices": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "GLB: indexed cube under a translated, scaled node; normals averaged from faces",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "parse": {
+            "data": "Z2xURgIAAADAAgAA/AEAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAifSwic2NlbmUiOjAsInNjZW5lcyI6W3sibm9kZXMiOlswXX1dLCJub2RlcyI6W3sibWVzaCI6MCwidHJhbnNsYXRpb24iOlsyLDAsMC41XSwic2NhbGUiOlswLjUsMC41LDAuNV19XSwibWVzaGVzIjpbeyJwcmltaXRpdmVzIjpbeyJhdHRyaWJ1dGVzIjp7IlBPU0lUSU9OIjowfSwiaW5kaWNlcyI6MX1dfV0sImFjY2Vzc29ycyI6W3siYnVmZmVyVmlldyI6MCwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjgsInR5cGUiOiJWRUMzIiwibWluIjpbLTEsLTEsLTFdLCJtYXgiOlsxLDEsMV19LHsiYnVmZmVyVmlldyI6MSwiY29tcG9uZW50VHlwZSI6NTEyMywiY291bnQiOjM2LCJ0eXBlIjoiU0NBTEFSIn1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjo5Nn0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjk2LCJieXRlTGVuZ3RoIjo3Mn1dLCJidWZmZXJzIjpbeyJieXRlTGVuZ3RoIjoxNjh9XX0gqAAAAEJJTgAAAIC/AACAvwAAgL8AAIA/AACAvwAAgL8AAIA/AACAPwAAgL8AAIC/AACAPwAAgL8AAIC/AACAvwAAgD8AAIA/AACAvwAAgD8AAIA/AACAPwAAgD8AAIC/AACAPwAAgD8AAAIAAQAAAAMAAgAEAAUABgAEAAYABwAAAAEABQAAAAUABAACAAMABwACAAcABgAAAAQABwAAAAcAAwABAAIABgABAAYABQA=",
+            "name": "cube.glb"
+          }
+        },
+        {
+          "type": "query",
+          "parse": {
+            "data": "Z2xURgIAAADAAgAA/AEAAEpTT057ImFzc2V0Ijp7InZlcnNpb24iOiIyLjAifSwic2NlbmUiOjAsInNjZW5lcyI6W3sibm9kZXMiOlswXX1dLCJub2RlcyI6W3sibWVzaCI6MCwidHJhbnNsYXRpb24iOlsyLDAsMC41XSwic2NhbGUiOlswLjUsMC41LDAuNV19XSwibWVzaGVzIjpbeyJwcmltaXRpdmVzIjpbeyJhdHRyaWJ1dGVzIjp7IlBPU0lUSU9OIjowfSwiaW5kaWNlcyI6MX1dfV0sImFjY2Vzc29ycyI6W3siYnVmZmVyVmlldyI6MCwiY29tcG9uZW50VHlwZSI6NTEyNiwiY291bnQiOjgsInR5cGUiOiJWRUMzIiwibWluIjpbLTEsLTEsLTFdLCJtYXgiOlsxLDEsMV19LHsiYnVmZmVyVmlldyI6MSwiY29tcG9uZW50VHlwZSI6NTEyMywiY291bnQiOjM2LCJ0eXBlIjoiU0NBTEFSIn1dLCJidWZmZXJWaWV3cyI6W3siYnVmZmVyIjowLCJieXRlT2Zmc2V0IjowLCJieXRlTGVuZ3RoIjo5Nn0seyJidWZmZXIiOjAsImJ5dGVPZmZzZXQiOjk2LCJieXRlTGVuZ3RoIjo3Mn1dLCJidWZmZXJzIjpbeyJieXRlTGVuZ3RoIjoxNjh9XX0gqAAAAEJJTgAAAIC/AACAvwAAgL8AAIA/AACAvwAAgL8AAIA/AACAPwAAgL8AAIC/AACAPwAAgL8AAIC/AACAvwAAgD8AAIA/AACAvwAAgD8AAIA/AACAPwAAgD8AAIC/AACAPwAAgD8AAAIAAQAAAAMAAgAEAAUABgAEAAYABwAAAAEABQAAAAUABAACAAMABwACAAcABgAAAAQABwAAAAcAAwABAAIABgABAAYABQA="
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "vertices": 8,
+            "triangles": 12,
+            "indexed": true,
+            "bounds": {
+              "min": {
+                "x": 1.5,
+                "y": -0.5,
+                "z": 0
+              },
+              "max": {
+                "x": 2.5,
+                "y": 0.5,
+                "z": 1
+              }
+            },
+            "hash": {
+              "positions": 45561285,
+              "colors": null,
+              "normals": 2025262631,
+              "indices": 591656245
+            }
+          },
+          {
+            "vertices": 8,
+            "triangles": 12,
+            "indexed": true,
+            "bounds": {
+              "min": {
+                "x": 1.5,
+                "y": -0.5,
+                "z": 0
+              },
+              "max": {
+                "x": 2.5,
+                "y": 0.5,
+                "z": 1
+              }
+            },
+            "hash": {
+              "positions": 45561285,
+              "colors": null,
+              "normals": 2025262631,
+              "indices": 591656245
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "errors: truncated STL, bad GLB magic, unknown extension",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "parse": {
+            "data": "c2t5c2NvcGUgZml4dHVyZSB0ZXRyYWhlZHJvbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+            "name": "x.stl"
+          }
+        },
+        {
+          "type": "query",
+          "parse": {
+            "data": "AQIDBAUGBwgJCgsMDQ4PEBESExQV",
+            "name": "x.glb"
+          }
+        },
+        {
+          "type": "query",
+          "parse": {
+            "data": "c2t5c2NvcGUgZml4dHVyZSB0ZXRyYWhlZHJvbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAA=",
+            "name": "x.obj"
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "error": "stl: truncated"
+          },
+          {
+            "error": "glb: bad magic"
+          },
+          {
+            "error": "mesh: unsupported resource x.obj"
+          }
+        ]
+      }
+    }
+  ]
+}

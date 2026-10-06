@@ -1,0 +1,1395 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "signal-tree",
+  "description": "Signal tree beside a chart: grouping by name prefix, search, Ctrl/Shift selection, drag payloads.",
+  "cases": [
+    {
+      "name": "rows: ungrouped channels first, then groups sorted with their leaves; split by the last separator",
+      "setup": {
+        "channels": [
+          {
+            "id": 1,
+            "name": "sine"
+          },
+          {
+            "id": 2,
+            "name": "tri",
+            "unit": "V"
+          },
+          {
+            "id": 3,
+            "name": "saw"
+          },
+          {
+            "id": 4,
+            "name": "valve",
+            "kind": "digital"
+          },
+          {
+            "id": 100,
+            "name": "amr-1/pose/x",
+            "unit": "m"
+          },
+          {
+            "id": 101,
+            "name": "amr-1/pose/y",
+            "unit": "m"
+          },
+          {
+            "id": 103,
+            "name": "amr-1/speed",
+            "unit": "m/s"
+          },
+          {
+            "id": 200,
+            "name": "motor.torque",
+            "unit": "Nm"
+          },
+          {
+            "id": 201,
+            "name": "motor.speed",
+            "unit": "rpm"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "rows": true
+        },
+        {
+          "type": "query",
+          "split": "amr-1/pose/x"
+        },
+        {
+          "type": "query",
+          "split": "sine"
+        },
+        {
+          "type": "query",
+          "split": "motor.speed"
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "kind": "channel",
+              "id": "c:3",
+              "name": "saw",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 3,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:4",
+              "name": "valve",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 4,
+              "unit": null,
+              "channelKind": "digital",
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1",
+              "name": "amr-1",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:103",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 103,
+              "unit": "m/s",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1/pose",
+              "name": "amr-1/pose",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:100",
+              "name": "x",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 100,
+              "unit": "m",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:101",
+              "name": "y",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 101,
+              "unit": "m",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:motor",
+              "name": "motor",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:201",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 201,
+              "unit": "rpm",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:200",
+              "name": "torque",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 200,
+              "unit": "Nm",
+              "channelKind": null,
+              "selected": false
+            }
+          ],
+          {
+            "group": "amr-1/pose",
+            "leaf": "x"
+          },
+          {
+            "group": "",
+            "leaf": "sine"
+          },
+          {
+            "group": "motor",
+            "leaf": "speed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "custom separators",
+      "setup": {
+        "channels": [
+          {
+            "id": 1,
+            "name": "sine"
+          },
+          {
+            "id": 2,
+            "name": "tri",
+            "unit": "V"
+          },
+          {
+            "id": 3,
+            "name": "saw"
+          },
+          {
+            "id": 4,
+            "name": "valve",
+            "kind": "digital"
+          },
+          {
+            "id": 100,
+            "name": "amr-1/pose/x",
+            "unit": "m"
+          },
+          {
+            "id": 101,
+            "name": "amr-1/pose/y",
+            "unit": "m"
+          },
+          {
+            "id": 103,
+            "name": "amr-1/speed",
+            "unit": "m/s"
+          },
+          {
+            "id": 200,
+            "name": "motor.torque",
+            "unit": "Nm"
+          },
+          {
+            "id": 201,
+            "name": "motor.speed",
+            "unit": "rpm"
+          }
+        ],
+        "separators": "/"
+      },
+      "steps": [
+        {
+          "type": "query",
+          "rows": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "kind": "channel",
+              "id": "c:201",
+              "name": "motor.speed",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 201,
+              "unit": "rpm",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:200",
+              "name": "motor.torque",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 200,
+              "unit": "Nm",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:3",
+              "name": "saw",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 3,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:4",
+              "name": "valve",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 4,
+              "unit": null,
+              "channelKind": "digital",
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1",
+              "name": "amr-1",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:103",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 103,
+              "unit": "m/s",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1/pose",
+              "name": "amr-1/pose",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:100",
+              "name": "x",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 100,
+              "unit": "m",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:101",
+              "name": "y",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 101,
+              "unit": "m",
+              "channelKind": null,
+              "selected": false
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "search filters channels by name or unit, hides empty groups and opens the rest",
+      "setup": {
+        "channels": [
+          {
+            "id": 1,
+            "name": "sine"
+          },
+          {
+            "id": 2,
+            "name": "tri",
+            "unit": "V"
+          },
+          {
+            "id": 3,
+            "name": "saw"
+          },
+          {
+            "id": 4,
+            "name": "valve",
+            "kind": "digital"
+          },
+          {
+            "id": 100,
+            "name": "amr-1/pose/x",
+            "unit": "m"
+          },
+          {
+            "id": 101,
+            "name": "amr-1/pose/y",
+            "unit": "m"
+          },
+          {
+            "id": 103,
+            "name": "amr-1/speed",
+            "unit": "m/s"
+          },
+          {
+            "id": 200,
+            "name": "motor.torque",
+            "unit": "Nm"
+          },
+          {
+            "id": 201,
+            "name": "motor.speed",
+            "unit": "rpm"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "toggleGroup",
+          "prefix": "amr-1/pose"
+        },
+        {
+          "type": "query",
+          "rows": true
+        },
+        {
+          "type": "setQuery",
+          "query": "POSE"
+        },
+        {
+          "type": "query",
+          "rows": true
+        },
+        {
+          "type": "setQuery",
+          "query": "rpm"
+        },
+        {
+          "type": "query",
+          "rows": true
+        },
+        {
+          "type": "setQuery",
+          "query": ""
+        },
+        {
+          "type": "query",
+          "rows": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "kind": "channel",
+              "id": "c:3",
+              "name": "saw",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 3,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:4",
+              "name": "valve",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 4,
+              "unit": null,
+              "channelKind": "digital",
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1",
+              "name": "amr-1",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:103",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 103,
+              "unit": "m/s",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1/pose",
+              "name": "amr-1/pose",
+              "depth": 0,
+              "expanded": false,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:motor",
+              "name": "motor",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:201",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 201,
+              "unit": "rpm",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:200",
+              "name": "torque",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 200,
+              "unit": "Nm",
+              "channelKind": null,
+              "selected": false
+            }
+          ],
+          [
+            {
+              "kind": "group",
+              "id": "g:amr-1/pose",
+              "name": "amr-1/pose",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:100",
+              "name": "x",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 100,
+              "unit": "m",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:101",
+              "name": "y",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 101,
+              "unit": "m",
+              "channelKind": null,
+              "selected": false
+            }
+          ],
+          [
+            {
+              "kind": "group",
+              "id": "g:motor",
+              "name": "motor",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:201",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 201,
+              "unit": "rpm",
+              "channelKind": null,
+              "selected": false
+            }
+          ],
+          [
+            {
+              "kind": "channel",
+              "id": "c:3",
+              "name": "saw",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 3,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:4",
+              "name": "valve",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 4,
+              "unit": null,
+              "channelKind": "digital",
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1",
+              "name": "amr-1",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:103",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 103,
+              "unit": "m/s",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1/pose",
+              "name": "amr-1/pose",
+              "depth": 0,
+              "expanded": false,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:motor",
+              "name": "motor",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:201",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 201,
+              "unit": "rpm",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:200",
+              "name": "torque",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 200,
+              "unit": "Nm",
+              "channelKind": null,
+              "selected": false
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "selection: plain, ctrl toggle, shift range over visible rows, group clicks",
+      "setup": {
+        "channels": [
+          {
+            "id": 1,
+            "name": "sine"
+          },
+          {
+            "id": 2,
+            "name": "tri",
+            "unit": "V"
+          },
+          {
+            "id": 3,
+            "name": "saw"
+          },
+          {
+            "id": 4,
+            "name": "valve",
+            "kind": "digital"
+          },
+          {
+            "id": 100,
+            "name": "amr-1/pose/x",
+            "unit": "m"
+          },
+          {
+            "id": 101,
+            "name": "amr-1/pose/y",
+            "unit": "m"
+          },
+          {
+            "id": 103,
+            "name": "amr-1/speed",
+            "unit": "m/s"
+          },
+          {
+            "id": 200,
+            "name": "motor.torque",
+            "unit": "Nm"
+          },
+          {
+            "id": 201,
+            "name": "motor.speed",
+            "unit": "rpm"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "click",
+          "rowId": "c:2"
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "c:4",
+          "ctrl": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "c:2",
+          "ctrl": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "c:1"
+        },
+        {
+          "type": "click",
+          "rowId": "c:101",
+          "shift": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "c:200",
+          "shift": true,
+          "ctrl": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "g:motor"
+        },
+        {
+          "type": "query",
+          "rows": true
+        },
+        {
+          "type": "click",
+          "rowId": "g:motor"
+        },
+        {
+          "type": "click",
+          "rowId": "g:motor",
+          "ctrl": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "g:motor",
+          "ctrl": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "g:amr-1/pose",
+          "shift": true
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "clearSelection"
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "click",
+          "rowId": "c:999"
+        },
+        {
+          "type": "query",
+          "selection": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            2
+          ],
+          [
+            2,
+            4
+          ],
+          [
+            4
+          ],
+          [
+            1,
+            2,
+            4,
+            100,
+            101,
+            103
+          ],
+          [
+            1,
+            2,
+            4,
+            100,
+            101,
+            103,
+            200,
+            201
+          ],
+          [
+            {
+              "kind": "channel",
+              "id": "c:3",
+              "name": "saw",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 3,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "channel",
+              "id": "c:4",
+              "name": "valve",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 4,
+              "unit": null,
+              "channelKind": "digital",
+              "selected": true
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1",
+              "name": "amr-1",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "channel",
+              "id": "c:103",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 103,
+              "unit": "m/s",
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-1/pose",
+              "name": "amr-1/pose",
+              "depth": 0,
+              "expanded": true,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "channel",
+              "id": "c:100",
+              "name": "x",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 100,
+              "unit": "m",
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "channel",
+              "id": "c:101",
+              "name": "y",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 101,
+              "unit": "m",
+              "channelKind": null,
+              "selected": true
+            },
+            {
+              "kind": "group",
+              "id": "g:motor",
+              "name": "motor",
+              "depth": 0,
+              "expanded": false,
+              "count": 2,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": true
+            }
+          ],
+          [
+            1,
+            2,
+            4,
+            100,
+            101,
+            103
+          ],
+          [
+            1,
+            2,
+            4,
+            100,
+            101,
+            103,
+            200,
+            201
+          ],
+          [
+            1,
+            2,
+            4,
+            100,
+            101,
+            103,
+            200,
+            201
+          ],
+          [],
+          []
+        ]
+      }
+    },
+    {
+      "name": "drag payload: the selection in row order when the picked channel is in it, else that channel alone",
+      "setup": {
+        "channels": [
+          {
+            "id": 1,
+            "name": "sine"
+          },
+          {
+            "id": 2,
+            "name": "tri",
+            "unit": "V"
+          },
+          {
+            "id": 3,
+            "name": "saw"
+          },
+          {
+            "id": 4,
+            "name": "valve",
+            "kind": "digital"
+          },
+          {
+            "id": 100,
+            "name": "amr-1/pose/x",
+            "unit": "m"
+          },
+          {
+            "id": 101,
+            "name": "amr-1/pose/y",
+            "unit": "m"
+          },
+          {
+            "id": 103,
+            "name": "amr-1/speed",
+            "unit": "m/s"
+          },
+          {
+            "id": 200,
+            "name": "motor.torque",
+            "unit": "Nm"
+          },
+          {
+            "id": 201,
+            "name": "motor.speed",
+            "unit": "rpm"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "click",
+          "rowId": "c:103"
+        },
+        {
+          "type": "click",
+          "rowId": "c:1",
+          "ctrl": true
+        },
+        {
+          "type": "click",
+          "rowId": "c:200",
+          "ctrl": true
+        },
+        {
+          "type": "query",
+          "dragIds": 1
+        },
+        {
+          "type": "query",
+          "dragIds": 2
+        },
+        {
+          "type": "query",
+          "dragIds": 200
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1,
+            103,
+            200
+          ],
+          [
+            2
+          ],
+          [
+            1,
+            103,
+            200
+          ]
+        ]
+      }
+    },
+    {
+      "name": "late channels appear in place",
+      "setup": {
+        "channels": [
+          {
+            "id": 1,
+            "name": "sine"
+          },
+          {
+            "id": 2,
+            "name": "tri",
+            "unit": "V"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "rows": true
+        },
+        {
+          "type": "declare",
+          "channel": {
+            "id": 300,
+            "name": "amr-2/speed",
+            "unit": "m/s"
+          }
+        },
+        {
+          "type": "declare",
+          "channel": {
+            "id": 5,
+            "name": "noise"
+          }
+        },
+        {
+          "type": "query",
+          "rows": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": false
+            }
+          ],
+          [
+            {
+              "kind": "channel",
+              "id": "c:5",
+              "name": "noise",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 5,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:1",
+              "name": "sine",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 1,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:2",
+              "name": "tri",
+              "depth": 0,
+              "expanded": null,
+              "count": null,
+              "channelId": 2,
+              "unit": "V",
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "group",
+              "id": "g:amr-2",
+              "name": "amr-2",
+              "depth": 0,
+              "expanded": true,
+              "count": 1,
+              "channelId": null,
+              "unit": null,
+              "channelKind": null,
+              "selected": false
+            },
+            {
+              "kind": "channel",
+              "id": "c:300",
+              "name": "speed",
+              "depth": 1,
+              "expanded": null,
+              "count": null,
+              "channelId": 300,
+              "unit": "m/s",
+              "channelKind": null,
+              "selected": false
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

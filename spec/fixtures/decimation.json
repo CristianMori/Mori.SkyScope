@@ -1,0 +1,76 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "decimation",
+  "description": "Incremental M4 buckets over a signal buffer: aggregation, incremental vs batch, polyline emission, rebuild, ring drop.",
+  "cases": [
+    { "name": "buckets aggregate first/min/max/last per quantum",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [0, 1, 2, 3, 4, 5, 6, 7] }, { "type": "update" }, { "type": "query", "buckets": [0, 2] }],
+      "expect": { "top": 1, "queries": [8, [
+        { "index": 0, "t": 0, "count": 4, "first": 0, "min": 0, "max": 3, "last": 3, "tFirst": 0, "tMin": 0, "tMax": 0.75, "tLast": 0.75 },
+        { "index": 1, "t": 1, "count": 4, "first": 4, "min": 4, "max": 7, "last": 7, "tFirst": 1, "tMin": 1, "tMax": 1.75, "tLast": 1.75 } ]] } },
+
+    { "name": "incremental updates equal a single batch",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [0, 1, 2, 3] }, { "type": "update" },
+                { "type": "appendRegular", "t0": 1, "dt": 0.25, "values": [4, 5, 6, 7] }, { "type": "update" }, { "type": "update" }, { "type": "query", "buckets": [0, 2] }],
+      "expect": { "queries": [4, 4, 0, [
+        { "index": 0, "t": 0, "count": 4, "first": 0, "min": 0, "max": 3, "last": 3, "tFirst": 0, "tMin": 0, "tMax": 0.75, "tLast": 0.75 },
+        { "index": 1, "t": 1, "count": 4, "first": 4, "min": 4, "max": 7, "last": 7, "tFirst": 1, "tMin": 1, "tMax": 1.75, "tLast": 1.75 } ]] } },
+
+    { "name": "polyline: min before max",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [5, 1, 9, 2] }, { "type": "update" }, { "type": "query", "polyline": [0, 1] }],
+      "expect": { "queries": [4, [0, 5, 0.25, 1, 0.5, 9, 0.75, 2]] } },
+
+    { "name": "polyline: max before min",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [5, 9, 1, 2] }, { "type": "update" }, { "type": "query", "polyline": [0, 1] }],
+      "expect": { "queries": [4, [0, 5, 0.25, 9, 0.5, 1, 0.75, 2]] } },
+
+    { "name": "polyline: extremes that are first or last are not repeated",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [1, 5, 9, 2] }, { "type": "update" }, { "type": "query", "polyline": [0, 1] }],
+      "expect": { "queries": [4, [0, 1, 0.5, 9, 0.75, 2]] } },
+
+    { "name": "polyline: one and two samples",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [7] }, { "type": "update" }, { "type": "query", "polyline": [0, 1] },
+                { "type": "appendRegular", "t0": 1, "dt": 0.25, "values": [3, 8] }, { "type": "update" }, { "type": "query", "polyline": [1, 2] }],
+      "expect": { "queries": [1, [0, 7], 2, [1, 3, 1.25, 8]] } },
+
+    { "name": "polyline spans several buckets in order",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.5, "values": [0, 1, 2, 3] }, { "type": "update" }, { "type": "query", "polyline": [0, 5] }],
+      "expect": { "queries": [4, [0, 0, 0.5, 1, 1, 2, 1.5, 3]] } },
+
+    { "name": "setQuantum rebuilds from the buffer",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 0.25, "values": [0, 1, 2, 3, 4, 5, 6, 7] }, { "type": "update" }, { "type": "setQuantum", "quantum": 2 }, { "type": "query", "buckets": [0, 3] }],
+      "expect": { "quantum": 2, "top": 0, "queries": [8, [
+        { "index": 0, "t": 0, "count": 8, "first": 0, "min": 0, "max": 7, "last": 7, "tFirst": 0, "tMin": 0, "tMax": 1.75, "tLast": 1.75 } ]] } },
+
+    { "name": "empty buckets are skipped",
+      "setup": { "capacity": 64, "kind": "regular", "quantum": 1 },
+      "steps": [{ "type": "appendRegular", "t0": 0, "dt": 1, "values": [1] }, { "type": "appendRegular", "t0": 5, "dt": 1, "values": [2] }, { "type": "update" },
+                { "type": "query", "buckets": [0, 10] }, { "type": "query", "bucket": 3 }],
+      "expect": { "top": 5, "queries": [2, [
+        { "index": 0, "t": 0, "count": 1, "first": 1, "min": 1, "max": 1, "last": 1, "tFirst": 0, "tMin": 0, "tMax": 0, "tLast": 0 },
+        { "index": 5, "t": 5, "count": 1, "first": 2, "min": 2, "max": 2, "last": 2, "tFirst": 5, "tMin": 5, "tMax": 5, "tLast": 5 } ], null] } },
+
+    { "name": "buckets older than the ring are dropped",
+      "setup": { "capacity": 64, "kind": "timestamped", "quantum": 1, "maxBuckets": 2 },
+      "steps": [{ "type": "appendTimestamped", "times": [0, 1, 2, 3], "values": [0, 1, 2, 3] }, { "type": "update" }, { "type": "query", "buckets": [0, 3] }, { "type": "query", "bucket": 0 }],
+      "expect": { "top": 3, "queries": [4, [
+        { "index": 2, "t": 2, "count": 1, "first": 2, "min": 2, "max": 2, "last": 2, "tFirst": 2, "tMin": 2, "tMax": 2, "tLast": 2 },
+        { "index": 3, "t": 3, "count": 1, "first": 3, "min": 3, "max": 3, "last": 3, "tFirst": 3, "tMin": 3, "tMax": 3, "tLast": 3 } ], null] } },
+
+    { "name": "negative times bucket with floor semantics",
+      "setup": { "capacity": 64, "kind": "timestamped", "quantum": 1 },
+      "steps": [{ "type": "appendTimestamped", "times": [-1.5, -0.5, 0.5], "values": [1, 2, 3] }, { "type": "update" }, { "type": "query", "buckets": [-2, 1] }],
+      "expect": { "top": 0, "queries": [3, [
+        { "index": -2, "t": -2, "count": 1, "first": 1, "min": 1, "max": 1, "last": 1, "tFirst": -1.5, "tMin": -1.5, "tMax": -1.5, "tLast": -1.5 },
+        { "index": -1, "t": -1, "count": 1, "first": 2, "min": 2, "max": 2, "last": 2, "tFirst": -0.5, "tMin": -0.5, "tMax": -0.5, "tLast": -0.5 },
+        { "index": 0, "t": 0, "count": 1, "first": 3, "min": 3, "max": 3, "last": 3, "tFirst": 0.5, "tMin": 0.5, "tMax": 0.5, "tLast": 0.5 } ]] } }
+  ]
+}

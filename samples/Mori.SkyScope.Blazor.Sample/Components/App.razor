@@ -1,0 +1,24 @@
+@* Mori.SkyScope — Root document of the Blazor sample. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="_content/Mori.SkyScope.Blazor/skyscope.css" />
+    <link rel="stylesheet" href="@Assets["Mori.SkyScope.Blazor.Sample.styles.css"]" />
+    <ImportMap />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <ReconnectModal />
+    <script src="@Assets["_framework/blazor.web.js"]"></script>
+</body>
+
+</html>

@@ -1,0 +1,84 @@
+@* Mori.SkyScope — Razor component hosting a gauge or input through the bundled engine. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div @ref="_host" class="@Css.Classes("skyscope-gauge-host", Class)" style="@($"width:{Width};height:{Height};{Style}")" @attributes="AdditionalAttributes"></div>
+
+@code {
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private DotNetObjectReference<Gauge>? _self;
+    private string? _lastState;
+
+    /// <summary>radial | linear | led | ledArray | numeric | compass | attitude | knob | switch | slider.</summary>
+    [Parameter, EditorRequired] public string Kind { get; set; } = "radial";
+    /// <summary>Gauge options (any object with the TS option shape, e.g. an anonymous object); serialised camelCase.</summary>
+    [Parameter] public object? Options { get; set; }
+    /// <summary>Current reading for the radial, linear, led, ledArray, numeric, knob and slider kinds.</summary>
+    [Parameter] public double? Value { get; set; }
+    /// <summary>Bit mask for the ledArray kind in <c>bits</c> mode: LED <c>i</c> lights when bit <c>i</c> is set.</summary>
+    [Parameter] public uint? Bits { get; set; }
+    /// <summary>Heading in degrees for the compass kind.</summary>
+    [Parameter] public double? Heading { get; set; }
+    /// <summary>Pitch in degrees for the attitude kind.</summary>
+    [Parameter] public double? Pitch { get; set; }
+    /// <summary>Roll in degrees for the attitude kind.</summary>
+    [Parameter] public double? Roll { get; set; }
+    /// <summary>State of the switch kind.</summary>
+    [Parameter] public bool? On { get; set; }
+    /// <summary>Raised by knob/slider (value) and switch (1/0) inputs.</summary>
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+    /// <summary>Raised by the switch input with its new state.</summary>
+    [Parameter] public EventCallback<bool> OnChanged { get; set; }
+    /// <summary>CSS width of the host element.</summary>
+    [Parameter] public string Width { get; set; } = "100%";
+    /// <summary>CSS height of the host element.</summary>
+    [Parameter] public string Height { get; set; } = "160px";
+    /// <summary>Extra CSS classes for the host element.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the host element's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the host element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string StateJson() => TrendChartJson.SerializeLoose(new { value = Value, bits = Bits, heading = Heading, pitch = Pitch, roll = Roll, on = On });
+
+    /// <summary>Called from JS when the input changes: a boolean updates <see cref="On"/> and raises <see cref="OnChanged"/>, a number updates <see cref="Value"/> and raises <see cref="ValueChanged"/>.</summary>
+    [JSInvokable]
+    public async Task OnChange(System.Text.Json.JsonElement v)
+    {
+        if (v.ValueKind == System.Text.Json.JsonValueKind.True || v.ValueKind == System.Text.Json.JsonValueKind.False) { var b = v.GetBoolean(); On = b; await OnChanged.InvokeAsync(b); }
+        else if (v.ValueKind == System.Text.Json.JsonValueKind.Number) { var d = v.GetDouble(); Value = d; await ValueChanged.InvokeAsync(d); }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+            _self = DotNetObjectReference.Create(this);
+            _handle = await _module.InvokeAsync<IJSObjectReference>("mountGauge", _host, Kind, Options is null ? null : TrendChartJson.SerializeLoose(Options), _self);
+            _lastState = StateJson();
+            await _handle.InvokeVoidAsync("set", _lastState);
+            return;
+        }
+        if (_handle is null) return;
+        var json = StateJson();
+        if (json != _lastState) { _lastState = json; await _handle.InvokeVoidAsync("set", json); }
+    }
+
+    /// <summary>Disposes the JS gauge, the module and the .NET object reference; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+        _self?.Dispose();
+    }
+}

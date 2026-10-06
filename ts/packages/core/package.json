@@ -1,0 +1,31 @@
+{
+  "name": "@mori/skyscope-core",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "sideEffects": false,
+  "author": "Cristian Mori",
+  "description": "Headless engine for Mori.SkyScope: ring buffers, M4 decimation, SkyScopeFrame codec, scales, painter contract, trend chart, gauges, analytic charts, scene layers, source-plugin contracts.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CristianMori/Mori.SkyScope"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,91 @@
+@* Mori.SkyScope — Razor component driving a browser-side recording playback that charts and scenes bind to. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="@Css.Classes("skyscope-playback", Class)" style="@($"display:flex;align-items:center;gap:8px;{Style}")" @attributes="AdditionalAttributes">
+    <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Primary" OnClick="Toggle">@(_playing ? "⏸" : "▶")</Button>
+    <Button Size="Core.Size.Sm" OnClick="@(() => Seek(0))">⏮</Button>
+    <Button Size="Core.Size.Sm" OnClick="OpenFileAsync">Open…</Button>
+    <input type="range" min="0" max="1000" value="@((int)(_progress * 1000))" @oninput="OnScrub" style="flex:1;min-width:120px" aria-label="position" />
+    <span style="font-variant-numeric:tabular-nums;font-size:12px;min-width:100px;text-align:right">@Fmt(_progress * _duration) / @Fmt(_duration)</span>
+    @foreach (var s in Speeds)
+    {
+        var speed = s;
+        <Button Size="Core.Size.Sm" Variant="@(Math.Abs(_speed - speed) < 1e-9 ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => SetSpeed(speed))">@(speed)×</Button>
+    }
+    <Button Size="Core.Size.Sm" Variant="@(_loop ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => SetLoop(!_loop))">loop</Button>
+</div>
+
+@code {
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private System.Threading.Timer? _poll;
+    private bool _playing, _loop;
+    private double _progress, _duration, _speed = 1;
+
+    /// <summary>Charts bind to this recording by passing <c>"playback:" + Key</c> as their <c>WsUrl</c>.</summary>
+    [Parameter, EditorRequired] public string Key { get; set; } = "recording";
+    /// <summary>CSV text: header row names the channels; a time column (t/time/timestamp) or <see cref="CsvOptions"/> with a rate. Null when loading MCAP.</summary>
+    [Parameter] public string? Csv { get; set; }
+    /// <summary>An MCAP recording to load (fetched by the browser).</summary>
+    [Parameter] public string? McapUrl { get; set; }
+    /// <summary>Options with the TS <c>CsvOptions</c> shape (delimiter, timeColumn, rate, chunkRows…).</summary>
+    [Parameter] public object? CsvOptions { get; set; }
+    /// <summary>Start playing as soon as the recording is loaded.</summary>
+    [Parameter] public bool Autoplay { get; set; } = true;
+    /// <summary>Speed factors offered as buttons.</summary>
+    [Parameter] public double[] Speeds { get; set; } = [0.25, 0.5, 1, 2, 5, 10];
+    /// <summary>Extra CSS classes for the bar.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the bar's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the bar's root element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private sealed record State(bool Playing, double Position, double Duration, double Progress, double Speed, bool Loop, bool Finished);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+        _handle = await _module.InvokeAsync<IJSObjectReference>("mountPlayback", Key, Csv, CsvOptions is null ? null : TrendChartJson.SerializeLoose(CsvOptions), Autoplay, McapUrl);
+        _poll = new System.Threading.Timer(_ => InvokeAsync(RefreshAsync), null, 0, 200);
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_handle is null) return;
+        try
+        {
+            var s = await _handle.InvokeAsync<State>("state");
+            _playing = s.Playing; _progress = s.Progress; _duration = s.Duration; _speed = s.Speed; _loop = s.Loop;
+            StateHasChanged();
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    /// <summary>Let the user pick a .mcap or .csv file; returns its name or null.</summary>
+    public async Task<string?> OpenFileAsync() { if (_handle is null) return null; var name = await _handle.InvokeAsync<string?>("openFile"); await RefreshAsync(); return name; }
+    private Task Toggle() => Call("toggle");
+    private Task Seek(double p) => Call("seekProgress", p);
+    private Task SetSpeed(double s) => Call("setSpeed", s);
+    private Task SetLoop(bool loop) => Call("setLoop", loop);
+    private Task OnScrub(ChangeEventArgs e) => double.TryParse(e.Value?.ToString(), out var v) ? Seek(v / 1000) : Task.CompletedTask;
+    private async Task Call(string method, params object?[] args) { if (_handle is not null) { await _handle.InvokeVoidAsync(method, args); await RefreshAsync(); } }
+
+    private static string Fmt(double t) { var m = (int)Math.Floor(t / 60); var s = t - m * 60; return $"{m}:{(s < 10 ? "0" : "")}{s:0.00}"; }
+
+    /// <summary>Stops the state poll and disposes the JS playback and the module; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        _poll?.Dispose();
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

@@ -1,0 +1,398 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "scene",
+  "description": "Scene: z-ordered hit-testing across polyline/points layers, visibility, bounds, and layer surface caching driven by the projection version.",
+  "cases": [
+    {
+      "name": "hit-testing picks the topmost layer within tolerance",
+      "setup": {
+        "camera": {
+          "width": 100,
+          "height": 100,
+          "zoom": 10,
+          "flipY": false
+        },
+        "layers": [
+          {
+            "kind": "polyline",
+            "id": "path",
+            "points": [
+              0,
+              0,
+              2,
+              0,
+              2,
+              2
+            ]
+          },
+          {
+            "kind": "points",
+            "id": "wp",
+            "points": [
+              1,
+              1
+            ],
+            "radius": 2
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "hit": [
+            60,
+            50
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            60,
+            60
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            60,
+            58
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            90,
+            90
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            70,
+            60
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "layerId": "path",
+            "world": {
+              "x": 1,
+              "y": 0,
+              "z": 0
+            },
+            "screen": {
+              "x": 60,
+              "y": 50
+            },
+            "distance": 0,
+            "index": 0
+          },
+          {
+            "layerId": "wp",
+            "world": {
+              "x": 1,
+              "y": 1,
+              "z": 0
+            },
+            "screen": {
+              "x": 60,
+              "y": 60
+            },
+            "distance": 0,
+            "index": 0
+          },
+          {
+            "layerId": "wp",
+            "world": {
+              "x": 1,
+              "y": 1,
+              "z": 0
+            },
+            "screen": {
+              "x": 60,
+              "y": 58
+            },
+            "distance": 2,
+            "index": 0
+          },
+          null,
+          {
+            "layerId": "path",
+            "world": {
+              "x": 2,
+              "y": 1,
+              "z": 0
+            },
+            "screen": {
+              "x": 70,
+              "y": 60
+            },
+            "distance": 0,
+            "index": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "hidden layers are skipped and bounds are the union of visible layers",
+      "setup": {
+        "camera": {
+          "width": 100,
+          "height": 100,
+          "zoom": 10,
+          "flipY": false
+        },
+        "layers": [
+          {
+            "kind": "polyline",
+            "id": "path",
+            "points": [
+              0,
+              0,
+              2,
+              0,
+              2,
+              2
+            ]
+          },
+          {
+            "kind": "points",
+            "id": "wp",
+            "points": [
+              1,
+              1
+            ],
+            "radius": 4
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "bounds": true
+        },
+        {
+          "type": "setVisible",
+          "id": "wp",
+          "visible": false
+        },
+        {
+          "type": "query",
+          "hit": [
+            60,
+            60
+          ]
+        },
+        {
+          "type": "query",
+          "bounds": true
+        },
+        {
+          "type": "query",
+          "order": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 2
+          },
+          null,
+          {
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 2
+          },
+          [
+            "path",
+            "wp"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "z-order can be changed",
+      "setup": {
+        "camera": {
+          "width": 100,
+          "height": 100,
+          "zoom": 10,
+          "flipY": false
+        },
+        "layers": [
+          {
+            "kind": "points",
+            "id": "a",
+            "points": [
+              0,
+              0
+            ],
+            "radius": 5
+          },
+          {
+            "kind": "points",
+            "id": "b",
+            "points": [
+              0,
+              0
+            ],
+            "radius": 5
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "hit": [
+            50,
+            50
+          ]
+        },
+        {
+          "type": "move",
+          "id": "a",
+          "index": 1
+        },
+        {
+          "type": "query",
+          "hit": [
+            50,
+            50
+          ]
+        },
+        {
+          "type": "remove",
+          "id": "a"
+        },
+        {
+          "type": "query",
+          "order": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "layerId": "b",
+            "world": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "screen": {
+              "x": 50,
+              "y": 50
+            },
+            "distance": 0,
+            "index": 0
+          },
+          {
+            "layerId": "a",
+            "world": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "screen": {
+              "x": 50,
+              "y": 50
+            },
+            "distance": 0,
+            "index": 0
+          },
+          [
+            "b"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "cacheable layers redraw only when dirty or the projection changes",
+      "setup": {
+        "camera": {
+          "width": 100,
+          "height": 100,
+          "zoom": 10,
+          "flipY": false
+        },
+        "layers": [
+          {
+            "kind": "polyline",
+            "id": "path",
+            "points": [
+              0,
+              0,
+              2,
+              0
+            ]
+          },
+          {
+            "kind": "points",
+            "id": "wp",
+            "points": [
+              1,
+              1
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "draw": true
+        },
+        {
+          "type": "query",
+          "draw": true
+        },
+        {
+          "type": "pan",
+          "dx": 5,
+          "dy": 0
+        },
+        {
+          "type": "query",
+          "draw": true
+        },
+        {
+          "type": "markDirty",
+          "id": "wp"
+        },
+        {
+          "type": "query",
+          "draw": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            "layerDraw(polyline)",
+            "layer",
+            "layerDraw(circle)",
+            "layer"
+          ],
+          [
+            "layer",
+            "layer"
+          ],
+          [
+            "layerDraw(polyline)",
+            "layer",
+            "layerDraw(circle)",
+            "layer"
+          ],
+          [
+            "layer",
+            "layerDraw(circle)",
+            "layer"
+          ]
+        ]
+      }
+    }
+  ]
+}

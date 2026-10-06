@@ -1,0 +1,30 @@
+{
+  "name": "@mori/skyscope-source-template",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Cristian Mori",
+  "type": "module",
+  "description": "Template source plugin for Mori.SkyScope — copy, rename, replace the timer with your protocol.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@mori/skyscope-core": "0.1.0"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

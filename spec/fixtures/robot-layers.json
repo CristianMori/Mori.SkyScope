@@ -1,0 +1,1569 @@
+{
+  "component": "robot-layers",
+  "cases": [
+    {
+      "name": "bitmap: placement matrix, conformal decomposition, bounds, pixel hit",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": [
+          {
+            "kind": "bitmap",
+            "id": "img",
+            "image": {
+              "width": 4,
+              "height": 2
+            },
+            "placement": {
+              "originX": 1,
+              "originY": 1,
+              "resolution": 0.5,
+              "rotation": 0
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "pixelToWorld": "img"
+        },
+        {
+          "type": "query",
+          "bounds": "img"
+        },
+        {
+          "type": "query",
+          "hit": [
+            25,
+            165
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            25,
+            205
+          ]
+        },
+        {
+          "type": "query",
+          "decompose": {
+            "a": 1.732050808,
+            "b": 1,
+            "c": 1,
+            "d": -1.732050808,
+            "e": 10,
+            "f": -4
+          }
+        },
+        {
+          "type": "query",
+          "decompose": {
+            "a": 2,
+            "b": 0,
+            "c": 0,
+            "d": 3,
+            "e": 0,
+            "f": 0
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "a": 0.5,
+            "b": 0,
+            "c": 0,
+            "d": -0.5,
+            "e": 1,
+            "f": 2
+          },
+          {
+            "x": 1,
+            "y": 1,
+            "w": 2,
+            "h": 1
+          },
+          {
+            "layerId": "img",
+            "world": {
+              "x": 1.25,
+              "y": 1.75
+            },
+            "distance": 0,
+            "index": 0,
+            "data": null
+          },
+          null,
+          {
+            "tx": 10,
+            "ty": -4,
+            "rotation": 0.523598775,
+            "sx": 2,
+            "sy": -2
+          },
+          {
+            "tx": 0,
+            "ty": 0,
+            "rotation": 0,
+            "sx": 2,
+            "sy": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "occupancy grid: raster colours, hash, cell lookup, hit data, rotated bounds",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": [
+          {
+            "kind": "occupancy",
+            "id": "map",
+            "width": 4,
+            "height": 3,
+            "resolution": 0.5,
+            "origin": {
+              "x": 0,
+              "y": 0,
+              "yaw": 0
+            },
+            "data": [
+              0,
+              50,
+              100,
+              -1,
+              25,
+              75,
+              0,
+              0,
+              100,
+              100,
+              -1,
+              10
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "hash": "map"
+        },
+        {
+          "type": "query",
+          "pixel": [
+            "map",
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "pixel": [
+            "map",
+            3,
+            2
+          ]
+        },
+        {
+          "type": "query",
+          "pixel": [
+            "map",
+            1,
+            2
+          ]
+        },
+        {
+          "type": "query",
+          "cellAt": [
+            "map",
+            0.25,
+            0.25
+          ]
+        },
+        {
+          "type": "query",
+          "cellAt": [
+            "map",
+            1.75,
+            1.25
+          ]
+        },
+        {
+          "type": "query",
+          "cellAt": [
+            "map",
+            2.1,
+            0.5
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            15,
+            195
+          ]
+        },
+        {
+          "type": "query",
+          "bounds": "map"
+        },
+        {
+          "type": "setCell",
+          "id": "map",
+          "row": 0,
+          "col": 3,
+          "value": 0
+        },
+        {
+          "type": "query",
+          "hash": "map"
+        },
+        {
+          "type": "setOrigin",
+          "id": "map",
+          "pose": {
+            "x": 0,
+            "y": 0,
+            "yaw": 1.5707963267948966
+          }
+        },
+        {
+          "type": "query",
+          "bounds": "map"
+        },
+        {
+          "type": "query",
+          "cellAt": [
+            "map",
+            -0.25,
+            0.25
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "width": 4,
+            "height": 3,
+            "hash": 1279129555
+          },
+          [
+            15,
+            23,
+            42,
+            255
+          ],
+          [
+            203,
+            213,
+            225,
+            255
+          ],
+          [
+            135,
+            139,
+            149,
+            255
+          ],
+          {
+            "row": 0,
+            "col": 0
+          },
+          {
+            "row": 2,
+            "col": 3
+          },
+          null,
+          {
+            "layerId": "map",
+            "world": {
+              "x": 0.75,
+              "y": 0.25
+            },
+            "distance": 0,
+            "index": 1,
+            "data": 50
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "w": 2,
+            "h": 1.5
+          },
+          {
+            "width": 4,
+            "height": 3,
+            "hash": 3902740683
+          },
+          {
+            "x": -1.5,
+            "y": 0,
+            "w": 1.5,
+            "h": 2
+          },
+          {
+            "row": 0,
+            "col": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "laser scan → world points through the sensor pose, out-of-range dropped",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": []
+      },
+      "steps": [
+        {
+          "type": "query",
+          "laserScan": {
+            "angleMin": -1.5707963267948966,
+            "angleIncrement": 1.5707963267948966,
+            "ranges": [
+              1,
+              2,
+              null,
+              0.05,
+              3
+            ],
+            "rangeMin": 0.1,
+            "rangeMax": 2.5,
+            "pose": {
+              "x": 1,
+              "y": 1,
+              "yaw": 1.5707963267948966
+            }
+          }
+        },
+        {
+          "type": "query",
+          "laserScan": {
+            "angleMin": 0,
+            "angleIncrement": 1,
+            "ranges": [
+              2,
+              null
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            2,
+            1,
+            1,
+            3
+          ],
+          [
+            2,
+            0
+          ]
+        ]
+      }
+    },
+    {
+      "name": "point cloud: intensity colours, nearest-point hit, bounds",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": [
+          {
+            "kind": "pointCloud",
+            "id": "pc",
+            "points": [
+              4,
+              5,
+              5,
+              5,
+              6,
+              5
+            ],
+            "intensities": [
+              0,
+              5,
+              10
+            ],
+            "colormap": "grayscale",
+            "pointSize": 4
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "colorOf": [
+            "pc",
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "colorOf": [
+            "pc",
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "colorOf": [
+            "pc",
+            2
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            102,
+            101
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            110,
+            100
+          ]
+        },
+        {
+          "type": "query",
+          "bounds": "pc"
+        },
+        {
+          "type": "query",
+          "pointCount": "pc"
+        },
+        {
+          "type": "setPoints",
+          "id": "pc",
+          "points": [
+            0,
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "pointCount": "pc"
+        },
+        {
+          "type": "query",
+          "colorOf": [
+            "pc",
+            0
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          "#000000",
+          "#808080",
+          "#ffffff",
+          {
+            "layerId": "pc",
+            "world": {
+              "x": 5,
+              "y": 5
+            },
+            "distance": 2.236067977,
+            "index": 1,
+            "data": 5
+          },
+          null,
+          {
+            "x": 4,
+            "y": 5,
+            "w": 2,
+            "h": 0
+          },
+          3,
+          1,
+          "#dc2626"
+        ]
+      }
+    },
+    {
+      "name": "pose: footprint in world, screen arrow, hit radius",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": [
+          {
+            "kind": "pose",
+            "id": "bot",
+            "pose": {
+              "x": 5,
+              "y": 5,
+              "yaw": 1.5707963267948966
+            },
+            "footprint": [
+              -0.5,
+              -0.3,
+              0.5,
+              -0.3,
+              0.5,
+              0.3,
+              -0.5,
+              0.3
+            ],
+            "arrowSize": 14
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "worldFootprint": "bot"
+        },
+        {
+          "type": "query",
+          "arrow": "bot"
+        },
+        {
+          "type": "query",
+          "bounds": "bot"
+        },
+        {
+          "type": "query",
+          "hit": [
+            100,
+            100
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            100,
+            82
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            130,
+            100
+          ]
+        },
+        {
+          "type": "setPose",
+          "id": "bot",
+          "pose": {
+            "x": 6,
+            "y": 5,
+            "yaw": 0
+          }
+        },
+        {
+          "type": "query",
+          "arrow": "bot"
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            5.3,
+            4.5,
+            5.3,
+            5.5,
+            4.7,
+            5.5,
+            4.7,
+            4.5
+          ],
+          [
+            100,
+            86,
+            106.3,
+            107,
+            100,
+            102.8,
+            93.7,
+            107
+          ],
+          {
+            "x": 4.7,
+            "y": 4.5,
+            "w": 0.6,
+            "h": 1
+          },
+          {
+            "layerId": "bot",
+            "world": {
+              "x": 5,
+              "y": 5
+            },
+            "distance": 0,
+            "index": null,
+            "data": {
+              "x": 5,
+              "y": 5,
+              "yaw": 1.5707963267948966
+            }
+          },
+          {
+            "layerId": "bot",
+            "world": {
+              "x": 5,
+              "y": 5
+            },
+            "distance": 18,
+            "index": null,
+            "data": {
+              "x": 5,
+              "y": 5,
+              "yaw": 1.5707963267948966
+            }
+          },
+          null,
+          [
+            134,
+            100,
+            113,
+            106.3,
+            117.2,
+            100,
+            113,
+            93.7
+          ]
+        ]
+      }
+    },
+    {
+      "name": "shapes: topmost hit, circle radius, polygon and line hits, upsert and remove",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": [
+          {
+            "kind": "shapes",
+            "id": "sh",
+            "shapes": [
+              {
+                "id": "zone",
+                "kind": "rect",
+                "x": 2,
+                "y": 2,
+                "w": 2,
+                "h": 1,
+                "fill": {
+                  "color": "#16a34a",
+                  "opacity": 0.2
+                },
+                "label": "zone"
+              },
+              {
+                "id": "goal",
+                "kind": "circle",
+                "x": 5,
+                "y": 5,
+                "r": 1,
+                "stroke": {
+                  "color": "#d97706",
+                  "width": 2
+                }
+              },
+              {
+                "id": "tri",
+                "kind": "polygon",
+                "points": [
+                  7,
+                  7,
+                  9,
+                  7,
+                  8,
+                  9
+                ],
+                "fill": {
+                  "color": "#7c3aed"
+                }
+              },
+              {
+                "id": "route",
+                "kind": "line",
+                "points": [
+                  1,
+                  8,
+                  3,
+                  9,
+                  5,
+                  8
+                ],
+                "stroke": {
+                  "color": "#0891b2",
+                  "width": 2
+                }
+              },
+              {
+                "id": "lbl",
+                "kind": "text",
+                "x": 8,
+                "y": 2,
+                "text": "dock"
+              }
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "bounds": "sh"
+        },
+        {
+          "type": "query",
+          "hit": [
+            100,
+            100
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            100,
+            80
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            60,
+            150
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            160,
+            40
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            40,
+            30
+          ]
+        },
+        {
+          "type": "query",
+          "hit": [
+            160,
+            160
+          ]
+        },
+        {
+          "type": "upsert",
+          "id": "sh",
+          "shape": {
+            "id": "goal",
+            "kind": "circle",
+            "x": 5,
+            "y": 5,
+            "r": 0.2
+          }
+        },
+        {
+          "type": "query",
+          "hit": [
+            100,
+            80
+          ]
+        },
+        {
+          "type": "removeShape",
+          "id": "sh",
+          "shapeId": "tri"
+        },
+        {
+          "type": "removeShape",
+          "id": "sh",
+          "shapeId": "nope"
+        },
+        {
+          "type": "query",
+          "hit": [
+            160,
+            40
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "x": 1,
+            "y": 2,
+            "w": 8,
+            "h": 7
+          },
+          {
+            "layerId": "sh",
+            "world": {
+              "x": 5,
+              "y": 5
+            },
+            "distance": 0,
+            "index": 1,
+            "data": "goal"
+          },
+          {
+            "layerId": "sh",
+            "world": {
+              "x": 5,
+              "y": 6
+            },
+            "distance": 20,
+            "index": 1,
+            "data": "goal"
+          },
+          {
+            "layerId": "sh",
+            "world": {
+              "x": 3,
+              "y": 2.5
+            },
+            "distance": 0,
+            "index": 0,
+            "data": "zone"
+          },
+          {
+            "layerId": "sh",
+            "world": {
+              "x": 8,
+              "y": 8
+            },
+            "distance": 0,
+            "index": 2,
+            "data": "tri"
+          },
+          {
+            "layerId": "sh",
+            "world": {
+              "x": 2,
+              "y": 8.5
+            },
+            "distance": 0,
+            "index": 3,
+            "data": "route"
+          },
+          {
+            "layerId": "sh",
+            "world": {
+              "x": 8,
+              "y": 2
+            },
+            "distance": 0,
+            "index": 4,
+            "data": "lbl"
+          },
+          null,
+          true,
+          false,
+          null
+        ]
+      }
+    },
+    {
+      "name": "trail keeps only the last points",
+      "setup": {
+        "camera": {
+          "width": 200,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 20
+        },
+        "layers": [
+          {
+            "kind": "trail",
+            "id": "t",
+            "maxPoints": 3,
+            "points": [
+              1,
+              1,
+              2,
+              2,
+              3,
+              3
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "points": "t"
+        },
+        {
+          "type": "append",
+          "id": "t",
+          "x": 4,
+          "y": 4
+        },
+        {
+          "type": "append",
+          "id": "t",
+          "x": 5,
+          "y": 5
+        },
+        {
+          "type": "query",
+          "points": "t"
+        },
+        {
+          "type": "query",
+          "pointCount": "t"
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1,
+            1,
+            2,
+            2,
+            3,
+            3
+          ],
+          [
+            3,
+            3,
+            4,
+            4,
+            5,
+            5
+          ],
+          3
+        ]
+      }
+    },
+    {
+      "name": "drawing parity: composed robot scene",
+      "setup": {
+        "camera": {
+          "width": 240,
+          "height": 200,
+          "centerX": 5,
+          "centerY": 5,
+          "zoom": 18
+        },
+        "layers": [
+          {
+            "kind": "grid",
+            "id": "grid"
+          },
+          {
+            "kind": "occupancy",
+            "id": "map",
+            "width": 4,
+            "height": 3,
+            "resolution": 0.5,
+            "origin": {
+              "x": 2,
+              "y": 2,
+              "yaw": 0.2
+            },
+            "data": [
+              0,
+              50,
+              100,
+              -1,
+              25,
+              75,
+              0,
+              0,
+              100,
+              100,
+              -1,
+              10
+            ]
+          },
+          {
+            "kind": "pointCloud",
+            "id": "scan",
+            "scan": {
+              "angleMin": -1.5707963267948966,
+              "angleIncrement": 1.5707963267948966,
+              "ranges": [
+                1,
+                2,
+                null,
+                0.05,
+                3
+              ],
+              "rangeMin": 0.1,
+              "rangeMax": 2.5,
+              "pose": {
+                "x": 1,
+                "y": 1,
+                "yaw": 1.5707963267948966
+              }
+            },
+            "intensities": [
+              1,
+              2,
+              3
+            ],
+            "colormap": "turbo",
+            "pointSize": 3
+          },
+          {
+            "kind": "trail",
+            "id": "trail",
+            "maxPoints": 10,
+            "points": [
+              1,
+              1,
+              2,
+              1.5,
+              3,
+              3
+            ]
+          },
+          {
+            "kind": "pose",
+            "id": "bot",
+            "pose": {
+              "x": 3,
+              "y": 3,
+              "yaw": 0.8
+            },
+            "footprint": [
+              -0.5,
+              -0.3,
+              0.5,
+              -0.3,
+              0.5,
+              0.3,
+              -0.5,
+              0.3
+            ],
+            "label": "amr-1"
+          },
+          {
+            "kind": "shapes",
+            "id": "sh",
+            "shapes": [
+              {
+                "id": "zone",
+                "kind": "rect",
+                "x": 2,
+                "y": 2,
+                "w": 2,
+                "h": 1,
+                "fill": {
+                  "color": "#16a34a",
+                  "opacity": 0.2
+                },
+                "label": "zone"
+              },
+              {
+                "id": "goal",
+                "kind": "circle",
+                "x": 5,
+                "y": 5,
+                "r": 1,
+                "stroke": {
+                  "color": "#d97706",
+                  "width": 2
+                }
+              },
+              {
+                "id": "tri",
+                "kind": "polygon",
+                "points": [
+                  7,
+                  7,
+                  9,
+                  7,
+                  8,
+                  9
+                ],
+                "fill": {
+                  "color": "#7c3aed"
+                }
+              },
+              {
+                "id": "route",
+                "kind": "line",
+                "points": [
+                  1,
+                  8,
+                  3,
+                  9,
+                  5,
+                  8
+                ],
+                "stroke": {
+                  "color": "#0891b2",
+                  "width": 2
+                }
+              },
+              {
+                "id": "lbl",
+                "kind": "text",
+                "x": 8,
+                "y": 2,
+                "text": "dock"
+              }
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "draw": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "op": "layerDraw",
+              "key": "layer:grid",
+              "width": 240,
+              "height": 200,
+              "ops": [
+                {
+                  "op": "line",
+                  "x1": 30,
+                  "y1": 200,
+                  "x2": 30,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#cbd5e1",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 120,
+                  "y1": 200,
+                  "x2": 120,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 210,
+                  "y1": 200,
+                  "x2": 210,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 190,
+                  "x2": 240,
+                  "y2": 190,
+                  "stroke": {
+                    "color": "#cbd5e1",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 100,
+                  "x2": 240,
+                  "y2": 100,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 10,
+                  "x2": 240,
+                  "y2": 10,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                }
+              ]
+            },
+            {
+              "op": "layer",
+              "key": "layer:grid",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "op": "layerDraw",
+              "key": "layer:map",
+              "width": 240,
+              "height": 200,
+              "ops": [
+                {
+                  "op": "save"
+                },
+                {
+                  "op": "translate",
+                  "x": 60.636,
+                  "y": 127.538
+                },
+                {
+                  "op": "rotate",
+                  "radians": -0.2
+                },
+                {
+                  "op": "scale",
+                  "sx": 9,
+                  "sy": 9
+                },
+                {
+                  "op": "image",
+                  "imageWidth": 4,
+                  "imageHeight": 3,
+                  "x": 0,
+                  "y": 0,
+                  "w": 4,
+                  "h": 3,
+                  "opacity": 1,
+                  "hash": 1279129555
+                },
+                {
+                  "op": "restore"
+                }
+              ]
+            },
+            {
+              "op": "layer",
+              "key": "layer:map",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "op": "layerDraw",
+              "key": "layer:scan",
+              "width": 240,
+              "height": 200,
+              "ops": [
+                {
+                  "op": "rect",
+                  "x": 64.5,
+                  "y": 170.5,
+                  "w": 3,
+                  "h": 3,
+                  "radius": 0,
+                  "fill": {
+                    "color": "#dc2626",
+                    "opacity": 1
+                  },
+                  "stroke": null
+                },
+                {
+                  "op": "rect",
+                  "x": 46.5,
+                  "y": 134.5,
+                  "w": 3,
+                  "h": 3,
+                  "radius": 0,
+                  "fill": {
+                    "color": "#dc2626",
+                    "opacity": 1
+                  },
+                  "stroke": null
+                }
+              ]
+            },
+            {
+              "op": "layer",
+              "key": "layer:scan",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "op": "layerDraw",
+              "key": "layer:trail",
+              "width": 240,
+              "height": 200,
+              "ops": [
+                {
+                  "op": "polyline",
+                  "points": [
+                    48,
+                    172,
+                    66,
+                    163,
+                    84,
+                    136
+                  ],
+                  "stroke": {
+                    "color": "#16a34a",
+                    "width": 2,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                }
+              ]
+            },
+            {
+              "op": "layer",
+              "key": "layer:trail",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "op": "save"
+            },
+            {
+              "op": "polygon",
+              "points": [
+                81.603,
+                146.218,
+                94.144,
+                133.306,
+                86.397,
+                125.782,
+                73.856,
+                138.694
+              ],
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 0.25
+              },
+              "stroke": {
+                "color": "#2563eb",
+                "width": 1.5,
+                "dash": null,
+                "cap": "butt",
+                "join": "round",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                93.754,
+                125.957,
+                83.642,
+                145.411,
+                82.049,
+                138.009,
+                74.604,
+                136.632
+              ],
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": {
+                "color": "#ffffff",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "amr-1",
+              "x": 84,
+              "y": 119,
+              "style": {
+                "color": "#2563eb",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "bottom",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "restore"
+            },
+            {
+              "op": "layerDraw",
+              "key": "layer:sh",
+              "width": 240,
+              "height": 200,
+              "ops": [
+                {
+                  "op": "polygon",
+                  "points": [
+                    66,
+                    154,
+                    102,
+                    154,
+                    102,
+                    136,
+                    66,
+                    136
+                  ],
+                  "fill": {
+                    "color": "#16a34a",
+                    "opacity": 0.2
+                  },
+                  "stroke": null
+                },
+                {
+                  "op": "text",
+                  "text": "zone",
+                  "x": 84,
+                  "y": 145,
+                  "style": {
+                    "color": "#0f172a",
+                    "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                    "size": 11,
+                    "weight": "normal",
+                    "align": "center",
+                    "baseline": "middle",
+                    "rotation": 0,
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "circle",
+                  "cx": 120,
+                  "cy": 100,
+                  "r": 18,
+                  "fill": null,
+                  "stroke": {
+                    "color": "#d97706",
+                    "width": 2,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "polygon",
+                  "points": [
+                    156,
+                    64,
+                    192,
+                    64,
+                    174,
+                    28
+                  ],
+                  "fill": {
+                    "color": "#7c3aed",
+                    "opacity": 1
+                  },
+                  "stroke": null
+                },
+                {
+                  "op": "polyline",
+                  "points": [
+                    48,
+                    46,
+                    84,
+                    28,
+                    120,
+                    46
+                  ],
+                  "stroke": {
+                    "color": "#0891b2",
+                    "width": 2,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "text",
+                  "text": "dock",
+                  "x": 174,
+                  "y": 154,
+                  "style": {
+                    "color": "#0f172a",
+                    "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                    "size": 11,
+                    "weight": "normal",
+                    "align": "center",
+                    "baseline": "middle",
+                    "rotation": 0,
+                    "opacity": 1
+                  }
+                }
+              ]
+            },
+            {
+              "op": "layer",
+              "key": "layer:sh",
+              "x": 0,
+              "y": 0
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

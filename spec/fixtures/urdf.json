@@ -1,0 +1,624 @@
+{
+  "component": "urdf",
+  "cases": [
+    {
+      "name": "arm: links, joints, materials by name and inline, mesh URIs",
+      "setup": {
+        "xml": "<?xml version=\"1.0\"?>\n<!-- fixture robot -->\n<robot name=\"arm\">\n  <material name=\"steel\"><color rgba=\"0.6 0.6 0.65 1\"/></material>\n  <material name=\"see-through\"><color rgba=\"1 0 0 0.5\"/></material>\n  <link name=\"base_link\">\n    <visual name=\"plate\"><origin xyz=\"0 0 0.05\" rpy=\"0 0 0\"/><geometry><box size=\"0.4 0.4 0.1\"/></geometry><material name=\"steel\"/></visual>\n    <visual><origin xyz=\"0 0 0.3\"/><geometry><cylinder radius=\"0.05\" length=\"0.4\"/></geometry><material><color rgba=\"0 0 1 1\"/></material></visual>\n  </link>\n  <link name=\"upper_arm\">\n    <visual><origin xyz=\"0.25 0 0\" rpy=\"0 1.5707963 0\"/><geometry><cylinder radius=\"0.04\" length=\"0.5\"/></geometry><material name=\"steel\"/></visual>\n  </link>\n  <link name=\"forearm\">\n    <visual><origin xyz=\"0.2 0 0\"/><geometry><mesh filename=\"package://arm/meshes/forearm.stl\" scale=\"0.001 0.001 0.001\"/></geometry><material name=\"see-through\"/></visual>\n    <visual><origin xyz=\"0.4 0 0\"/><geometry><sphere radius=\"0.03\"/></geometry></visual>\n  </link>\n  <link name=\"tool\"/>\n  <joint name=\"shoulder\" type=\"revolute\">\n    <parent link=\"base_link\"/><child link=\"upper_arm\"/>\n    <origin xyz=\"0 0 0.5\" rpy=\"0 0 0\"/><axis xyz=\"0 1 0\"/>\n    <limit lower=\"-1.57\" upper=\"1.57\" effort=\"10\" velocity=\"1\"/>\n  </joint>\n  <joint name=\"elbow\" type=\"continuous\">\n    <parent link=\"upper_arm\"/><child link=\"forearm\"/>\n    <origin xyz=\"0.5 0 0\"/><axis xyz=\"0 1 0\"/>\n  </joint>\n  <joint name=\"slide\" type=\"prismatic\">\n    <parent link=\"forearm\"/><child link=\"tool\"/>\n    <origin xyz=\"0.4 0 0\" rpy=\"0 0 1.5707963\"/><axis xyz=\"1 0 0\"/>\n    <limit lower=\"0\" upper=\"0.1\"/>\n  </joint>\n</robot>"
+      },
+      "steps": [
+        {
+          "type": "query",
+          "summary": true
+        },
+        {
+          "type": "query",
+          "markers": {}
+        },
+        {
+          "type": "query",
+          "markers": {
+            "prefix": "r1/",
+            "defaultColor": "#ffffff"
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "name": "arm",
+            "root": "base_link",
+            "links": [
+              {
+                "name": "base_link",
+                "visuals": 2
+              },
+              {
+                "name": "upper_arm",
+                "visuals": 1
+              },
+              {
+                "name": "forearm",
+                "visuals": 2
+              },
+              {
+                "name": "tool",
+                "visuals": 0
+              }
+            ],
+            "joints": [
+              {
+                "name": "shoulder",
+                "type": "revolute",
+                "parent": "base_link",
+                "child": "upper_arm",
+                "axis": [
+                  0,
+                  1,
+                  0
+                ],
+                "lower": -1.57,
+                "upper": 1.57
+              },
+              {
+                "name": "elbow",
+                "type": "continuous",
+                "parent": "upper_arm",
+                "child": "forearm",
+                "axis": [
+                  0,
+                  1,
+                  0
+                ],
+                "lower": null,
+                "upper": null
+              },
+              {
+                "name": "slide",
+                "type": "prismatic",
+                "parent": "forearm",
+                "child": "tool",
+                "axis": [
+                  1,
+                  0,
+                  0
+                ],
+                "lower": 0,
+                "upper": 0.1
+              }
+            ],
+            "meshes": [
+              "package://arm/meshes/forearm.stl"
+            ]
+          },
+          [
+            {
+              "id": "base_link/plate",
+              "type": "cube",
+              "frame": "base_link",
+              "position": [
+                0,
+                0,
+                0.05
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.4,
+                0.4,
+                0.1
+              ],
+              "color": "#9999a6",
+              "opacity": 1,
+              "meshResource": null
+            },
+            {
+              "id": "base_link/1",
+              "type": "cylinder",
+              "frame": "base_link",
+              "position": [
+                0,
+                0,
+                0.3
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.1,
+                0.1,
+                0.4
+              ],
+              "color": "#0000ff",
+              "opacity": 1,
+              "meshResource": null
+            },
+            {
+              "id": "upper_arm/0",
+              "type": "cylinder",
+              "frame": "upper_arm",
+              "position": [
+                0.25,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0.707106772,
+                0,
+                0.707106791
+              ],
+              "scale": [
+                0.08,
+                0.08,
+                0.5
+              ],
+              "color": "#9999a6",
+              "opacity": 1,
+              "meshResource": null
+            },
+            {
+              "id": "forearm/0",
+              "type": "mesh",
+              "frame": "forearm",
+              "position": [
+                0.2,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.001,
+                0.001,
+                0.001
+              ],
+              "color": "#ff0000",
+              "opacity": 0.5,
+              "meshResource": "package://arm/meshes/forearm.stl"
+            },
+            {
+              "id": "forearm/1",
+              "type": "sphere",
+              "frame": "forearm",
+              "position": [
+                0.4,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.06,
+                0.06,
+                0.06
+              ],
+              "color": "#9ca3af",
+              "opacity": 1,
+              "meshResource": null
+            }
+          ],
+          [
+            {
+              "id": "r1/base_link/plate",
+              "type": "cube",
+              "frame": "r1/base_link",
+              "position": [
+                0,
+                0,
+                0.05
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.4,
+                0.4,
+                0.1
+              ],
+              "color": "#9999a6",
+              "opacity": 1,
+              "meshResource": null
+            },
+            {
+              "id": "r1/base_link/1",
+              "type": "cylinder",
+              "frame": "r1/base_link",
+              "position": [
+                0,
+                0,
+                0.3
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.1,
+                0.1,
+                0.4
+              ],
+              "color": "#0000ff",
+              "opacity": 1,
+              "meshResource": null
+            },
+            {
+              "id": "r1/upper_arm/0",
+              "type": "cylinder",
+              "frame": "r1/upper_arm",
+              "position": [
+                0.25,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0.707106772,
+                0,
+                0.707106791
+              ],
+              "scale": [
+                0.08,
+                0.08,
+                0.5
+              ],
+              "color": "#9999a6",
+              "opacity": 1,
+              "meshResource": null
+            },
+            {
+              "id": "r1/forearm/0",
+              "type": "mesh",
+              "frame": "r1/forearm",
+              "position": [
+                0.2,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.001,
+                0.001,
+                0.001
+              ],
+              "color": "#ff0000",
+              "opacity": 0.5,
+              "meshResource": "package://arm/meshes/forearm.stl"
+            },
+            {
+              "id": "r1/forearm/1",
+              "type": "sphere",
+              "frame": "r1/forearm",
+              "position": [
+                0.4,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.06,
+                0.06,
+                0.06
+              ],
+              "color": "#ffffff",
+              "opacity": 1,
+              "meshResource": null
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "arm: transforms at rest and with joint positions (revolute, continuous, prismatic), points through the chain",
+      "setup": {
+        "xml": "<?xml version=\"1.0\"?>\n<!-- fixture robot -->\n<robot name=\"arm\">\n  <material name=\"steel\"><color rgba=\"0.6 0.6 0.65 1\"/></material>\n  <material name=\"see-through\"><color rgba=\"1 0 0 0.5\"/></material>\n  <link name=\"base_link\">\n    <visual name=\"plate\"><origin xyz=\"0 0 0.05\" rpy=\"0 0 0\"/><geometry><box size=\"0.4 0.4 0.1\"/></geometry><material name=\"steel\"/></visual>\n    <visual><origin xyz=\"0 0 0.3\"/><geometry><cylinder radius=\"0.05\" length=\"0.4\"/></geometry><material><color rgba=\"0 0 1 1\"/></material></visual>\n  </link>\n  <link name=\"upper_arm\">\n    <visual><origin xyz=\"0.25 0 0\" rpy=\"0 1.5707963 0\"/><geometry><cylinder radius=\"0.04\" length=\"0.5\"/></geometry><material name=\"steel\"/></visual>\n  </link>\n  <link name=\"forearm\">\n    <visual><origin xyz=\"0.2 0 0\"/><geometry><mesh filename=\"package://arm/meshes/forearm.stl\" scale=\"0.001 0.001 0.001\"/></geometry><material name=\"see-through\"/></visual>\n    <visual><origin xyz=\"0.4 0 0\"/><geometry><sphere radius=\"0.03\"/></geometry></visual>\n  </link>\n  <link name=\"tool\"/>\n  <joint name=\"shoulder\" type=\"revolute\">\n    <parent link=\"base_link\"/><child link=\"upper_arm\"/>\n    <origin xyz=\"0 0 0.5\" rpy=\"0 0 0\"/><axis xyz=\"0 1 0\"/>\n    <limit lower=\"-1.57\" upper=\"1.57\" effort=\"10\" velocity=\"1\"/>\n  </joint>\n  <joint name=\"elbow\" type=\"continuous\">\n    <parent link=\"upper_arm\"/><child link=\"forearm\"/>\n    <origin xyz=\"0.5 0 0\"/><axis xyz=\"0 1 0\"/>\n  </joint>\n  <joint name=\"slide\" type=\"prismatic\">\n    <parent link=\"forearm\"/><child link=\"tool\"/>\n    <origin xyz=\"0.4 0 0\" rpy=\"0 0 1.5707963\"/><axis xyz=\"1 0 0\"/>\n    <limit lower=\"0\" upper=\"0.1\"/>\n  </joint>\n</robot>"
+      },
+      "steps": [
+        {
+          "type": "query",
+          "transforms": {}
+        },
+        {
+          "type": "query",
+          "transforms": {
+            "positions": {
+              "shoulder": 1.5707963267948966,
+              "elbow": -1.5707963267948966,
+              "slide": 0.1
+            },
+            "prefix": "r1/",
+            "time": 3
+          }
+        },
+        {
+          "type": "query",
+          "point": {
+            "link": "tool",
+            "p": [
+              0,
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "type": "query",
+          "point": {
+            "link": "tool",
+            "p": [
+              0,
+              0,
+              0
+            ],
+            "positions": {
+              "shoulder": 1.5707963267948966
+            }
+          }
+        },
+        {
+          "type": "query",
+          "point": {
+            "link": "tool",
+            "p": [
+              0,
+              0,
+              0
+            ],
+            "positions": {
+              "shoulder": 1.5707963267948966,
+              "elbow": -1.5707963267948966,
+              "slide": 0.1
+            }
+          }
+        },
+        {
+          "type": "query",
+          "point": {
+            "link": "forearm",
+            "p": [
+              0.4,
+              0,
+              0
+            ],
+            "positions": {
+              "elbow": 3.141592653589793
+            }
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "child": "upper_arm",
+              "parent": "base_link",
+              "t": [
+                0,
+                0,
+                0.5
+              ],
+              "q": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "time": null
+            },
+            {
+              "child": "forearm",
+              "parent": "upper_arm",
+              "t": [
+                0.5,
+                0,
+                0
+              ],
+              "q": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "time": null
+            },
+            {
+              "child": "tool",
+              "parent": "forearm",
+              "t": [
+                0.4,
+                0,
+                0
+              ],
+              "q": [
+                0,
+                0,
+                0.707106772,
+                0.707106791
+              ],
+              "time": null
+            }
+          ],
+          [
+            {
+              "child": "r1/upper_arm",
+              "parent": "r1/base_link",
+              "t": [
+                0,
+                0,
+                0.5
+              ],
+              "q": [
+                0,
+                0.707106781,
+                0,
+                0.707106781
+              ],
+              "time": 3
+            },
+            {
+              "child": "r1/forearm",
+              "parent": "r1/upper_arm",
+              "t": [
+                0.5,
+                0,
+                0
+              ],
+              "q": [
+                0,
+                -0.707106781,
+                0,
+                0.707106781
+              ],
+              "time": 3
+            },
+            {
+              "child": "r1/tool",
+              "parent": "r1/forearm",
+              "t": [
+                0.400000003,
+                0.1,
+                0
+              ],
+              "q": [
+                0,
+                0,
+                0.707106772,
+                0.707106791
+              ],
+              "time": 3
+            }
+          ],
+          {
+            "x": 0.9,
+            "y": 0,
+            "z": 0.5
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "z": -0.4
+          },
+          {
+            "x": 0.400000003,
+            "y": 0.1,
+            "z": 0
+          },
+          {
+            "x": 0.1,
+            "y": 0,
+            "z": 0.5
+          }
+        ]
+      }
+    },
+    {
+      "name": "minimal: one link, no joints, unknown geometry falls back to a tiny box",
+      "setup": {
+        "xml": "<robot name=\"dot\"><link name=\"only\"><visual><geometry><capsule radius=\"1\"/></geometry></visual></link></robot>"
+      },
+      "steps": [
+        {
+          "type": "query",
+          "summary": true
+        },
+        {
+          "type": "query",
+          "markers": {}
+        },
+        {
+          "type": "query",
+          "transforms": {}
+        },
+        {
+          "type": "query",
+          "point": {
+            "link": "only",
+            "p": [
+              1,
+              2,
+              3
+            ]
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "name": "dot",
+            "root": "only",
+            "links": [
+              {
+                "name": "only",
+                "visuals": 1
+              }
+            ],
+            "joints": [],
+            "meshes": []
+          },
+          [
+            {
+              "id": "only/0",
+              "type": "cube",
+              "frame": "only",
+              "position": [
+                0,
+                0,
+                0
+              ],
+              "orientation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "scale": [
+                0.01,
+                0.01,
+                0.01
+              ],
+              "color": "#9ca3af",
+              "opacity": 1,
+              "meshResource": null
+            }
+          ],
+          [],
+          {
+            "x": 1,
+            "y": 2,
+            "z": 3
+          }
+        ]
+      }
+    }
+  ]
+}

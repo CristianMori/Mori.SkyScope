@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Template source plugin for Mori.SkyScope: copy, rename, replace the timer with your protocol (see docs/PLUGINS.md).</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mori.SkyScope.Core\Mori.SkyScope.Core.csproj" />
+  </ItemGroup>
+
+</Project>

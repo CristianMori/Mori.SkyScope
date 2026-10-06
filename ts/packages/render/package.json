@@ -1,0 +1,34 @@
+{
+  "name": "@mori/skyscope-render",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "author": "Cristian Mori",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@mori/skyscope-core": "0.1.0"
+  },
+  "sideEffects": false,
+  "description": "Canvas2D and WebGL painters plus the chart, gauge and scene views for Mori.SkyScope.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CristianMori/Mori.SkyScope"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

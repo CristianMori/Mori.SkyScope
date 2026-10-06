@@ -1,0 +1,66 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "signal-store",
+  "description": "SignalStore: channel declaration and sizing, frame routing into buffers, auto-declare, timing conversion, drop accounting, change notifications.",
+  "cases": [
+    { "name": "declared channel is sized from rate x retention",
+      "setup": { "retentionSeconds": 10, "defaultCapacity": 64 },
+      "steps": [{ "type": "declare", "id": 1, "name": "speed", "unit": "m/s", "rate": 100 }, { "type": "query", "channels": true }],
+      "expect": { "channelCount": 1, "dropped": 0, "queries": [[{ "id": 1, "name": "speed", "unit": "m/s", "kind": null, "timing": "regular", "rate": 100, "capacity": 1000, "length": 0, "latestTime": null }]] } },
+
+    { "name": "regular frame lands in the buffer and notifies once",
+      "setup": { "retentionSeconds": 10, "defaultCapacity": 64 },
+      "steps": [{ "type": "declare", "id": 1, "name": "a", "rate": 4 },
+                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 0, "dt": 0.25, "values": [1, 2, 3] }] } },
+                { "type": "query", "samples": 1 }, { "type": "query", "channels": true }],
+      "expect": { "notifications": [[1]], "queries": [[[0, 1], [0.25, 2], [0.5, 3]], [{ "id": 1, "name": "a", "unit": null, "kind": null, "timing": "regular", "rate": 4, "capacity": 40, "length": 3, "latestTime": 0.5 }]] } },
+
+    { "name": "unknown channel is auto-declared from the frame encoding",
+      "setup": { "retentionSeconds": 10, "defaultCapacity": 64 },
+      "steps": [{ "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 7, "encoding": "timestamped", "times": [1, 2], "values": [5, 6] }, { "id": 8, "encoding": "regular", "tStart": 0, "dt": 1, "values": [9] }] } },
+                { "type": "query", "channels": true }],
+      "expect": { "channelCount": 2, "notifications": [[7, 8]], "queries": [[
+        { "id": 7, "name": "ch7", "unit": null, "kind": null, "timing": "timestamped", "rate": null, "capacity": 64, "length": 2, "latestTime": 2 },
+        { "id": 8, "name": "ch8", "unit": null, "kind": null, "timing": "regular", "rate": null, "capacity": 64, "length": 1, "latestTime": 0 }]] } },
+
+    { "name": "quantized batches are dequantized",
+      "setup": {},
+      "steps": [{ "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "quantized", "tStart": 0, "dt": 1, "scale": 0.5, "offset": 10, "q": [-2, 0, 3] }] } }, { "type": "query", "samples": 1 }],
+      "expect": { "queries": [[[0, 9], [1, 10], [2, 11.5]]] } },
+
+    { "name": "out-of-order batch is dropped, counted, and does not notify",
+      "setup": {},
+      "steps": [{ "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 10, "dt": 1, "values": [1] }] } },
+                { "type": "pushFrame", "frame": { "seq": 2, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 5, "dt": 1, "values": [2] }] } },
+                { "type": "query", "samples": 1 }],
+      "expect": { "dropped": 1, "lastDropReason": "out-of-order-time", "notifications": [[1]], "queries": [[[10, 1]]] } },
+
+    { "name": "regular batch into a timestamped channel is expanded",
+      "setup": {},
+      "steps": [{ "type": "declare", "id": 1, "name": "ev", "timing": "timestamped" },
+                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 2, "dt": 0.5, "values": [1, 2] }] } }, { "type": "query", "samples": 1 }],
+      "expect": { "dropped": 0, "queries": [[[2, 1], [2.5, 2]]] } },
+
+    { "name": "timestamped batch into a regular channel is refused",
+      "setup": {},
+      "steps": [{ "type": "declare", "id": 1, "name": "r", "rate": 10 },
+                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "timestamped", "times": [1], "values": [1] }] } }, { "type": "query", "samples": 1 }],
+      "expect": { "dropped": 1, "lastDropReason": "timing-mismatch", "notifications": [], "queries": [[]] } },
+
+    { "name": "re-declaring keeps data unless timing or capacity changes",
+      "setup": { "retentionSeconds": 1, "defaultCapacity": 64 },
+      "steps": [{ "type": "declare", "id": 1, "name": "a", "rate": 10 },
+                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 0, "dt": 0.1, "values": [1, 2] }] } },
+                { "type": "declare", "id": 1, "name": "renamed", "unit": "V" }, { "type": "query", "channels": true },
+                { "type": "declare", "id": 1, "name": "renamed", "timing": "timestamped" }, { "type": "query", "channels": true }],
+      "expect": { "queries": [
+        [{ "id": 1, "name": "renamed", "unit": "V", "kind": null, "timing": "regular", "rate": 10, "capacity": 16, "length": 2, "latestTime": 0.1 }],
+        [{ "id": 1, "name": "renamed", "unit": "V", "kind": null, "timing": "timestamped", "rate": 10, "capacity": 16, "length": 0, "latestTime": null }]] } },
+
+    { "name": "a partially bad frame notifies only the channels that changed",
+      "setup": {},
+      "steps": [{ "type": "declare", "id": 2, "name": "r", "rate": 10 },
+                { "type": "pushFrame", "frame": { "seq": 1, "t0": 0, "channels": [{ "id": 1, "encoding": "regular", "tStart": 0, "dt": 1, "values": [1] }, { "id": 2, "encoding": "timestamped", "times": [0], "values": [1] }] } }],
+      "expect": { "dropped": 1, "notifications": [[1]] } }
+  ]
+}

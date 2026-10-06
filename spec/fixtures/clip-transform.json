@@ -1,0 +1,19 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "clip-transform",
+  "description": "Data-to-clip-space mapping used by the WebGL series renderer; must place points exactly where the axis scales would.",
+  "cases": [
+    { "name": "full-viewport linear axes map the domain corners to clip corners",
+      "setup": { "x": { "domain": [0, 10], "range": [0, 200] }, "y": { "domain": [-1, 1], "range": [100, 0] }, "viewport": [200, 100] },
+      "steps": [{ "type": "query", "transform": true }, { "type": "query", "apply": [0, -1] }, { "type": "query", "apply": [10, 1] }, { "type": "query", "apply": [5, 0] }],
+      "expect": { "queries": [{ "sx": 0.2, "ox": -1, "sy": 1, "oy": 0 }, { "x": -1, "y": -1 }, { "x": 1, "y": 1 }, { "x": 0, "y": 0 }] } },
+    { "name": "a plot area inset in the viewport",
+      "setup": { "x": { "domain": [0, 10], "range": [50, 150] }, "y": { "domain": [0, 10], "range": [75, 25] }, "viewport": [200, 100] },
+      "steps": [{ "type": "query", "apply": [0, 0] }, { "type": "query", "apply": [10, 10] }],
+      "expect": { "queries": [{ "x": -0.5, "y": -0.5 }, { "x": 0.5, "y": 0.5 }] } },
+    { "name": "xOrigin keeps large timestamps precise",
+      "setup": { "x": { "kind": "time", "domain": [1700000000, 1700000010], "range": [0, 200] }, "y": { "domain": [0, 1], "range": [100, 0] }, "viewport": [200, 100], "xOrigin": 1700000000 },
+      "steps": [{ "type": "query", "apply": [1700000005, 0.5] }, { "type": "query", "apply": [1700000010, 1] }],
+      "expect": { "queries": [{ "x": 0, "y": 0 }, { "x": 1, "y": 1 }] } }
+  ]
+}

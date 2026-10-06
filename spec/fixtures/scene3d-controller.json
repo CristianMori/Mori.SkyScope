@@ -1,0 +1,1632 @@
+{
+  "component": "scene3dController",
+  "cases": [
+    {
+      "name": "orbit: left drag orbits, middle drag pans, right drag dollies, wheel dollies about the cursor, dblclick fits",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 5
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 6
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0
+              ]
+            },
+            "intensities": {
+              "$f32": [
+                0,
+                0.5,
+                1
+              ]
+            },
+            "stamp": 1
+          }
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "pointermove",
+          "x": 401,
+          "y": 301
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "pointermove",
+          "x": 500,
+          "y": 250
+        },
+        {
+          "type": "pointerup",
+          "x": 500,
+          "y": 250,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 1
+        },
+        {
+          "type": "pointermove",
+          "x": 450,
+          "y": 300
+        },
+        {
+          "type": "pointerup",
+          "x": 450,
+          "y": 300,
+          "button": 1
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 2
+        },
+        {
+          "type": "pointermove",
+          "x": 400,
+          "y": 500
+        },
+        {
+          "type": "pointerup",
+          "x": 400,
+          "y": 500,
+          "button": 2
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "wheel",
+          "x": 400,
+          "y": 300,
+          "deltaY": -400
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "dblclick",
+          "x": 400,
+          "y": 300
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "keydown",
+          "key": "r"
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "keydown",
+          "key": "t"
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "keydown",
+          "key": "o"
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "keydown",
+          "key": "f"
+        },
+        {
+          "type": "query",
+          "state": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          false,
+          false,
+          {
+            "target": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 0
+          },
+          true,
+          false,
+          {
+            "target": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 2.641592654,
+            "pitch": 0.35,
+            "ortho": false,
+            "version": 1
+          },
+          false,
+          true,
+          false,
+          {
+            "target": {
+              "x": 0.330974267,
+              "y": 0.605844332,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 2.641592654,
+            "pitch": 0.35,
+            "ortho": false,
+            "version": 2
+          },
+          false,
+          true,
+          false,
+          {
+            "target": {
+              "x": 0.330974267,
+              "y": 0.605844332,
+              "z": 0
+            },
+            "distance": 20,
+            "yaw": 2.641592654,
+            "pitch": 0.35,
+            "ortho": false,
+            "version": 3
+          },
+          true,
+          {
+            "target": {
+              "x": 0.330974267,
+              "y": 0.605844332,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 2.641592654,
+            "pitch": 0.35,
+            "ortho": false,
+            "version": 4
+          },
+          true,
+          {
+            "target": {
+              "x": 0.5,
+              "y": 0.5,
+              "z": 0.5
+            },
+            "distance": 1.847759065,
+            "yaw": 2.641592654,
+            "pitch": 0.35,
+            "ortho": false,
+            "version": 5
+          },
+          true,
+          {
+            "target": {
+              "x": 0.5,
+              "y": 0.5,
+              "z": 0.5
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 7
+          },
+          true,
+          {
+            "target": {
+              "x": 0.5,
+              "y": 0.5,
+              "z": 0.5
+            },
+            "distance": 10,
+            "yaw": -1.570796327,
+            "pitch": 1.569796327,
+            "ortho": false,
+            "version": 8
+          },
+          true,
+          {
+            "target": {
+              "x": 0.5,
+              "y": 0.5,
+              "z": 0.5
+            },
+            "distance": 10,
+            "yaw": -1.570796327,
+            "pitch": 1.569796327,
+            "ortho": true,
+            "version": 9
+          },
+          true,
+          {
+            "target": {
+              "x": 0.5,
+              "y": 0.5,
+              "z": 0.5
+            },
+            "distance": 1.707106781,
+            "yaw": -1.570796327,
+            "pitch": 1.569796327,
+            "ortho": true,
+            "version": 10
+          }
+        ]
+      }
+    },
+    {
+      "name": "shift+left and space+left pan; clicks without drag do nothing in orbit; escape clears",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 5
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 6
+            }
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 0,
+          "modifiers": {
+            "shift": true
+          }
+        },
+        {
+          "type": "pointermove",
+          "x": 300,
+          "y": 300
+        },
+        {
+          "type": "pointerup",
+          "x": 300,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "keydown",
+          "key": " "
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "pointermove",
+          "x": 400,
+          "y": 400
+        },
+        {
+          "type": "pointerup",
+          "x": 400,
+          "y": 400,
+          "button": 0
+        },
+        {
+          "type": "keyup",
+          "key": " "
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "pointerup",
+          "x": 401,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "state": true
+        },
+        {
+          "type": "pointermove",
+          "x": 420,
+          "y": 310
+        },
+        {
+          "type": "query",
+          "cursor": true
+        },
+        {
+          "type": "keydown",
+          "key": "Escape"
+        }
+      ],
+      "expect": {
+        "queries": [
+          false,
+          true,
+          false,
+          {
+            "target": {
+              "x": 0,
+              "y": -1.380711875,
+              "z": 0
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 1
+          },
+          false,
+          false,
+          true,
+          false,
+          false,
+          {
+            "target": {
+              "x": 0.779608568,
+              "y": -1.380711875,
+              "z": 1.139550684
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 2
+          },
+          false,
+          false,
+          {
+            "target": {
+              "x": 0.779608568,
+              "y": -1.380711875,
+              "z": 1.139550684
+            },
+            "distance": 10,
+            "yaw": 3.141592654,
+            "pitch": 0.6,
+            "ortho": false,
+            "version": 2
+          },
+          true,
+          {
+            "x": 2.157220061,
+            "y": -1.706019481,
+            "z": 0
+          },
+          false
+        ]
+      }
+    },
+    {
+      "name": "measure tool: two clicks (ground or hit), a third restarts; HUD shows the label",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 5
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 6
+            }
+          }
+        ],
+        "tool": "measure"
+      },
+      "steps": [
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0
+              ]
+            },
+            "intensities": {
+              "$f32": [
+                0,
+                0.5,
+                1
+              ]
+            },
+            "stamp": 1
+          }
+        },
+        {
+          "type": "now",
+          "now": 1
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "pointerup",
+          "x": 400,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "pointerdown",
+          "x": 500,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "pointerup",
+          "x": 500,
+          "y": 300,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "draw"
+        },
+        {
+          "type": "pointerdown",
+          "x": 450,
+          "y": 250,
+          "button": 0
+        },
+        {
+          "type": "pointerup",
+          "x": 450,
+          "y": 250,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "setTool",
+          "tool": "orbit"
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "query",
+          "tool": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          false,
+          true,
+          false,
+          true,
+          {
+            "points": [
+              {
+                "x": 0,
+                "y": 0,
+                "z": 0
+              },
+              {
+                "x": 0,
+                "y": -1.380711875,
+                "z": 0
+              }
+            ],
+            "distance": 1.380711875
+          },
+          {
+            "ops3d": 4,
+            "hud": [
+              {
+                "op": "circle",
+                "cx": 400,
+                "cy": 300,
+                "r": 4,
+                "fill": {
+                  "color": "#dc2626",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "line",
+                "x1": 400,
+                "y1": 300,
+                "x2": 500,
+                "y2": 300,
+                "stroke": {
+                  "color": "#dc2626",
+                  "width": 1.5,
+                  "dash": [
+                    6,
+                    4
+                  ],
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 500,
+                "cy": 300,
+                "r": 4,
+                "fill": {
+                  "color": "#dc2626",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "rect",
+                "x": 425.2,
+                "y": 280,
+                "w": 49.6,
+                "h": 16,
+                "radius": 3,
+                "fill": {
+                  "color": "#0b1220",
+                  "opacity": 0.9
+                },
+                "stroke": {
+                  "color": "#dc2626",
+                  "width": 1,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "text",
+                "text": "1.38 m",
+                "x": 450,
+                "y": 288,
+                "style": {
+                  "color": "#dc2626",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 11,
+                  "weight": "normal",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 560,
+                "r": 34,
+                "fill": {
+                  "color": "#0b1220",
+                  "opacity": 0.6
+                },
+                "stroke": null
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 760,
+                "y2": 545.319,
+                "stroke": {
+                  "color": "#dc2626",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 545.319,
+                "r": 5,
+                "fill": {
+                  "color": "#dc2626",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "x",
+                "x": 760,
+                "y": 545.319,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 734,
+                "y2": 560,
+                "stroke": {
+                  "color": "#16a34a",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 734,
+                "cy": 560,
+                "r": 5,
+                "fill": {
+                  "color": "#16a34a",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "y",
+                "x": 734,
+                "y": 560,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 760,
+                "y2": 538.541,
+                "stroke": {
+                  "color": "#2563eb",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 538.541,
+                "r": 5,
+                "fill": {
+                  "color": "#2563eb",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "z",
+                "x": 760,
+                "y": 538.541,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "text",
+                "text": "map · persp",
+                "x": 10,
+                "y": 592,
+                "style": {
+                  "color": "#e2e8f0",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 11,
+                  "weight": "normal",
+                  "align": "left",
+                  "baseline": "bottom",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              }
+            ]
+          },
+          false,
+          true,
+          {
+            "points": [
+              {
+                "x": 1.359865305,
+                "y": -0.767837709,
+                "z": 0
+              }
+            ],
+            "distance": null
+          },
+          {
+            "points": [],
+            "distance": null
+          },
+          "orbit"
+        ]
+      }
+    },
+    {
+      "name": "select tool: hover and click pick the nearest cloud point; HUD rings; gizmo and readout",
+      "setup": {
+        "width": 800,
+        "height": 600,
+        "fixedFrame": "map",
+        "camera": {
+          "width": 800,
+          "height": 600,
+          "target": [
+            0,
+            0,
+            0
+          ],
+          "distance": 10,
+          "yaw": 3.141592653589793,
+          "pitch": 0.6
+        },
+        "transforms": [
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              1,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 1
+          },
+          {
+            "child": "base_link",
+            "parent": "map",
+            "t": [
+              3,
+              0,
+              0
+            ],
+            "q": [
+              0,
+              0,
+              0.7071067811865476,
+              0.7071067811865476
+            ],
+            "time": 3
+          },
+          {
+            "child": "laser",
+            "parent": "base_link",
+            "t": [
+              0,
+              0,
+              0.5
+            ],
+            "q": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "layers": [
+          {
+            "id": "grid",
+            "kind": "grid3d",
+            "meta": {
+              "size": 5
+            }
+          },
+          {
+            "id": "cloud",
+            "kind": "pointCloud3d",
+            "meta": {
+              "frame": "laser",
+              "pointSize": 6
+            }
+          }
+        ],
+        "tool": "select"
+      },
+      "steps": [
+        {
+          "type": "push",
+          "id": "cloud",
+          "payload": {
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0
+              ]
+            },
+            "intensities": {
+              "$f32": [
+                0,
+                0.5,
+                1
+              ]
+            },
+            "stamp": 1
+          }
+        },
+        {
+          "type": "now",
+          "now": 1
+        },
+        {
+          "type": "query",
+          "project3": [
+            1.5,
+            0,
+            0.5
+          ]
+        },
+        {
+          "type": "pointermove",
+          "x": 400,
+          "y": 268
+        },
+        {
+          "type": "query",
+          "hover": true
+        },
+        {
+          "type": "query",
+          "cursor": true
+        },
+        {
+          "type": "pointerdown",
+          "x": 400,
+          "y": 268,
+          "button": 0
+        },
+        {
+          "type": "pointerup",
+          "x": 400,
+          "y": 268,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "draw"
+        },
+        {
+          "type": "pointerdown",
+          "x": 10,
+          "y": 10,
+          "button": 0
+        },
+        {
+          "type": "pointerup",
+          "x": 10,
+          "y": 10,
+          "button": 0
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "keydown",
+          "key": "Escape"
+        },
+        {
+          "type": "draw"
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "x": 400,
+            "y": 216.727609243,
+            "depth": 0.990892225,
+            "visible": true
+          },
+          true,
+          {
+            "layerId": "cloud",
+            "world": {
+              "x": 0,
+              "y": 0,
+              "z": 0.5
+            },
+            "index": 2
+          },
+          {
+            "x": 0.836514888,
+            "y": 0,
+            "z": 0
+          },
+          false,
+          true,
+          {
+            "layerId": "cloud",
+            "world": {
+              "x": 0,
+              "y": 0,
+              "z": 0.5
+            },
+            "index": 2
+          },
+          {
+            "ops3d": 4,
+            "hud": [
+              {
+                "op": "circle",
+                "cx": 400,
+                "cy": 269.244,
+                "r": 9,
+                "fill": null,
+                "stroke": {
+                  "color": "#d97706",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 560,
+                "r": 34,
+                "fill": {
+                  "color": "#0b1220",
+                  "opacity": 0.6
+                },
+                "stroke": null
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 760,
+                "y2": 545.319,
+                "stroke": {
+                  "color": "#dc2626",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 545.319,
+                "r": 5,
+                "fill": {
+                  "color": "#dc2626",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "x",
+                "x": 760,
+                "y": 545.319,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 734,
+                "y2": 560,
+                "stroke": {
+                  "color": "#16a34a",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 734,
+                "cy": 560,
+                "r": 5,
+                "fill": {
+                  "color": "#16a34a",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "y",
+                "x": 734,
+                "y": 560,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 760,
+                "y2": 538.541,
+                "stroke": {
+                  "color": "#2563eb",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 538.541,
+                "r": 5,
+                "fill": {
+                  "color": "#2563eb",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "z",
+                "x": 760,
+                "y": 538.541,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "text",
+                "text": "0.84, 0.00, 0.00 m  ·  map · persp",
+                "x": 10,
+                "y": 592,
+                "style": {
+                  "color": "#e2e8f0",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 11,
+                  "weight": "normal",
+                  "align": "left",
+                  "baseline": "bottom",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              }
+            ]
+          },
+          false,
+          true,
+          null,
+          false,
+          {
+            "ops3d": 4,
+            "hud": [
+              {
+                "op": "circle",
+                "cx": 400,
+                "cy": 269.244,
+                "r": 9,
+                "fill": null,
+                "stroke": {
+                  "color": "#e2e8f0",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 560,
+                "r": 34,
+                "fill": {
+                  "color": "#0b1220",
+                  "opacity": 0.6
+                },
+                "stroke": null
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 760,
+                "y2": 545.319,
+                "stroke": {
+                  "color": "#dc2626",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 545.319,
+                "r": 5,
+                "fill": {
+                  "color": "#dc2626",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "x",
+                "x": 760,
+                "y": 545.319,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 734,
+                "y2": 560,
+                "stroke": {
+                  "color": "#16a34a",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 734,
+                "cy": 560,
+                "r": 5,
+                "fill": {
+                  "color": "#16a34a",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "y",
+                "x": 734,
+                "y": 560,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "line",
+                "x1": 760,
+                "y1": 560,
+                "x2": 760,
+                "y2": 538.541,
+                "stroke": {
+                  "color": "#2563eb",
+                  "width": 2,
+                  "dash": null,
+                  "cap": "butt",
+                  "join": "miter",
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "circle",
+                "cx": 760,
+                "cy": 538.541,
+                "r": 5,
+                "fill": {
+                  "color": "#2563eb",
+                  "opacity": 1
+                },
+                "stroke": null
+              },
+              {
+                "op": "text",
+                "text": "z",
+                "x": 760,
+                "y": 538.541,
+                "style": {
+                  "color": "#ffffff",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 9,
+                  "weight": "bold",
+                  "align": "center",
+                  "baseline": "middle",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              },
+              {
+                "op": "text",
+                "text": "0.84, 0.00, 0.00 m  ·  map · persp",
+                "x": 10,
+                "y": 592,
+                "style": {
+                  "color": "#e2e8f0",
+                  "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                  "size": 11,
+                  "weight": "normal",
+                  "align": "left",
+                  "baseline": "bottom",
+                  "rotation": 0,
+                  "opacity": 1
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

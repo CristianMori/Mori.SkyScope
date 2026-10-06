@@ -1,0 +1,76 @@
+@* Mori.SkyScope — Razor component recording the page's stream to an MCAP file in the browser. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<span class="@Css.Classes("skyscope-recorder", Class)" style="@($"display:inline-flex;align-items:center;gap:8px;{Style}")" @attributes="AdditionalAttributes">
+    <Button Size="Core.Size.Sm" Variant="@(_recording ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="Toggle">@(_recording ? "■ Stop" : "● Record")</Button>
+    <span style="font-size:12px;color:var(--skyscope-color-text-secondary);min-width:150px">@_status</span>
+</span>
+
+@code {
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private System.Threading.Timer? _poll;
+    private bool _recording;
+    private string _status = "";
+
+    /// <summary>The stream to record — the same <c>WsUrl</c> the charts and scenes on the page use.</summary>
+    [Parameter, EditorRequired] public string WsUrl { get; set; } = "";
+    /// <summary>Stop automatically at this size (bytes); 0 = no limit. Recordings live in browser memory until saved.</summary>
+    [Parameter] public long MaxBytes { get; set; } = 256L * 1024 * 1024;
+    /// <summary>File name for the download; null = <c>skyscope-&lt;timestamp&gt;.mcap</c>.</summary>
+    [Parameter] public string? FileName { get; set; }
+    /// <summary>Raised with the size in bytes after a recording was saved.</summary>
+    [Parameter] public EventCallback<long> Saved { get; set; }
+    /// <summary>Extra CSS classes for the root element.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the root element's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the root element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private sealed record State(bool Recording, long Messages, long Bytes, double Duration);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+        _handle = await _module.InvokeAsync<IJSObjectReference>("mountRecorder", WsUrl, MaxBytes);
+        _poll = new System.Threading.Timer(_ => InvokeAsync(RefreshAsync), null, 0, 500);
+    }
+
+    private async Task Toggle()
+    {
+        if (_handle is null) return;
+        if (!_recording) await _handle.InvokeVoidAsync("start");
+        else { var size = await _handle.InvokeAsync<long>("stopAndSave", FileName); if (size > 0) await Saved.InvokeAsync(size); }
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (_handle is null) return;
+        try
+        {
+            var s = await _handle.InvokeAsync<State>("stats");
+            _recording = s.Recording;
+            _status = s.Recording ? $"REC {s.Duration:0.0} s · {s.Messages} msgs · {s.Bytes / 1e6:0.0} MB" : s.Bytes > 0 ? $"last: {s.Messages} msgs · {s.Bytes / 1e6:0.0} MB" : "";
+            StateHasChanged();
+        }
+        catch (JSDisconnectedException) { }
+    }
+
+    /// <summary>Stops the stats poll and disposes the JS recorder and the module; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        _poll?.Dispose();
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

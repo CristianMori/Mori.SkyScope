@@ -1,0 +1,38 @@
+{
+  "name": "mori-skyscope",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "ts/packages/*",
+    "samples/react-sample"
+  ],
+  "scripts": {
+    "build": "npm run design && npm run build -w @mori/skyscope-core -w @mori/skyscope-tokens -w @mori/skyscope-render -w @mori/skyscope-sources -w @mori/skyscope-react -w @mori/skyscope-source-template && npm run bundle:blazor",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b ts/packages/core ts/packages/render ts/packages/sources ts/packages/react ts/packages/blazor ts/packages/source-template",
+    "sample": "npm run dev -w react-sample",
+    "design": "node tools/build-design.mjs",
+    "frames": "npm run build -w @mori/skyscope-core && node tools/gen-frames.mjs",
+    "bundle:blazor": "tsc -b ts/packages/core ts/packages/render ts/packages/sources ts/packages/blazor && esbuild ts/packages/blazor/src/index.ts --bundle --format=esm --target=es2020 --minify --sourcemap --outfile=dotnet/Mori.SkyScope.Blazor/wwwroot/skyscope.js",
+    "pack": "node tools/pack-npm.mjs",
+    "bench": "npm run build -w @mori/skyscope-core && node tools/bench-ingest.mjs"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^26.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0",
+    "vitest": "^3.2.0",
+    "ws": "^8.21.3",
+    "esbuild": "^0.25.0"
+  },
+  "author": "Cristian Mori"
+}

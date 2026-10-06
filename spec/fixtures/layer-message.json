@@ -1,0 +1,308 @@
+{
+  "component": "layerMessage",
+  "cases": [
+    {
+      "name": "a point cloud with f32 attachments round-trips; plain fields stay JSON",
+      "steps": [
+        {
+          "encode": {
+            "id": "cloud",
+            "payload": {
+              "frame": "laser",
+              "stamp": 1.5,
+              "positions": {
+                "$f32": [
+                  0,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0,
+                  0,
+                  1,
+                  0,
+                  0,
+                  0,
+                  1,
+                  1.5,
+                  -2.25,
+                  0.125
+                ]
+              },
+              "intensities": {
+                "$f32": [
+                  0,
+                  0.25,
+                  0.5,
+                  0.75,
+                  1
+                ]
+              }
+            }
+          }
+        },
+        {
+          "hasBinary": {
+            "frame": "laser",
+            "stamp": 1.5,
+            "positions": {
+              "$f32": [
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                1,
+                1.5,
+                -2.25,
+                0.125
+              ]
+            },
+            "intensities": {
+              "$f32": [
+                0,
+                0.25,
+                0.5,
+                0.75,
+                1
+              ]
+            }
+          }
+        },
+        {
+          "hasBinary": {
+            "positions": [
+              1,
+              2,
+              3
+            ]
+          }
+        },
+        {
+          "hasBinary": "x"
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "length": 192,
+            "hash": 3327597651,
+            "roundTrip": {
+              "id": "cloud",
+              "payload": {
+                "frame": "laser",
+                "stamp": 1.5,
+                "positions": {
+                  "$f32": [
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    1,
+                    1.5,
+                    -2.25,
+                    0.125
+                  ]
+                },
+                "intensities": {
+                  "$f32": [
+                    0,
+                    0.25,
+                    0.5,
+                    0.75,
+                    1
+                  ]
+                }
+              }
+            }
+          },
+          true,
+          false,
+          false
+        ]
+      },
+      "setup": {}
+    },
+    {
+      "name": "every dtype, alignment padding, empty arrays, unicode id",
+      "steps": [
+        {
+          "encode": {
+            "id": "ünïcode/层",
+            "payload": {
+              "a": {
+                "$f32": [
+                  1.5
+                ]
+              },
+              "b": {
+                "$f64": [
+                  3.141592653589793
+                ]
+              },
+              "c": {
+                "$u8": [
+                  1,
+                  2,
+                  3
+                ]
+              },
+              "d": {
+                "$u16": [
+                  65535,
+                  7
+                ]
+              },
+              "e": {
+                "$i16": [
+                  -2,
+                  3
+                ]
+              },
+              "f": {
+                "$u32": [
+                  4294967295
+                ]
+              },
+              "g": {
+                "$i32": [
+                  -7
+                ]
+              },
+              "h": {
+                "$u8": []
+              },
+              "note": "kept",
+              "n": 3,
+              "nested": {
+                "arr": [
+                  1,
+                  2
+                ]
+              }
+            }
+          }
+        },
+        {
+          "encode": {
+            "id": "",
+            "payload": {}
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "length": 264,
+            "hash": 1300921001,
+            "roundTrip": {
+              "id": "ünïcode/层",
+              "payload": {
+                "note": "kept",
+                "n": 3,
+                "nested": {
+                  "arr": [
+                    1,
+                    2
+                  ]
+                },
+                "a": {
+                  "$f32": [
+                    1.5
+                  ]
+                },
+                "b": {
+                  "$f64": [
+                    3.141592654
+                  ]
+                },
+                "c": {
+                  "$u8": [
+                    1,
+                    2,
+                    3
+                  ]
+                },
+                "d": {
+                  "$u16": [
+                    65535,
+                    7
+                  ]
+                },
+                "e": {
+                  "$i16": [
+                    -2,
+                    3
+                  ]
+                },
+                "f": {
+                  "$u32": [
+                    4294967295
+                  ]
+                },
+                "g": {
+                  "$i32": [
+                    -7
+                  ]
+                },
+                "h": {
+                  "$u8": []
+                }
+              }
+            }
+          },
+          {
+            "length": 24,
+            "hash": 19059179,
+            "roundTrip": {
+              "id": "",
+              "payload": {}
+            }
+          }
+        ]
+      },
+      "setup": {}
+    },
+    {
+      "name": "decode errors: bad magic, truncated attachment, unknown dtype",
+      "steps": [
+        {
+          "decode": "U0tTRgEAAAAAAAAAAAAAAA=="
+        },
+        {
+          "decode": "U0tTTAEAAAABAAEAAgAAAGF7fQAAAAAAAQAAAAQAAABwAAAAAAAAAA=="
+        },
+        {
+          "decode": "U0tTTAEAAAABAAEAAgAAAGF7fQAAAAAAAQAJAAAAAABwAAAAAAAAAA=="
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "error": "layer message: bad magic"
+          },
+          {
+            "error": "layer message: truncated"
+          },
+          {
+            "error": "layer message: unknown dtype 9"
+          }
+        ]
+      },
+      "setup": {}
+    }
+  ]
+}

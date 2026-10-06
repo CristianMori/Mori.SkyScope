@@ -1,0 +1,1008 @@
+{
+  "component": "scene-controller",
+  "cases": [
+    {
+      "name": "pan tool: drag pans, wheel zooms about the pointer, shift-drag box zooms",
+      "setup": {
+        "width": 200,
+        "height": 200,
+        "options": {
+          "camera": {
+            "centerX": 5,
+            "centerY": 5,
+            "zoom": 20
+          }
+        }
+      },
+      "steps": [
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 50,
+            "y": 50,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 70,
+            "y": 60
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 70,
+            "y": 60,
+            "button": 0
+          }
+        },
+        {
+          "type": "query",
+          "camera": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "wheel",
+            "x": 100,
+            "y": 100,
+            "deltaY": -400
+          }
+        },
+        {
+          "type": "query",
+          "camera": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 60,
+            "y": 60,
+            "button": 0,
+            "modifiers": {
+              "shift": true
+            }
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 140,
+            "y": 140,
+            "modifiers": {
+              "shift": true
+            }
+          }
+        },
+        {
+          "type": "query",
+          "boxPreview": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 140,
+            "y": 140,
+            "button": 0,
+            "modifiers": {
+              "shift": true
+            }
+          }
+        },
+        {
+          "type": "query",
+          "boxPreview": true
+        },
+        {
+          "type": "query",
+          "camera": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          false,
+          true,
+          false,
+          {
+            "centerX": 4,
+            "centerY": 5.5,
+            "zoom": 20,
+            "rotation": 0
+          },
+          true,
+          {
+            "centerX": 4,
+            "centerY": 5.5,
+            "zoom": 40,
+            "rotation": 0
+          },
+          false,
+          true,
+          {
+            "x": 60,
+            "y": 60,
+            "w": 80,
+            "h": 80
+          },
+          true,
+          null,
+          {
+            "centerX": 4,
+            "centerY": 5.5,
+            "zoom": 100,
+            "rotation": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "measure tool: two clicks measure, a third restarts, escape clears",
+      "setup": {
+        "width": 200,
+        "height": 200,
+        "options": {
+          "camera": {
+            "centerX": 5,
+            "centerY": 5,
+            "zoom": 20
+          }
+        }
+      },
+      "steps": [
+        {
+          "type": "setTool",
+          "tool": "measure"
+        },
+        {
+          "type": "query",
+          "tool": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 40,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 40,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 140,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 140,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 100,
+            "y": 20,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 100,
+            "y": 20,
+            "button": 0
+          }
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "keydown",
+            "key": "Escape"
+          }
+        },
+        {
+          "type": "query",
+          "measure": true
+        },
+        {
+          "type": "setTool",
+          "tool": "pan"
+        },
+        {
+          "type": "query",
+          "tool": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          "measure",
+          false,
+          true,
+          {
+            "points": [
+              {
+                "x": 2,
+                "y": 5
+              }
+            ],
+            "distance": null
+          },
+          false,
+          true,
+          {
+            "points": [
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              }
+            ],
+            "distance": 5
+          },
+          false,
+          true,
+          {
+            "points": [
+              {
+                "x": 5,
+                "y": 9
+              }
+            ],
+            "distance": null
+          },
+          false,
+          {
+            "points": [],
+            "distance": null
+          },
+          "pan"
+        ]
+      }
+    },
+    {
+      "name": "select tool: hover and click hit the pose, double-click fits all, rotate keys",
+      "setup": {
+        "width": 200,
+        "height": 200,
+        "options": {
+          "camera": {
+            "centerX": 5,
+            "centerY": 5,
+            "zoom": 20
+          }
+        },
+        "layers": [
+          {
+            "kind": "pose",
+            "id": "bot",
+            "pose": {
+              "x": 5,
+              "y": 5,
+              "yaw": 0
+            },
+            "footprint": [
+              -0.5,
+              -0.3,
+              0.5,
+              -0.3,
+              0.5,
+              0.3,
+              -0.5,
+              0.3
+            ]
+          },
+          {
+            "kind": "shapes",
+            "id": "sh",
+            "shapes": [
+              {
+                "id": "zone",
+                "kind": "rect",
+                "x": 0,
+                "y": 0,
+                "w": 2,
+                "h": 2
+              }
+            ]
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "setTool",
+          "tool": "select"
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "type": "query",
+          "hover": true
+        },
+        {
+          "type": "query",
+          "cursor": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 100,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 100,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "query",
+          "selection": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 180,
+            "y": 20
+          }
+        },
+        {
+          "type": "query",
+          "hover": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "dblclick",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "type": "query",
+          "camera": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "keydown",
+            "key": "q"
+          }
+        },
+        {
+          "type": "query",
+          "camera": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "keydown",
+            "key": "r"
+          }
+        },
+        {
+          "type": "query",
+          "camera": true
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "keydown",
+            "key": "f"
+          }
+        },
+        {
+          "type": "query",
+          "camera": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          true,
+          {
+            "layerId": "bot",
+            "world": {
+              "x": 5,
+              "y": 5
+            },
+            "distance": 0,
+            "index": null,
+            "data": {
+              "x": 5,
+              "y": 5,
+              "yaw": 0
+            }
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          false,
+          true,
+          {
+            "layerId": "bot",
+            "world": {
+              "x": 5,
+              "y": 5
+            },
+            "distance": 0,
+            "index": null,
+            "data": {
+              "x": 5,
+              "y": 5,
+              "yaw": 0
+            }
+          },
+          true,
+          null,
+          true,
+          {
+            "centerX": 2.75,
+            "centerY": 2.65,
+            "zoom": 27.636363636,
+            "rotation": 0
+          },
+          true,
+          {
+            "centerX": 2.75,
+            "centerY": 2.65,
+            "zoom": 27.636363636,
+            "rotation": -0.261799388
+          },
+          true,
+          {
+            "centerX": 2.75,
+            "centerY": 2.65,
+            "zoom": 27.636363636,
+            "rotation": 0
+          },
+          true,
+          {
+            "centerX": 2.75,
+            "centerY": 2.65,
+            "zoom": 27.636363636,
+            "rotation": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "scale bar picks 1-2-5 lengths",
+      "setup": {
+        "width": 200,
+        "height": 200,
+        "options": {
+          "camera": {
+            "centerX": 5,
+            "centerY": 5,
+            "zoom": 20
+          }
+        }
+      },
+      "steps": [
+        {
+          "type": "query",
+          "scaleBar": 100
+        },
+        {
+          "type": "query",
+          "scaleBar": 60
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "wheel",
+            "x": 100,
+            "y": 100,
+            "deltaY": 355
+          }
+        },
+        {
+          "type": "query",
+          "scaleBar": 100
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "world": 5,
+            "px": 100
+          },
+          {
+            "world": 2,
+            "px": 40
+          },
+          true,
+          {
+            "world": 10,
+            "px": 108.110001783
+          }
+        ]
+      }
+    },
+    {
+      "name": "drawing parity: overlays",
+      "setup": {
+        "width": 200,
+        "height": 200,
+        "options": {
+          "camera": {
+            "centerX": 5,
+            "centerY": 5,
+            "zoom": 20
+          },
+          "unit": "m",
+          "theme": {
+            "background": "#ffffff"
+          }
+        },
+        "layers": [
+          {
+            "kind": "grid",
+            "id": "grid"
+          },
+          {
+            "kind": "pose",
+            "id": "bot",
+            "pose": {
+              "x": 5,
+              "y": 5,
+              "yaw": 1
+            },
+            "label": "bot"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "setTool",
+          "tool": "select"
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 100,
+            "y": 100
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 100,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 100,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "setTool",
+          "tool": "measure"
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 40,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 40,
+            "y": 100,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 140,
+            "y": 60,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerup",
+            "x": 140,
+            "y": 60,
+            "button": 0
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 150,
+            "y": 150
+          }
+        },
+        {
+          "type": "setTool",
+          "tool": "pan"
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointerdown",
+            "x": 20,
+            "y": 20,
+            "button": 0,
+            "modifiers": {
+              "shift": true
+            }
+          }
+        },
+        {
+          "type": "event",
+          "event": {
+            "type": "pointermove",
+            "x": 60,
+            "y": 50,
+            "modifiers": {
+              "shift": true
+            }
+          }
+        },
+        {
+          "type": "query",
+          "draw": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          false,
+          true,
+          [
+            {
+              "op": "clear",
+              "color": "#ffffff"
+            },
+            {
+              "op": "layerDraw",
+              "key": "layer:grid",
+              "width": 200,
+              "height": 200,
+              "ops": [
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 200,
+                  "x2": 0,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#cbd5e1",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 100,
+                  "y1": 200,
+                  "x2": 100,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 200,
+                  "y1": 200,
+                  "x2": 200,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 200,
+                  "x2": 200,
+                  "y2": 200,
+                  "stroke": {
+                    "color": "#cbd5e1",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 100,
+                  "x2": 200,
+                  "y2": 100,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                },
+                {
+                  "op": "line",
+                  "x1": 0,
+                  "y1": 0,
+                  "x2": 200,
+                  "y2": 0,
+                  "stroke": {
+                    "color": "#e2e8f0",
+                    "width": 1,
+                    "dash": null,
+                    "cap": "butt",
+                    "join": "miter",
+                    "opacity": 1
+                  }
+                }
+              ]
+            },
+            {
+              "op": "layer",
+              "key": "layer:grid",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "op": "save"
+            },
+            {
+              "op": "polygon",
+              "points": [
+                107.564,
+                88.219,
+                101.519,
+                109.294,
+                98.487,
+                102.356,
+                90.917,
+                102.486
+              ],
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": {
+                "color": "#ffffff",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "bot",
+              "x": 100,
+              "y": 83,
+              "style": {
+                "color": "#2563eb",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "bottom",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "restore"
+            },
+            {
+              "op": "circle",
+              "cx": 100,
+              "cy": 100,
+              "r": 9,
+              "fill": null,
+              "stroke": {
+                "color": "#d97706",
+                "width": 2,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 20,
+              "y": 20,
+              "w": 40,
+              "h": 30,
+              "radius": 0,
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 0.1
+              },
+              "stroke": {
+                "color": "#2563eb",
+                "width": 1,
+                "dash": [
+                  4,
+                  3
+                ],
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 12,
+              "y1": 186,
+              "x2": 112,
+              "y2": 186,
+              "stroke": {
+                "color": "#0f172a",
+                "width": 2,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 12,
+              "y1": 182,
+              "x2": 12,
+              "y2": 190,
+              "stroke": {
+                "color": "#0f172a",
+                "width": 2,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 112,
+              "y1": 182,
+              "x2": 112,
+              "y2": 190,
+              "stroke": {
+                "color": "#0f172a",
+                "width": 2,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "5 m",
+              "x": 62,
+              "y": 180,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "bottom",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "7.50, 2.50 m",
+              "x": 190,
+              "y": 192,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "bottom",
+                "rotation": 0,
+                "opacity": 1
+              }
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

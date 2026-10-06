@@ -1,0 +1,45 @@
+@* Mori.SkyScope — Button component of the chrome around instruments. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+
+<button type="@Type" class="@Classes" disabled="@(Disabled || Loading)" aria-busy="@(Loading ? "true" : null)"
+        @onclick="OnClick" @attributes="AdditionalAttributes">
+    @if (Loading)
+    {
+        <span class="skyscope-button__spinner" aria-hidden="true"></span>
+    }
+    @ChildContent
+</button>
+
+@code {
+    /// <summary>Visual variant (default, primary, danger, subtle, ghost); non-default values add a <c>skyscope-button--*</c> modifier class.</summary>
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Default;
+    /// <summary>Size of the button; medium adds no modifier class.</summary>
+    [Parameter] public Size Size { get; set; } = Size.Md;
+    /// <summary>Renders the button disabled so it cannot be clicked.</summary>
+    [Parameter] public bool Disabled { get; set; }
+    /// <summary>Shows a spinner and disables the button while an operation is in flight.</summary>
+    [Parameter] public bool Loading { get; set; }
+    /// <summary>Full-width.</summary>
+    [Parameter] public bool Block { get; set; }
+    /// <summary>Square, for icon-only buttons. Supply an <c>aria-label</c>.</summary>
+    [Parameter] public bool Icon { get; set; }
+    /// <summary>HTML <c>type</c> attribute: button, submit or reset.</summary>
+    [Parameter] public string Type { get; set; } = "button";
+    /// <summary>Extra CSS classes appended to the component's own.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Raised when the button is clicked.</summary>
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    /// <summary>Content rendered inside the button (label, icon).</summary>
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the <c>button</c> element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string Classes => Css.Classes(
+        "skyscope-button",
+        Variant == ButtonVariant.Default ? null : $"skyscope-button--{Variant.ToString().ToLowerInvariant()}",
+        Css.Size("skyscope-button", Size),
+        Block ? "skyscope-button--block" : null,
+        Icon ? "skyscope-button--icon" : null,
+        Class);
+}

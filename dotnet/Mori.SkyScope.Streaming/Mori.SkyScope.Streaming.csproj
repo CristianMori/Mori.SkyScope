@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>ASP.NET Core WebSocket broadcaster for Mori.SkyScope frames and scene layers.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../Mori.SkyScope.Core/Mori.SkyScope.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,860 @@
+{
+  "component": "frameTree",
+  "cases": [
+    {
+      "name": "static chain map → odom → base_link → laser; lookups both ways and across siblings",
+      "steps": [
+        {
+          "type": "set",
+          "child": "odom",
+          "parent": "map",
+          "t": [
+            10,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "type": "set",
+          "child": "base_link",
+          "parent": "odom",
+          "t": [
+            1,
+            2,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0.7071067811865476,
+            0.7071067811865476
+          ]
+        },
+        {
+          "type": "set",
+          "child": "laser",
+          "parent": "base_link",
+          "t": [
+            0.2,
+            0,
+            0.3
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "type": "set",
+          "child": "camera",
+          "parent": "base_link",
+          "t": [
+            0.1,
+            0,
+            0.5
+          ],
+          "q": [
+            0,
+            0.70710678,
+            0,
+            0.70710678
+          ]
+        },
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "query",
+          "roots": true
+        },
+        {
+          "type": "query",
+          "parent": "laser"
+        },
+        {
+          "type": "query",
+          "parent": "map"
+        },
+        {
+          "type": "query",
+          "lookup": [
+            "map",
+            "laser"
+          ]
+        },
+        {
+          "type": "query",
+          "point": [
+            "map",
+            "laser",
+            null,
+            [
+              1,
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "type": "query",
+          "point": [
+            "laser",
+            "map",
+            null,
+            [
+              11.2,
+              2,
+              0.3
+            ]
+          ]
+        },
+        {
+          "type": "query",
+          "lookup": [
+            "laser",
+            "camera"
+          ]
+        },
+        {
+          "type": "query",
+          "point": [
+            "camera",
+            "laser",
+            null,
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "type": "query",
+          "canTransform": [
+            "map",
+            "mars"
+          ]
+        },
+        {
+          "type": "query",
+          "lookup": [
+            "map",
+            "map"
+          ]
+        },
+        {
+          "type": "query",
+          "version": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            "base_link",
+            "camera",
+            "laser",
+            "map",
+            "odom"
+          ],
+          [
+            "map"
+          ],
+          "base_link",
+          null,
+          [
+            0,
+            1,
+            0,
+            0,
+            -1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            11,
+            2.2,
+            0.3,
+            1
+          ],
+          {
+            "x": 11,
+            "y": 3.2,
+            "z": 0.3
+          },
+          {
+            "x": -0.2,
+            "y": -0.2,
+            "z": 0
+          },
+          [
+            3e-9,
+            0,
+            -0.999999997,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0.999999997,
+            0,
+            3e-9,
+            0,
+            -0.1,
+            0,
+            0.2,
+            1
+          ],
+          {
+            "x": 0.200000001,
+            "y": 0,
+            "z": 0.1
+          },
+          false,
+          [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          4
+        ]
+      },
+      "setup": {}
+    },
+    {
+      "name": "timed transforms interpolate (lerp + slerp) and clamp outside the range",
+      "steps": [
+        {
+          "type": "set",
+          "child": "base_link",
+          "parent": "map",
+          "t": [
+            0,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 0
+        },
+        {
+          "type": "set",
+          "child": "base_link",
+          "parent": "map",
+          "t": [
+            4,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0.7071067811865476,
+            0.7071067811865476
+          ],
+          "time": 2
+        },
+        {
+          "type": "set",
+          "child": "base_link",
+          "parent": "map",
+          "t": [
+            4,
+            4,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "time": 4
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link",
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link",
+            3
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link",
+            -1
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link",
+            10
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link"
+          ]
+        },
+        {
+          "type": "query",
+          "point": [
+            "map",
+            "base_link",
+            1,
+            [
+              1,
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "type": "query",
+          "point": [
+            "map",
+            "base_link",
+            4,
+            [
+              1,
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "type": "set",
+          "child": "base_link",
+          "parent": "map",
+          "t": [
+            2,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 1
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link",
+            0.5
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "base_link",
+            1.5
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "t": {
+              "x": 2,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0.382683432,
+              "w": 0.923879533
+            }
+          },
+          {
+            "t": {
+              "x": 4,
+              "y": 2,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0.923879533,
+              "w": 0.382683432
+            }
+          },
+          {
+            "t": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          {
+            "t": {
+              "x": 4,
+              "y": 4,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 1,
+              "w": 0
+            }
+          },
+          {
+            "t": {
+              "x": 4,
+              "y": 4,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 1,
+              "w": 0
+            }
+          },
+          {
+            "x": 2.707106781,
+            "y": 0.707106781,
+            "z": 0
+          },
+          {
+            "x": 3,
+            "y": 4,
+            "z": 0
+          },
+          {
+            "t": {
+              "x": 1,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          {
+            "t": {
+              "x": 3,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0.382683432,
+              "w": 0.923879533
+            }
+          }
+        ]
+      },
+      "setup": {}
+    },
+    {
+      "name": "reparenting resets samples; remove and clear; static overrides timed",
+      "steps": [
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "map",
+          "t": [
+            1,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 0
+        },
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "map",
+          "t": [
+            2,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 1
+        },
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "odom",
+          "t": [
+            5,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 2
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "a",
+            0.5
+          ]
+        },
+        {
+          "type": "query",
+          "parent": "a"
+        },
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "odom",
+          "t": [
+            7,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "a",
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "a",
+            100
+          ]
+        },
+        {
+          "type": "set",
+          "child": "b",
+          "parent": "a",
+          "t": [
+            0,
+            1,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "point": [
+            "odom",
+            "b",
+            null,
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "type": "remove",
+          "frame": "a"
+        },
+        {
+          "type": "query",
+          "canTransform": [
+            "odom",
+            "b"
+          ]
+        },
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "clear"
+        },
+        {
+          "type": "query",
+          "frameIds": true
+        },
+        {
+          "type": "query",
+          "version": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "t": {
+              "x": 5,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          "odom",
+          {
+            "t": {
+              "x": 7,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          {
+            "t": {
+              "x": 7,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          {
+            "x": 7,
+            "y": 1,
+            "z": 0
+          },
+          false,
+          [
+            "a",
+            "b"
+          ],
+          [],
+          7
+        ]
+      },
+      "setup": {}
+    },
+    {
+      "name": "maxSamples keeps the newest and a cycle does not hang",
+      "setup": {
+        "maxSamples": 3
+      },
+      "steps": [
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "map",
+          "t": [
+            1,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 1
+        },
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "map",
+          "t": [
+            2,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 2
+        },
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "map",
+          "t": [
+            3,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 3
+        },
+        {
+          "type": "set",
+          "child": "a",
+          "parent": "map",
+          "t": [
+            4,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "time": 4
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "a",
+            0
+          ]
+        },
+        {
+          "type": "query",
+          "transformAt": [
+            "a",
+            3.5
+          ]
+        },
+        {
+          "type": "set",
+          "child": "map",
+          "parent": "a",
+          "t": [
+            0,
+            0,
+            0
+          ],
+          "q": [
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "type": "query",
+          "canTransform": [
+            "map",
+            "a"
+          ]
+        },
+        {
+          "type": "query",
+          "roots": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          {
+            "t": {
+              "x": 2,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          {
+            "t": {
+              "x": 3.5,
+              "y": 0,
+              "z": 0
+            },
+            "q": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            }
+          },
+          false,
+          []
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+/* Mori.SkyScope base. Scoped to .skyscope-root so the library never restyles a host page. */
+.skyscope-root {
+  min-height: 100%;
+  font-family: var(--skyscope-font-family-sans);
+  font-size: var(--skyscope-font-size-md);
+  line-height: var(--skyscope-font-leading-normal);
+  color: var(--skyscope-color-text-primary);
+  background: var(--skyscope-color-bg-canvas);
+  -webkit-font-smoothing: antialiased;
+}
+[class^="skyscope-"], [class*=" skyscope-"], [class^="skyscope-"] *, [class*=" skyscope-"] * { box-sizing: border-box; }
+.skyscope-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

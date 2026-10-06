@@ -1,0 +1,1076 @@
+{
+  "component": "polar",
+  "cases": [
+    {
+      "name": "polar line: equally spaced angles, nice radial domain, open by default",
+      "setup": {
+        "options": {
+          "legend": "none",
+          "series": [
+            {
+              "id": "r",
+              "values": [
+                1,
+                2,
+                3,
+                4,
+                3,
+                2,
+                1,
+                2
+              ]
+            }
+          ]
+        },
+        "width": 300,
+        "height": 300
+      },
+      "steps": [
+        {
+          "type": "query",
+          "rDomain": true
+        },
+        {
+          "type": "query",
+          "layout": true
+        },
+        {
+          "type": "query",
+          "points": "r"
+        },
+        {
+          "type": "query",
+          "gridAngles": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            0,
+            4
+          ],
+          {
+            "cx": 150,
+            "cy": 150,
+            "r": 117.8,
+            "plot": {
+              "x": 8,
+              "y": 8,
+              "w": 284,
+              "h": 284
+            },
+            "title": null,
+            "legend": null
+          },
+          [
+            150,
+            120.55,
+            191.648589412,
+            108.351410588,
+            238.35,
+            150,
+            233.297178824,
+            233.297178824,
+            150,
+            238.35,
+            108.351410588,
+            191.648589412,
+            120.55,
+            150,
+            108.351410588,
+            108.351410588
+          ],
+          [
+            {
+              "a": 0,
+              "label": "0°"
+            },
+            {
+              "a": 30,
+              "label": "30°"
+            },
+            {
+              "a": 60,
+              "label": "60°"
+            },
+            {
+              "a": 90,
+              "label": "90°"
+            },
+            {
+              "a": 120,
+              "label": "120°"
+            },
+            {
+              "a": 150,
+              "label": "150°"
+            },
+            {
+              "a": 180,
+              "label": "180°"
+            },
+            {
+              "a": 210,
+              "label": "210°"
+            },
+            {
+              "a": 240,
+              "label": "240°"
+            },
+            {
+              "a": 270,
+              "label": "270°"
+            },
+            {
+              "a": 300,
+              "label": "300°"
+            },
+            {
+              "a": 330,
+              "label": "330°"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "radar: categories, area closed, counter-clockwise start at 90, polygon grid",
+      "setup": {
+        "options": {
+          "legend": "none",
+          "categories": [
+            "speed",
+            "power",
+            "range",
+            "grip",
+            "cost"
+          ],
+          "startAngle": 90,
+          "clockwise": false,
+          "gridShape": "polygon",
+          "max": 10,
+          "series": [
+            {
+              "id": "a",
+              "values": [
+                8,
+                6,
+                7,
+                9,
+                4
+              ]
+            },
+            {
+              "id": "b",
+              "values": [
+                5,
+                9,
+                6,
+                4,
+                8
+              ]
+            }
+          ]
+        },
+        "width": 300,
+        "height": 300
+      },
+      "steps": [
+        {
+          "type": "query",
+          "rDomain": true
+        },
+        {
+          "type": "query",
+          "gridAngles": true
+        },
+        {
+          "type": "query",
+          "points": "a"
+        },
+        {
+          "type": "query",
+          "hit": [
+            244,
+            150
+          ]
+        },
+        {
+          "type": "hover",
+          "x": 244,
+          "y": 150
+        },
+        {
+          "type": "query",
+          "hover": true
+        },
+        {
+          "type": "query",
+          "legend": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            0,
+            10
+          ],
+          [
+            {
+              "a": 0,
+              "label": "speed"
+            },
+            {
+              "a": 72,
+              "label": "power"
+            },
+            {
+              "a": 144,
+              "label": "range"
+            },
+            {
+              "a": 216,
+              "label": "grip"
+            },
+            {
+              "a": 288,
+              "label": "cost"
+            }
+          ],
+          [
+            244.24,
+            150,
+            171.841321162,
+            82.779325428,
+            83.288458644,
+            101.531228096,
+            64.228018256,
+            212.316992448,
+            164.560880775,
+            194.813783048,
+            244.24,
+            150
+          ],
+          {
+            "seriesId": "a",
+            "index": 0
+          },
+          {
+            "seriesId": "a",
+            "index": 0
+          },
+          [
+            {
+              "id": "a",
+              "name": "a",
+              "color": "#2563eb",
+              "hidden": false,
+              "shape": "box"
+            },
+            {
+              "id": "b",
+              "name": "b",
+              "color": "#dc2626",
+              "hidden": false,
+              "shape": "box"
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "explicit angles and min",
+      "setup": {
+        "options": {
+          "legend": "none",
+          "min": -1,
+          "series": [
+            {
+              "id": "s",
+              "kind": "scatter",
+              "angles": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "values": [
+                0,
+                1,
+                -0.5,
+                2
+              ]
+            }
+          ]
+        },
+        "width": 200,
+        "height": 200
+      },
+      "steps": [
+        {
+          "type": "query",
+          "rDomain": true
+        },
+        {
+          "type": "query",
+          "points": "s"
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            -1,
+            2
+          ],
+          [
+            100,
+            77.4,
+            145.2,
+            100,
+            100,
+            111.3,
+            32.2,
+            100
+          ]
+        ]
+      }
+    },
+    {
+      "name": "drawing parity: radar",
+      "setup": {
+        "options": {
+          "title": "Radar",
+          "legend": "top-right",
+          "categories": [
+            "a",
+            "b",
+            "c",
+            "d"
+          ],
+          "gridShape": "polygon",
+          "series": [
+            {
+              "id": "x",
+              "name": "X",
+              "values": [
+                3,
+                4,
+                2,
+                5
+              ]
+            },
+            {
+              "id": "y",
+              "name": "Y",
+              "kind": "line",
+              "values": [
+                4,
+                2,
+                5,
+                3
+              ]
+            }
+          ]
+        },
+        "width": 300,
+        "height": 260
+      },
+      "steps": [
+        {
+          "type": "hover",
+          "x": 150,
+          "y": 60
+        },
+        {
+          "type": "query",
+          "draw": true
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "op": "clear",
+              "color": "#ffffff"
+            },
+            {
+              "op": "text",
+              "text": "Radar",
+              "x": 150,
+              "y": 19,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 14,
+                "weight": "bold",
+                "align": "center",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                54.2,
+                236.8,
+                141,
+                150,
+                227.8,
+                63.2,
+                141
+              ],
+              "fill": {
+                "color": "#f8fafc",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                123.64,
+                167.36,
+                141,
+                150,
+                158.36,
+                132.64,
+                141
+              ],
+              "fill": null,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                106.28,
+                184.72,
+                141,
+                150,
+                175.72,
+                115.28,
+                141
+              ],
+              "fill": null,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                88.92,
+                202.08,
+                141,
+                150,
+                193.08,
+                97.92,
+                141
+              ],
+              "fill": null,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                71.56,
+                219.44,
+                141,
+                150,
+                210.44,
+                80.56,
+                141
+              ],
+              "fill": null,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                54.2,
+                236.8,
+                141,
+                150,
+                227.8,
+                63.2,
+                141
+              ],
+              "fill": null,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 150,
+              "y1": 141,
+              "x2": 150,
+              "y2": 54.2,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 150,
+              "y1": 141,
+              "x2": 236.8,
+              "y2": 141,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 150,
+              "y1": 141,
+              "x2": 150,
+              "y2": 227.8,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 150,
+              "y1": 141,
+              "x2": 63.2,
+              "y2": 141,
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "a",
+              "x": 150,
+              "y": 44.3,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "b",
+              "x": 246.7,
+              "y": 141,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "c",
+              "x": 150,
+              "y": 237.7,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "center",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "d",
+              "x": 53.3,
+              "y": 141,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "right",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "1",
+              "x": 153,
+              "y": 123.64,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 10,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "2",
+              "x": 153,
+              "y": 106.28,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 10,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "3",
+              "x": 153,
+              "y": 88.92,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 10,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "4",
+              "x": 153,
+              "y": 71.56,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 10,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "5",
+              "x": 153,
+              "y": 54.2,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 10,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polygon",
+              "points": [
+                150,
+                88.92,
+                219.44,
+                141,
+                150,
+                175.72,
+                63.2,
+                141,
+                150,
+                88.92
+              ],
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 0.25
+              },
+              "stroke": null
+            },
+            {
+              "op": "polyline",
+              "points": [
+                150,
+                88.92,
+                219.44,
+                141,
+                150,
+                175.72,
+                63.2,
+                141,
+                150,
+                88.92
+              ],
+              "stroke": {
+                "color": "#2563eb",
+                "width": 1.5,
+                "dash": null,
+                "cap": "butt",
+                "join": "round",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "polyline",
+              "points": [
+                150,
+                71.56,
+                184.72,
+                141,
+                150,
+                227.8,
+                97.92,
+                141,
+                150,
+                71.56
+              ],
+              "stroke": {
+                "color": "#dc2626",
+                "width": 1.5,
+                "dash": null,
+                "cap": "butt",
+                "join": "round",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "circle",
+              "cx": 150,
+              "cy": 88.92,
+              "r": 3.5,
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 219.44,
+              "cy": 141,
+              "r": 3.5,
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 150,
+              "cy": 175.72,
+              "r": 3.5,
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 63.2,
+              "cy": 141,
+              "r": 3.5,
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 150,
+              "cy": 71.56,
+              "r": 3.5,
+              "fill": {
+                "color": "#dc2626",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 184.72,
+              "cy": 141,
+              "r": 3.5,
+              "fill": {
+                "color": "#dc2626",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 150,
+              "cy": 227.8,
+              "r": 3.5,
+              "fill": {
+                "color": "#dc2626",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 97.92,
+              "cy": 141,
+              "r": 3.5,
+              "fill": {
+                "color": "#dc2626",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "circle",
+              "cx": 150,
+              "cy": 71.56,
+              "r": 6.5,
+              "fill": null,
+              "stroke": {
+                "color": "#dc2626",
+                "width": 2,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 134,
+              "y": 38,
+              "w": 150,
+              "h": 54,
+              "radius": 3,
+              "fill": {
+                "color": "#ffffff",
+                "opacity": 0.88
+              },
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 136,
+              "y": 46,
+              "w": 146,
+              "h": 19,
+              "radius": 2,
+              "fill": {
+                "color": "#94a3b8",
+                "opacity": 0.15
+              },
+              "stroke": null
+            },
+            {
+              "op": "rect",
+              "x": 142,
+              "y": 50.5,
+              "w": 14,
+              "h": 10,
+              "radius": 2,
+              "fill": {
+                "color": "#2563eb",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "text",
+              "text": "X",
+              "x": 162,
+              "y": 55.5,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "line",
+              "x1": 142,
+              "y1": 74.5,
+              "x2": 156,
+              "y2": 74.5,
+              "stroke": {
+                "color": "#dc2626",
+                "width": 2,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "Y",
+              "x": 162,
+              "y": 74.5,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 162,
+              "y": 83.56,
+              "w": 74.2,
+              "h": 46,
+              "radius": 3,
+              "fill": {
+                "color": "#ffffff",
+                "opacity": 0.95
+              },
+              "stroke": {
+                "color": "#e2e8f0",
+                "width": 1,
+                "dash": null,
+                "cap": "butt",
+                "join": "miter",
+                "opacity": 1
+              }
+            },
+            {
+              "op": "text",
+              "text": "a",
+              "x": 168,
+              "y": 98.06,
+              "style": {
+                "color": "#64748b",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            },
+            {
+              "op": "rect",
+              "x": 168,
+              "y": 111.06,
+              "w": 8,
+              "h": 8,
+              "radius": 2,
+              "fill": {
+                "color": "#dc2626",
+                "opacity": 1
+              },
+              "stroke": null
+            },
+            {
+              "op": "text",
+              "text": "Y  4.00",
+              "x": 184,
+              "y": 115.06,
+              "style": {
+                "color": "#0f172a",
+                "family": "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+                "size": 11,
+                "weight": "normal",
+                "align": "left",
+                "baseline": "middle",
+                "rotation": 0,
+                "opacity": 1
+              }
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

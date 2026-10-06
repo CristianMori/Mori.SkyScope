@@ -1,0 +1,18 @@
+{
+  "color": {
+    "bg":      { "canvas": "{color.gray.950}", "surface": "{color.gray.900}", "subtle": "{color.gray.800}", "muted": "{color.gray.700}", "overlay": "rgba(2, 6, 23, 0.65)" },
+    "text":    { "primary": "{color.gray.50}", "secondary": "{color.gray.400}", "muted": "{color.gray.500}", "inverse": "{color.gray.900}", "link": "{color.blue.400}" },
+    "border":  { "default": "{color.gray.800}", "strong": "{color.gray.700}", "focus": "{color.blue.400}" },
+    "primary": { "default": "{color.blue.500}", "hover": "{color.blue.400}", "active": "{color.blue.300}", "subtle": "rgba(59, 130, 246, 0.15)", "subtleHover": "rgba(59, 130, 246, 0.25)", "text": "{color.white}", "ring": "rgba(59, 130, 246, 0.45)" },
+    "danger":  { "default": "{color.red.500}", "hover": "{color.red.400}", "active": "{color.red.300}", "subtle": "rgba(239, 68, 68, 0.15)", "subtleHover": "rgba(239, 68, 68, 0.25)", "text": "{color.white}", "ring": "rgba(239, 68, 68, 0.45)" },
+    "success": { "default": "{color.green.500}", "hover": "{color.green.400}", "active": "{color.green.300}", "subtle": "rgba(34, 197, 94, 0.15)", "text": "{color.gray.950}" },
+    "warning": { "default": "{color.amber.400}", "hover": "{color.amber.300}", "active": "{color.amber.200}", "subtle": "rgba(245, 158, 11, 0.15)", "text": "{color.gray.950}" },
+    "control": { "bg": "{color.gray.900}", "bgHover": "{color.gray.800}", "bgDisabled": "{color.gray.800}", "border": "{color.gray.700}", "borderHover": "{color.gray.600}", "placeholder": "{color.gray.500}", "textDisabled": "{color.gray.600}" }
+  },
+  "shadow": {
+    "sm": "0 1px 2px rgba(0, 0, 0, 0.4)",
+    "md": "0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4)",
+    "lg": "0 12px 32px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4)"
+  },
+  "focus": { "ring": "0 0 0 3px {color.primary.ring}", "ringDanger": "0 0 0 3px {color.danger.ring}" }
+}

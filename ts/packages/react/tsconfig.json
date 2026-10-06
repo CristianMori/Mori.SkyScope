@@ -1,0 +1,28 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../tokens"
+    },
+    {
+      "path": "../render"
+    },
+    {
+      "path": "../sources"
+    }
+  ],
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/**/*.test.tsx",
+    "src/**/*.test.ts"
+  ]
+}

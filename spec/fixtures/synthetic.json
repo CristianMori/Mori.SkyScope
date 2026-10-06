@@ -1,0 +1,226 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "synthetic",
+  "description": "Deterministic waveform generator shared by the demo/bench sources in both cores.",
+  "cases": [
+    {
+      "name": "square",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "square",
+            "frequency": 1,
+            "amplitude": 2,
+            "offset": 1
+          },
+          "tStart": 0,
+          "dt": 0.25,
+          "count": 4
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            3,
+            3,
+            -1,
+            -1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "triangle starts at its peak",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "triangle"
+          },
+          "tStart": 0,
+          "dt": 0.25,
+          "count": 5
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1,
+            0,
+            -1,
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "sawtooth",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "sawtooth"
+          },
+          "tStart": 0,
+          "dt": 0.25,
+          "count": 4
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            -1,
+            -0.5,
+            0,
+            0.5
+          ]
+        ]
+      }
+    },
+    {
+      "name": "ramp is offset + amplitude * t",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "ramp",
+            "amplitude": 2,
+            "offset": 1
+          },
+          "tStart": 0,
+          "dt": 0.5,
+          "count": 3
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      }
+    },
+    {
+      "name": "sine at exact quarter phase",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "sine",
+            "frequency": 0.5
+          },
+          "tStart": 0,
+          "dt": 0.5,
+          "count": 2
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            0,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "phase shifts square by a quarter period",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "square",
+            "phase": 1.5707963267948966
+          },
+          "tStart": 0,
+          "dt": 0.25,
+          "count": 4
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1,
+            -1,
+            -1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "noise is a stateless hash of (seed, sample index)",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "noise",
+            "noise": 1,
+            "seed": 42
+          },
+          "tStart": 0,
+          "dt": 1,
+          "count": 4
+        },
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "noise",
+            "noise": 1,
+            "seed": 42
+          },
+          "tStart": 0,
+          "dt": 1,
+          "count": 2,
+          "startIndex": 2
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            0.2824348211288452,
+            -0.7915218472480774,
+            0.29834917187690735,
+            -0.08987738192081451
+          ],
+          [
+            0.29834917187690735,
+            -0.08987738192081451
+          ]
+        ]
+      }
+    },
+    {
+      "name": "noise adds to the waveform and rounds to f32",
+      "steps": [
+        {
+          "type": "synth",
+          "spec": {
+            "waveform": "square",
+            "amplitude": 2,
+            "noise": 0.5,
+            "seed": 7
+          },
+          "tStart": 0,
+          "dt": 0.25,
+          "count": 4,
+          "startIndex": 10
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            1.835497498512268,
+            1.7737637758255005,
+            -2.121425151824951,
+            -1.7033435106277466
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Headless engine for Mori.SkyScope: ring buffers, M4 decimation, SkyScopeFrame codec, scales, painter contract, trend chart, gauges, analytic charts, scene layers and source-plugin contracts.</Description>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

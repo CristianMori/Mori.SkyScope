@@ -1,0 +1,62 @@
+@* Mori.SkyScope — Razor component hosting an analytic chart (XY, pie, polar or heatmap) through the bundled engine. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div @ref="_host" class="@Css.Classes("skyscope-chart-host", Class)" style="@($"width:{Width};height:{Height};{Style}")" @attributes="AdditionalAttributes"></div>
+
+@code {
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private string? _lastOptions, _lastValues;
+
+    /// <summary>xy | pie | polar | heatmap.</summary>
+    [Parameter, EditorRequired] public string Kind { get; set; } = "xy";
+    /// <summary>Chart options with the TS option shape (an anonymous object or a core config class); serialised camelCase. Changing it rebuilds the chart.</summary>
+    [Parameter] public object? Options { get; set; }
+    /// <summary>Heatmap matrix, row-major with row 0 at yMin.</summary>
+    [Parameter] public double[]? Values { get; set; }
+    /// <summary>CSS width of the host element.</summary>
+    [Parameter] public string Width { get; set; } = "100%";
+    /// <summary>CSS height of the host element.</summary>
+    [Parameter] public string Height { get; set; } = "240px";
+    /// <summary>Extra CSS classes for the host element.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the host element's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the host element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>Heatmap only: append a column (spectrogram).</summary>
+    public ValueTask PushColumnAsync(double[] column) => _handle?.InvokeVoidAsync("pushColumn", TrendChartJson.SerializeLoose(column)) ?? ValueTask.CompletedTask;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var options = Options is null ? null : TrendChartJson.SerializeLoose(Options);
+        var values = Values is null ? null : TrendChartJson.SerializeLoose(Values);
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+            _handle = await _module.InvokeAsync<IJSObjectReference>("mountChart", _host, Kind, options);
+            _lastOptions = options;
+            if (values is not null) { _lastValues = values; await _handle.InvokeVoidAsync("setValues", values); }
+            return;
+        }
+        if (_handle is null) return;
+        if (options != _lastOptions) { _lastOptions = options; await _handle.InvokeVoidAsync("setOptions", options ?? "{}"); _lastValues = null; }
+        if (values is not null && values != _lastValues) { _lastValues = values; await _handle.InvokeVoidAsync("setValues", values); }
+    }
+
+    /// <summary>Disposes the JS chart and the module; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

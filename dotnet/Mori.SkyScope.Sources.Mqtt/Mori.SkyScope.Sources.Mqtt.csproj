@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>MQTT source plugin for Mori.SkyScope: topic filters with JSON-path extraction into signal channels (MQTTnet).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MQTTnet" Version="5.2.0.1603" />
+    <ProjectReference Include="..\Mori.SkyScope.Core\Mori.SkyScope.Core.csproj" />
+  </ItemGroup>
+
+</Project>

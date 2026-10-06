@@ -1,0 +1,78 @@
+@* Mori.SkyScope — Razor component hosting the 2D scene view. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div @ref="_host" class="@Css.Classes("skyscope-scene-host", Class)" style="@($"width:{Width};height:{Height};{Style}")" @attributes="AdditionalAttributes"></div>
+
+@code {
+    private ElementReference _host;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _handle;
+    private string? _lastTool;
+    private readonly List<Func<Task>> _pending = [];
+
+    /// <summary>SceneView options (camera, tool, theme, unit…) with the TS option shape; serialised camelCase.</summary>
+    [Parameter] public object? Options { get; set; }
+    /// <summary>SkyScope stream to subscribe to for relayed layers (shared with charts on the same page).</summary>
+    [Parameter] public string? WsUrl { get; set; }
+    /// <summary>pan | boxZoom | measure | select.</summary>
+    [Parameter] public string Tool { get; set; } = "pan";
+    /// <summary>Called once the JS scene exists — declare the initial layers here.</summary>
+    [Parameter] public EventCallback<SceneView> OnReady { get; set; }
+    /// <summary>CSS width of the host element.</summary>
+    [Parameter] public string Width { get; set; } = "100%";
+    /// <summary>CSS height of the host element.</summary>
+    [Parameter] public string Height { get; set; } = "320px";
+    /// <summary>Extra CSS classes for the host element.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Extra inline CSS appended to the host element's style.</summary>
+    [Parameter] public string? Style { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the host element.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>Declare (or replace) a layer: kind = grid | polyline | points | occupancyGrid | pointCloud | pose | shapes | trail; meta with the TS option shape.</summary>
+    public ValueTask DeclareLayerAsync(string id, string kind, object? meta = null) => Invoke("declareLayer", id, kind, meta is null ? null : TrendChartJson.SerializeLoose(meta));
+    /// <summary>Update a layer with a push payload (see <c>applyLayerPayload</c>): pose {x,y,yaw}, pointCloud {scan,pose}|{points}, occupancyGrid {data}|{cells}, shapes {upsert}|{remove}, trail {append}.</summary>
+    public ValueTask PushAsync(string id, object payload) => Invoke("push", id, TrendChartJson.SerializeLoose(payload));
+    /// <summary>Remove a layer by id. Calls made before the JS scene exists are queued and replayed at mount.</summary>
+    public ValueTask RemoveLayerAsync(string id) => Invoke("removeLayer", id);
+    /// <summary>Fit the camera to every layer.</summary>
+    public ValueTask FitAllAsync() => Invoke("fitAll");
+    /// <summary>Rotate the view to an angle in radians.</summary>
+    public ValueTask SetRotationAsync(double radians) => Invoke("setRotation", radians);
+
+    private ValueTask Invoke(string method, params object?[] args)
+    {
+        if (_handle is null) { _pending.Add(() => _handle!.InvokeVoidAsync(method, args).AsTask()); return ValueTask.CompletedTask; }
+        return _handle.InvokeVoidAsync(method, args);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/Mori.SkyScope.Blazor/skyscope.js");
+            _handle = await _module.InvokeAsync<IJSObjectReference>("mountScene", _host, Options is null ? null : TrendChartJson.SerializeLoose(Options), WsUrl);
+            _lastTool = Tool;
+            await _handle.InvokeVoidAsync("setTool", Tool);
+            foreach (var p in _pending) await p();
+            _pending.Clear();
+            await OnReady.InvokeAsync(this);
+            return;
+        }
+        if (_handle is not null && Tool != _lastTool) { _lastTool = Tool; await _handle.InvokeVoidAsync("setTool", Tool); }
+    }
+
+    /// <summary>Disposes the JS scene and the module; a dropped circuit is ignored.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_handle is not null) { await _handle.InvokeVoidAsync("dispose"); await _handle.DisposeAsync(); }
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}

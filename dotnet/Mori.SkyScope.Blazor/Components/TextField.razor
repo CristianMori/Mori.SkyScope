@@ -1,0 +1,109 @@
+@* Mori.SkyScope — Text field component with validation of the chrome around instruments. Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0. *@
+
+@namespace Mori.SkyScope.Blazor
+
+<div class="@Css.Classes("skyscope-field", Class)" @attributes="AdditionalAttributes">
+    @if (Label is not null)
+    {
+        <label class="skyscope-field__label" for="@Id">@Label@if (Required) { <span class="skyscope-field__required" aria-hidden="true">*</span> }</label>
+    }
+    <div class="@InputClasses">
+        @if (Prefix is not null) { <span class="skyscope-input__adornment">@Prefix</span> }
+        <input id="@Id" class="skyscope-input__control" type="@Type" value="@_state.Value" placeholder="@Placeholder"
+               disabled="@Disabled" readonly="@ReadOnly" required="@Required" autocomplete="@AutoComplete"
+               aria-invalid="@(_state.ShowErrors ? "true" : null)" aria-describedby="@DescribedBy"
+               @oninput="HandleInput" @onblur="HandleBlur" />
+        @if (Suffix is not null) { <span class="skyscope-input__adornment">@Suffix</span> }
+    </div>
+    @if (_state.ShowErrors)
+    {
+        <div id="@(Id + "-error")" class="skyscope-field__error" role="alert">@_state.Errors[0]</div>
+    }
+    else if (Hint is not null)
+    {
+        <div id="@(Id + "-hint")" class="skyscope-field__hint">@Hint</div>
+    }
+</div>
+
+@code {
+    private static int _seq;
+    private FieldState _state = Field.Create();
+    private IReadOnlyList<ValidationRule> _rules = [];
+    private string? _lastValueParameter;
+
+    /// <summary>The text shown in the input; bind with <c>@bind-Value</c>.</summary>
+    [Parameter] public string Value { get; set; } = "";
+    /// <summary>Raised with the new text on every input event and on <see cref="Reset"/>.</summary>
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    /// <summary>Declarative rules from <see cref="Mori.SkyScope.Core.Forms.Rules"/>. <see cref="Required"/> prepends a required rule automatically.</summary>
+    [Parameter] public IReadOnlyList<ValidationRule>? Rules { get; set; }
+    /// <summary>Label rendered above the input.</summary>
+    [Parameter] public string? Label { get; set; }
+    /// <summary>Help text below the input; replaced by the first error while errors are shown.</summary>
+    [Parameter] public string? Hint { get; set; }
+    /// <summary>Placeholder shown while the input is empty.</summary>
+    [Parameter] public string? Placeholder { get; set; }
+    /// <summary>Extra CSS classes for the field wrapper.</summary>
+    [Parameter] public string? Class { get; set; }
+    /// <summary>HTML input type (text, password, email, …).</summary>
+    [Parameter] public string Type { get; set; } = "text";
+    /// <summary>HTML <c>autocomplete</c> attribute of the input.</summary>
+    [Parameter] public string? AutoComplete { get; set; }
+    /// <summary>Element id that links label, input, hint and error; generated when not set.</summary>
+    [Parameter] public string Id { get; set; } = $"skyscope-tf-{Interlocked.Increment(ref _seq)}";
+    /// <summary>Renders the input disabled.</summary>
+    [Parameter] public bool Disabled { get; set; }
+    /// <summary>Renders the input read-only.</summary>
+    [Parameter] public bool ReadOnly { get; set; }
+    /// <summary>Marks the field required: adds the asterisk and prepends a required validation rule.</summary>
+    [Parameter] public bool Required { get; set; }
+    /// <summary>Size of the input; medium adds no modifier class.</summary>
+    [Parameter] public Size Size { get; set; } = Size.Md;
+    /// <summary>Adornment rendered before the input (icon, unit).</summary>
+    [Parameter] public RenderFragment? Prefix { get; set; }
+    /// <summary>Adornment rendered after the input.</summary>
+    [Parameter] public RenderFragment? Suffix { get; set; }
+    /// <summary>Unmatched attributes, forwarded to the field wrapper.</summary>
+    [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>Current core state — value, touched, dirty, errors.</summary>
+    public FieldState State => _state;
+
+    /// <summary>Surface validation errors without a blur (e.g. on submit).</summary>
+    public void Touch() { _state = Field.Reduce(_state, new FieldAction.Touch(), _rules); StateHasChanged(); }
+
+    /// <summary>Reset the field to a value (empty by default), clearing touched and dirty, and notify <see cref="ValueChanged"/>.</summary>
+    public Task Reset(string? value = null)
+    {
+        _state = Field.Reduce(_state, new FieldAction.Reset(value), _rules);
+        return ValueChanged.InvokeAsync(_state.Value);
+    }
+
+    protected override void OnParametersSet()
+    {
+        _rules = Required ? [new RequiredRule(), .. Rules ?? []] : Rules ?? [];
+        if (_lastValueParameter is null)
+            _state = Field.Create(Value, _rules);
+        else if (Value != _lastValueParameter)          // changed from outside, not by our own ValueChanged round-trip
+            _state = Field.Reduce(_state, new FieldAction.Change(Value), _rules);
+        else
+            _state = _state with { Errors = Field.Validate(_state.Value, _rules) };   // rules may have changed
+        _lastValueParameter = Value;
+    }
+
+    private Task HandleInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        _state = Field.Reduce(_state, new FieldAction.Change(value), _rules);
+        return ValueChanged.InvokeAsync(value);
+    }
+
+    private void HandleBlur() => _state = Field.Reduce(_state, new FieldAction.Blur(), _rules);
+
+    private string InputClasses => Css.Classes(
+        "skyscope-input", Css.Size("skyscope-input", Size),
+        _state.ShowErrors ? "skyscope-input--invalid" : null,
+        Disabled ? "skyscope-input--disabled" : null);
+
+    private string? DescribedBy => _state.ShowErrors ? Id + "-error" : Hint is not null ? Id + "-hint" : null;
+}

@@ -1,0 +1,96 @@
+{
+  "$schema": "../fixture.schema.json",
+  "component": "field",
+  "description": "Single text-like form field: value, touched/dirty tracking, declarative validation.",
+  "cases": [
+    { "name": "initial state without rules is valid, clean and untouched",
+      "expect": { "value": "", "initialValue": "", "touched": false, "dirty": false, "valid": true, "showErrors": false, "errors": [] } },
+
+    { "name": "required: empty value is invalid but errors stay hidden until touched",
+      "setup": { "rules": [{ "type": "required" }] },
+      "expect": { "valid": false, "showErrors": false, "errors": ["This field is required"] } },
+
+    { "name": "required: blur reveals the error",
+      "setup": { "rules": [{ "type": "required" }] },
+      "steps": [{ "type": "blur" }],
+      "expect": { "touched": true, "showErrors": true, "errors": ["This field is required"] } },
+
+    { "name": "required: whitespace-only counts as empty",
+      "setup": { "rules": [{ "type": "required" }] },
+      "steps": [{ "type": "change", "value": "   " }],
+      "expect": { "valid": false, "errors": ["This field is required"] } },
+
+    { "name": "required: custom message",
+      "setup": { "rules": [{ "type": "required", "message": "Name is required" }] },
+      "expect": { "errors": ["Name is required"] } },
+
+    { "name": "changing to a non-empty value clears the required error",
+      "setup": { "rules": [{ "type": "required" }] },
+      "steps": [{ "type": "change", "value": "Ada" }, { "type": "blur" }],
+      "expect": { "value": "Ada", "dirty": true, "touched": true, "valid": true, "showErrors": false, "errors": [] } },
+
+    { "name": "minLength: too short",
+      "setup": { "rules": [{ "type": "minLength", "length": 3 }] },
+      "steps": [{ "type": "change", "value": "ab" }],
+      "expect": { "errors": ["Must be at least 3 characters"] } },
+
+    { "name": "minLength: empty value is not checked (that is required's job)",
+      "setup": { "rules": [{ "type": "minLength", "length": 3 }] },
+      "expect": { "valid": true, "errors": [] } },
+
+    { "name": "maxLength: too long",
+      "setup": { "rules": [{ "type": "maxLength", "length": 3 }] },
+      "steps": [{ "type": "change", "value": "abcd" }],
+      "expect": { "errors": ["Must be at most 3 characters"] } },
+
+    { "name": "pattern: mismatch",
+      "setup": { "rules": [{ "type": "pattern", "pattern": "^[0-9]+$" }] },
+      "steps": [{ "type": "change", "value": "12a" }],
+      "expect": { "errors": ["Invalid format"] } },
+
+    { "name": "pattern: match passes",
+      "setup": { "rules": [{ "type": "pattern", "pattern": "^[0-9]+$" }] },
+      "steps": [{ "type": "change", "value": "123" }],
+      "expect": { "valid": true } },
+
+    { "name": "email: invalid",
+      "setup": { "rules": [{ "type": "email" }] },
+      "steps": [{ "type": "change", "value": "nope@" }],
+      "expect": { "errors": ["Invalid email address"] } },
+
+    { "name": "email: valid",
+      "setup": { "rules": [{ "type": "email" }] },
+      "steps": [{ "type": "change", "value": "ada@example.com" }],
+      "expect": { "valid": true } },
+
+    { "name": "a failing required rule short-circuits every other rule",
+      "setup": { "rules": [{ "type": "minLength", "length": 3 }, { "type": "required" }, { "type": "email" }] },
+      "steps": [{ "type": "blur" }],
+      "expect": { "errors": ["This field is required"] } },
+
+    { "name": "multiple failing rules are reported in rule order",
+      "setup": { "rules": [{ "type": "minLength", "length": 5 }, { "type": "email" }] },
+      "steps": [{ "type": "change", "value": "ab" }],
+      "expect": { "errors": ["Must be at least 5 characters", "Invalid email address"] } },
+
+    { "name": "dirty tracks difference from the initial value, not whether a change happened",
+      "setup": { "value": "a" },
+      "steps": [{ "type": "change", "value": "b" }, { "type": "change", "value": "a" }],
+      "expect": { "dirty": false, "touched": false } },
+
+    { "name": "reset restores the initial value and clears touched",
+      "setup": { "value": "a", "rules": [{ "type": "required" }] },
+      "steps": [{ "type": "change", "value": "" }, { "type": "blur" }, { "type": "reset" }],
+      "expect": { "value": "a", "touched": false, "dirty": false, "valid": true, "showErrors": false } },
+
+    { "name": "reset with a value adopts it as the new initial value",
+      "setup": { "value": "a" },
+      "steps": [{ "type": "change", "value": "b" }, { "type": "reset", "value": "c" }],
+      "expect": { "value": "c", "initialValue": "c", "dirty": false } },
+
+    { "name": "touch marks the field touched without changing the value",
+      "setup": { "rules": [{ "type": "required" }] },
+      "steps": [{ "type": "touch" }],
+      "expect": { "value": "", "touched": true, "showErrors": true } }
+  ]
+}

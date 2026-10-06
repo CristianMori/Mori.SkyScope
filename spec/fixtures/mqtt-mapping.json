@@ -1,0 +1,419 @@
+{
+  "component": "mqtt-mapping",
+  "cases": [
+    {
+      "name": "topic filters: single-level and multi-level wildcards",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "matches": [
+            "a/+/c",
+            "a/b/c"
+          ]
+        },
+        {
+          "type": "query",
+          "matches": [
+            "a/#",
+            "a/b/c/d"
+          ]
+        },
+        {
+          "type": "query",
+          "matches": [
+            "a/+",
+            "a/b/c"
+          ]
+        },
+        {
+          "type": "query",
+          "matches": [
+            "a/b",
+            "a/b"
+          ]
+        },
+        {
+          "type": "query",
+          "matches": [
+            "#",
+            "x"
+          ]
+        },
+        {
+          "type": "query",
+          "matches": [
+            "a/+/c",
+            "a/b/d"
+          ]
+        },
+        {
+          "type": "query",
+          "matches": [
+            "a/b/#",
+            "a/b"
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          true,
+          true,
+          false,
+          true,
+          true,
+          false,
+          true
+        ]
+      }
+    },
+    {
+      "name": "json paths with dots, slashes and indices",
+      "setup": {},
+      "steps": [
+        {
+          "type": "query",
+          "jsonPath": {
+            "value": {
+              "a": {
+                "b": [
+                  1,
+                  {
+                    "c": 5
+                  }
+                ]
+              }
+            },
+            "path": "a.b[1].c"
+          }
+        },
+        {
+          "type": "query",
+          "jsonPath": {
+            "value": {
+              "a": {
+                "b": [
+                  1,
+                  {
+                    "c": 5
+                  }
+                ]
+              }
+            },
+            "path": "a/b/0"
+          }
+        },
+        {
+          "type": "query",
+          "jsonPath": {
+            "value": {
+              "a": 1
+            },
+            "path": "a.x"
+          }
+        },
+        {
+          "type": "query",
+          "jsonPath": {
+            "value": {
+              "a": [
+                1
+              ]
+            },
+            "path": "a[5]"
+          }
+        },
+        {
+          "type": "query",
+          "jsonPath": {
+            "value": {
+              "a": "7"
+            },
+            "path": "a"
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          5,
+          1,
+          null,
+          null,
+          "7"
+        ]
+      }
+    },
+    {
+      "name": "messages: json fields, message time, plain numbers, non-numeric payloads ignored",
+      "setup": {
+        "rules": [
+          {
+            "topic": "robot/+/battery",
+            "channelId": 1,
+            "name": "voltage",
+            "unit": "V",
+            "path": "voltage",
+            "timePath": "ts",
+            "timeScale": 0.001
+          },
+          {
+            "topic": "robot/+/battery",
+            "channelId": 2,
+            "name": "soc",
+            "unit": "%",
+            "path": "soc",
+            "scale": 100
+          },
+          {
+            "topic": "sensors/#",
+            "channelId": 3
+          },
+          {
+            "topic": "sensors/#",
+            "channelId": 3,
+            "path": "v",
+            "offset": -273.15
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "message": {
+            "topic": "robot/a/battery",
+            "payload": "{\"voltage\":12.5,\"soc\":0.8,\"ts\":1700000000123}",
+            "receivedAt": 5
+          }
+        },
+        {
+          "type": "query",
+          "message": {
+            "topic": "sensors/temp",
+            "payload": " 21.5 ",
+            "receivedAt": 7
+          }
+        },
+        {
+          "type": "query",
+          "message": {
+            "topic": "sensors/k",
+            "payload": "{\"v\":300}",
+            "receivedAt": 8
+          }
+        },
+        {
+          "type": "query",
+          "message": {
+            "topic": "sensors/x",
+            "payload": "abc",
+            "receivedAt": 9
+          }
+        },
+        {
+          "type": "query",
+          "message": {
+            "topic": "sensors/y",
+            "payload": "true",
+            "receivedAt": 9
+          }
+        },
+        {
+          "type": "query",
+          "message": {
+            "topic": "other/topic",
+            "payload": "1",
+            "receivedAt": 9
+          }
+        },
+        {
+          "type": "query",
+          "message": {
+            "topic": "sensors/j",
+            "payload": "42",
+            "receivedAt": 3
+          }
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "channelId": 1,
+              "t": 1700000000.1230001,
+              "value": 12.5
+            },
+            {
+              "channelId": 2,
+              "t": 5,
+              "value": 80
+            }
+          ],
+          [
+            {
+              "channelId": 3,
+              "t": 7,
+              "value": 21.5
+            }
+          ],
+          [
+            {
+              "channelId": 3,
+              "t": 8,
+              "value": 26.85
+            }
+          ],
+          [],
+          [],
+          [],
+          [
+            {
+              "channelId": 3,
+              "t": 3,
+              "value": 42
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "name": "channels from rules and frame batching",
+      "setup": {
+        "rules": [
+          {
+            "topic": "robot/+/battery",
+            "channelId": 1,
+            "name": "voltage",
+            "unit": "V",
+            "path": "voltage",
+            "timePath": "ts",
+            "timeScale": 0.001
+          },
+          {
+            "topic": "robot/+/battery",
+            "channelId": 2,
+            "name": "soc",
+            "unit": "%",
+            "path": "soc",
+            "scale": 100
+          },
+          {
+            "topic": "sensors/#",
+            "channelId": 3
+          },
+          {
+            "topic": "sensors/#",
+            "channelId": 3,
+            "path": "v",
+            "offset": -273.15
+          }
+        ]
+      },
+      "steps": [
+        {
+          "type": "query",
+          "channels": true
+        },
+        {
+          "type": "query",
+          "frame": [
+            {
+              "channelId": 2,
+              "t": 3,
+              "value": 1
+            },
+            {
+              "channelId": 1,
+              "t": 2,
+              "value": 5
+            },
+            {
+              "channelId": 1,
+              "t": 1,
+              "value": 4
+            }
+          ]
+        },
+        {
+          "type": "query",
+          "frame": []
+        },
+        {
+          "type": "query",
+          "frame": [
+            {
+              "channelId": 7,
+              "t": 10,
+              "value": 0.5
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "queries": [
+          [
+            {
+              "id": 1,
+              "name": "voltage",
+              "unit": "V",
+              "timing": "timestamped"
+            },
+            {
+              "id": 2,
+              "name": "soc",
+              "unit": "%",
+              "timing": "timestamped"
+            },
+            {
+              "id": 3,
+              "name": "sensors/#",
+              "unit": null,
+              "timing": "timestamped"
+            }
+          ],
+          {
+            "seq": 0,
+            "t0": 1,
+            "channels": [
+              {
+                "id": 1,
+                "times": [
+                  1,
+                  2
+                ],
+                "values": [
+                  4,
+                  5
+                ]
+              },
+              {
+                "id": 2,
+                "times": [
+                  3
+                ],
+                "values": [
+                  1
+                ]
+              }
+            ]
+          },
+          null,
+          {
+            "seq": 2,
+            "t0": 10,
+            "channels": [
+              {
+                "id": 7,
+                "times": [
+                  10
+                ],
+                "values": [
+                  0.5
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

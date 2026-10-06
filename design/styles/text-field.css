@@ -1,0 +1,34 @@
+.skyscope-field { display: flex; flex-direction: column; gap: var(--skyscope-space-1); }
+.skyscope-field__label { font-size: var(--skyscope-font-size-sm); font-weight: var(--skyscope-font-weight-medium); color: var(--skyscope-color-text-primary); }
+.skyscope-field__required { color: var(--skyscope-color-danger-default); margin-left: 2px; }
+.skyscope-field__hint { font-size: var(--skyscope-font-size-xs); color: var(--skyscope-color-text-secondary); }
+.skyscope-field__error { font-size: var(--skyscope-font-size-xs); color: var(--skyscope-color-danger-default); }
+
+.skyscope-input {
+  --_h: var(--skyscope-control-height-md);
+  --_px: var(--skyscope-control-padding-x-md);
+  --_fs: var(--skyscope-control-font-size-md);
+  display: flex; align-items: center; gap: var(--skyscope-space-2);
+  height: var(--_h); padding: 0 var(--_px);
+  color: var(--skyscope-color-text-primary); background: var(--skyscope-color-control-bg);
+  border: var(--skyscope-control-border-width) solid var(--skyscope-color-control-border);
+  border-radius: var(--skyscope-control-radius);
+  transition: border-color var(--skyscope-motion-duration-fast) var(--skyscope-motion-easing-standard),
+              box-shadow var(--skyscope-motion-duration-fast) var(--skyscope-motion-easing-standard);
+}
+.skyscope-input:hover { border-color: var(--skyscope-color-control-border-hover); }
+.skyscope-input:focus-within { border-color: var(--skyscope-color-border-focus); box-shadow: var(--skyscope-focus-ring); }
+.skyscope-input--invalid { border-color: var(--skyscope-color-danger-default); }
+.skyscope-input--invalid:focus-within { border-color: var(--skyscope-color-danger-default); box-shadow: var(--skyscope-focus-ring-danger); }
+.skyscope-input--disabled { background: var(--skyscope-color-control-bg-disabled); color: var(--skyscope-color-control-text-disabled); cursor: not-allowed; }
+.skyscope-input--disabled:hover { border-color: var(--skyscope-color-control-border); }
+.skyscope-input--sm { --_h: var(--skyscope-control-height-sm); --_px: var(--skyscope-control-padding-x-sm); --_fs: var(--skyscope-control-font-size-sm); }
+.skyscope-input--lg { --_h: var(--skyscope-control-height-lg); --_px: var(--skyscope-control-padding-x-lg); --_fs: var(--skyscope-control-font-size-lg); }
+
+.skyscope-input__control {
+  flex: 1; min-width: 0; height: 100%; padding: 0; margin: 0;
+  font: inherit; font-size: var(--_fs); color: inherit; background: transparent; border: 0; outline: none;
+}
+.skyscope-input__control::placeholder { color: var(--skyscope-color-control-placeholder); }
+.skyscope-input__control:disabled { cursor: not-allowed; }
+.skyscope-input__adornment { display: inline-flex; align-items: center; color: var(--skyscope-color-text-secondary); font-size: var(--_fs); }

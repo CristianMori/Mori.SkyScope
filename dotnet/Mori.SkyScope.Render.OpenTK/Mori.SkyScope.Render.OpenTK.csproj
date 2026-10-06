@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>OpenGL (OpenTK) 3D painter for Mori.SkyScope: GlPainter3D implements IPainter3D with the same shaders as the WebGL2 renderer.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mori.SkyScope.Core/Mori.SkyScope.Core.csproj" />
+    <PackageReference Include="OpenTK" Version="4.9.4" />
+  </ItemGroup>
+</Project>
