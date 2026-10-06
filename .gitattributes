@@ -1,0 +1,10 @@
+# Normalise line endings: LF in the repository, native on checkout only for Windows-specific files.
+* text=auto eol=lf
+*.sln text eol=crlf
+*.slnx text eol=lf
+*.png binary
+*.jpg binary
+*.bin binary
+*.mcap binary
+*.stl binary
+*.glb binary
