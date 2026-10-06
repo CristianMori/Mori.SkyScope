@@ -3,7 +3,8 @@
 
 import type { Tool, TrendChartOptions } from "@mori/skyscope-core";
 import { acquire } from "./shared.js";
-import { TrendChartView } from "@mori/skyscope-render";
+import { TrendChartView, saveFile } from "@mori/skyscope-render";
+import type { DropTarget } from "@mori/skyscope-core";
 
 /**
  * The JS side of the Blazor components. Bundled by esbuild into
@@ -32,6 +33,20 @@ export interface TrendChartHandle {
   /** The view, for other mounts on the page (the signal tree attaches to it). */
   view: TrendChartView;
   /** Tears down the view and releases the shared socket (closed when no other mount uses it). */
+  /** The arrangement as a JSON layout file. */
+  exportLayout(): string;
+  /** Replace the arrangement with a layout file; theme and style are kept. */
+  importLayout(json: string): void;
+  /** Hand the layout file to the browser's download machinery. */
+  downloadLayout(fileName: string): void;
+  /** Add channels from code; `targetJson` is an optional DropTarget. Returns the series ids. */
+  addChannels(channelIds: number[], targetJson: string | null, group: boolean): string[];
+  /**
+   * Route drops to .NET: the object's `OnChannelDrop(json)` receives the channel ids, the resolved target and the point,
+   * and returns "apply" (default behaviour), "cancel" or "handled". The call is asynchronous, so the chart applies the
+   * drop after the answer arrives.
+   */
+  setDropHandler(dotnet: { invokeMethodAsync(name: string, ...args: unknown[]): Promise<string> } | null): void;
   dispose(): void;
 }
 
@@ -48,6 +63,18 @@ export function mountTrendChart(element: HTMLElement, options: MountOptions): Tr
     pause: () => view.model.pause(), resume: () => view.model.resume(), reset: () => view.model.reset(),
     setTimeSpan: (s) => view.model.setTimeSpan(s),
     stats: () => ({ connected: source?.connected ?? false, frames: source?.framesReceived ?? 0, channels: store.channels.size, dropped: store.dropped }),
+    exportLayout: () => view.exportLayout(),
+    importLayout: (json) => view.importLayout(json),
+    downloadLayout: (fileName) => saveFile(new Blob([view.exportLayout()], { type: "application/json" }), fileName, "application/json"),
+    addChannels: (ids, targetJson, group) => view.addChannels(ids, targetJson ? (JSON.parse(targetJson) as DropTarget) : undefined, group),
+    setDropHandler: (dotnet) => {
+      view.onChannelDrop = dotnet ? (e) => {
+        // .NET answers asynchronously: hold the drop here and apply (or not) when the verdict arrives
+        e.handled = true;
+        const json = JSON.stringify({ channelIds: e.channelIds, channels: e.payload.channels, target: e.target, x: e.x, y: e.y, group: e.group });
+        void dotnet.invokeMethodAsync("OnChannelDrop", json).then((verdict) => { if (verdict !== "cancel" && verdict !== "handled") view.addChannels(e.channelIds, e.target, e.group); });
+      } : null;
+    },
     dispose: () => { view.dispose(); release(); },
   };
 }

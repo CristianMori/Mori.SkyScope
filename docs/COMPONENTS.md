@@ -62,6 +62,20 @@ Signal handling follows ibaAnalyzer (manual part 2, chapter 6). Everything below
 - **Lane headers** (`laneHeaders`): a slim bar left of the axes per lane; drag it to reorder (a frame marks the
   insertion slot), the arrow folds the lane to a thin summary bar (`collapsed`), the cross removes the lane and its
   series. Series without an explicit lane are pinned before lanes move so they do not drift.
+- **Resizable lanes**: the gap between two open lanes is a hit region (`laneGap`); dragging it moves height from one lane
+  to the other by rewriting their two weights (their sum is kept, each lane keeps at least 24 px).
+- **Legend as a control**: the legend lists hidden series too, dimmed with "hidden" in place of the value, so they can be
+  brought back; a press without movement on a label or legend row toggles the series (`toggleSeries`); the model also has
+  `renameSeries`, `setSeriesColor`, `setSeriesWidth` and `removeSeries`, which the web view exposes in a right-click menu
+  (`showSeriesMenu` in the render package) and the WPF control in a context menu.
+- **Measurements**: cursors A and B are hit regions (`cursor`) and drag (`beginCursorDrag`); their times are tagged at the
+  top of the first lane and the span is shaded. While both are set, `measurements()` gives per analog signal the value at
+  A and B, their difference and the minimum, maximum and mean of the raw samples in the span (cached until a cursor moves
+  or samples enter or leave the span), and the layout reserves a band under the time axis (`TrendLayout.measure`,
+  `measurePanel`) for the table with Δt and its frequency in the title row.
+- **Layout files**: `exportLayout()` / `importLayout(json)` (C# `TrendLayoutFile`) write and read a versioned JSON of the
+  arrangement without theme and style; the web view, the Blazor handle (`exportLayout`, `importLayout`, `downloadLayout`)
+  and the WPF control (`SaveLayout`, `LoadLayout`) expose it and the three samples have save and load buttons.
 - **Y-axis manipulation**: drag the middle of an axis strip to shift its range, drag its top or bottom fifth to stretch
   about the other end, wheel to zoom about the pointer, double-click to return to autoscale (ranges become explicit
   `min`/`max` on the axis config).
@@ -74,14 +88,21 @@ Signal handling follows ibaAnalyzer (manual part 2, chapter 6). Everything below
   a store grouped by name prefix (`amr-1/pose/x` → group `amr-1/pose`, separators `/.:` configurable), search over
   name and unit, Ctrl toggle / Shift range selection, `dragIds` for the payload. Panels: `SignalTreePanel` (DOM, in
   the render package), React `SignalTree`, Blazor `SignalTree.razor` (attaches to a `TrendChart` by `@ref`), WPF
-  `SignalTreeControl` (a ListBox with native Ctrl/Shift selection). Dragging rows onto a chart goes through the chart's
-  `externalDragStart/Move/Drop` and obeys the drop rules above; channels not in the chart become series `ch:<id>`.
+  `SignalTreeControl` (a ListBox with native Ctrl/Shift selection), Windows Forms `SignalTreeControl` (a TreeView). Every
+  panel is a plain drag source of the platform (HTML5 drag and drop, `DragDrop.DoDragDrop`, `Control.DoDragDrop`) carrying
+  the channel payload (`charts/channel-drag.ts`, `Charts/ChannelDragData.cs`: MIME `application/x-skyscope-channels`,
+  desktop format `Mori.SkyScope.Channels`, plain-text ids accepted; fixture `trend-chart.json` case 29), and every chart
+  host is a drop target that previews the target on drag-over and raises `onChannelDrop` / `ChannelDrop` before applying
+  it (cancel, redirect, handle). `addChannels` (model and hosts) adds channels from code with the same drop rules; channels
+  not in the chart become series `ch:<id>`. The tree is optional: any control that produces the payload feeds a chart.
 
 Hosts: `TrendChartView` (three canvases: 2D background, WebGL series, 2D foreground; pointer, wheel, keyboard,
 hit-test routing, `onConfigChanged`), React `TrendChart` + hooks (`useSignalStore`, `useSource`, `useWebSocketSource`),
 Blazor `TrendChart.razor` (JSON config over interop, data streams in the browser, shared socket per URL), WPF
 `TrendChartControl` on the in-house `SkiaElement` (WriteableBitmap) with the same hit-test routing and a
-`ConfigChanged` event.
+`ConfigChanged` event, Windows Forms `TrendChartControl` (`Mori.SkyScope.WinForms`) on `SkiaHostControl`, a CPU bitmap or an
+OpenGL surface chosen by `Rendering`, with designer collections (`LaneDefinition`, `AxisDefinition`, `SeriesDefinition`,
+`ThresholdDefinition`, `MarkerDefinition` → `BuildDesignerConfig`), the same routing, context menu and layout files.
 
 ## 3. Gauges
 
@@ -98,7 +119,7 @@ Blazor `TrendChart.razor` (JSON config over interop, data streams in the browser
 
 Fixture `gauges.json`: 21 cases, 10 of them drawing parity. Hosts: `GaugeView` (redraws only while a needle settles)
 with `bindKnob` / `bindSlider` / `bindSwitch`, React views for each gauge, Blazor `Gauge.razor` (`Kind` + options +
-value callbacks), WPF `GaugeControl`.
+value callbacks), WPF `GaugeControl`, Windows Forms `GaugeControl`.
 
 ## 4. Analytic charts
 
@@ -120,7 +141,7 @@ PieChart: donut, pad angle, sorting, inside or outside labels, centre text, hove
 named maps or custom stops, colour bar, hover cell, rolling spectrogram mode (`pushColumn`).
 
 Hosts: `ChartView` (hover, legend clicks, drag box zoom, wheel, double-click), React `XYChart`, `PieChartView`,
-`PolarChartView`, `HeatmapView`, Blazor `Chart.razor` (`Kind` xy | pie | polar | heatmap, `PushColumnAsync`), WPF
+`PolarChartView`, `HeatmapView`, Blazor `Chart.razor` (`Kind` xy | pie | polar | heatmap, `PushColumnAsync`), WPF and Windows Forms
 `ChartControl`.
 
 ## 5. SceneView
@@ -168,7 +189,9 @@ double-click fits; F fit, R reset, T top-down, O orthographic; measure (two clic
 (hover and selection rings); gizmo and cursor readout.
 
 Hosts: web `Scene3DView` (GL canvas + HUD canvas), React `Scene3DView`, Blazor `SceneView3D.razor`, WPF
-`SceneControl3D` (OpenTK `GLWpfControl` + Skia HUD; shows a notice when no OpenGL context is available).
+`SceneControl3D` (OpenTK `GLWpfControl` + Skia HUD; shows a notice when no OpenGL context is available), Windows Forms
+`SceneControl3D` (own OpenGL 3.3 core context on the control window, `GlPainter3D` then Skia on the same framebuffer,
+`Snapshot()` reads the pixels back; verified on a desktop against the demo server).
 
 ## 6. Source plugins
 
@@ -190,16 +213,16 @@ robot, trail and zones; also publishes the pose as channels 100–103.
 Recording (backlog 2): MCAP writer/reader (`recording/mcap.ts`, C# `Mcap/Mcap.cs`), `McapRecorder` tee and the SkyScope
 topic layout (`recording/recorder.ts`, C# `Mcap/McapRecorder.cs`), layer events in `Recording` and `PlaybackSource`,
 `LayerSink.reset`; fixture `mcap.json` (5 cases) and golden `spec/mcap/sample.mcap`. Hosts: React `RecordButton` /
-`useRecorder`, WPF `RecorderControl`, Blazor `Recorder`; demo server `--record` and `/record` endpoints.
+`useRecorder`, WPF and Windows Forms `RecorderControl`, Blazor `Recorder`; demo server `--record` and `/record` endpoints.
 
-Playback UI (backlog 1): React `usePlayback` + `PlaybackControls`, WPF `PlaybackControl`, Blazor `Playback.razor`
+Playback UI (backlog 1): React `usePlayback` + `PlaybackControls`, WPF and Windows Forms `PlaybackControl`, Blazor `Playback.razor`
 (charts bind with `WsUrl="playback:<key>"`).
 
 ## 7. Samples, tools, packaging
 
 - `samples/Mori.SkyScope.DemoServer` — `--channels --rate --batch-ms --quantized`; synthetic signals plus the synthetic
   robot scene relayed on `ws://localhost:5055/ws`.
-- `samples/react-sample`, `samples/Mori.SkyScope.Blazor.Sample`, `samples/Mori.SkyScope.Wpf.Sample` — the robot dashboard
+- `samples/react-sample`, `samples/vanilla-ts` (DOM views without a framework, a custom drag source, the drop hook), `samples/Mori.SkyScope.Blazor.Sample`, `samples/Mori.SkyScope.Wpf.Sample`, `samples/Mori.SkyScope.WinForms.Sample` — the robot dashboard
   (trend chart with the robot pose lane, gauges, analytic charts, live scene; React also has the playback mode, WPF has
   `--csv`). WPF offscreen renders: `--snapshot`, `--logic`, `--charts`, `--scene` (`LogicSnapshot.cs`, `ChartsSnapshot.cs`,
   `SceneSnapshot.cs`) → `docs/images/*.png`.

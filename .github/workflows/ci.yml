@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    # Windows so the WPF projects build; everything else is cross-platform.
+    # Windows so the WPF and Windows Forms projects build; everything else is cross-platform.
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

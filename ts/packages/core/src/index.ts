@@ -34,6 +34,7 @@ export * from "./charts/trend-layout.js";
 export * from "./charts/trend-model.js";
 export * from "./charts/trend-draw.js";
 export * from "./charts/signal-tree.js";
+export * from "./charts/channel-drag.js";
 export * from "./charts/legend.js";
 export * from "./charts/cartesian.js";
 export * from "./charts/histogram.js";

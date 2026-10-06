@@ -26,6 +26,8 @@
         <span style="width:8px"></span>
         <Button Size="Core.Size.Sm" Variant="@(_paused ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="TogglePause">@(_paused ? "▶ live" : "⏸ pause")</Button>
         <Button Size="Core.Size.Sm" OnClick="Reset">reset</Button>
+        <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => _chart!.DownloadLayoutAsync("skyscope-layout.json"))">save layout</Button>
+        <label class="skyscope-button skyscope-button--sm skyscope-button--ghost" style="cursor:pointer">load layout<InputFile OnChange="LoadLayout" accept=".json" style="display:none" /></label>
         <Button Size="Core.Size.Sm" Variant="Core.ButtonVariant.Ghost" OnClick="@(() => { _dark = !_dark; _config.Theme = _dark ? ChartTheme.Dark : ChartTheme.Light; })">@(_dark ? "light" : "dark")</Button>
         <span style="width:8px"></span>
         <Button Size="Core.Size.Sm" Variant="@(_mode == "live" ? Core.ButtonVariant.Primary : Core.ButtonVariant.Default)" OnClick="@(() => _mode = "live")">live</Button>
@@ -156,6 +158,14 @@
     }
 
     /// <summary>Switches the trend chart's pointer tool.</summary>
+    /// <summary>Reads the chosen JSON layout file and hands it to the chart.</summary>
+    private async Task LoadLayout(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+    {
+        using var reader = new StreamReader(e.File.OpenReadStream(4 * 1024 * 1024));
+        var json = await reader.ReadToEndAsync();
+        if (_chart is not null) await _chart.ImportLayoutAsync(json);
+    }
+
     private Task SetTool(Tool t) { _tool = t; return _chart?.SetToolAsync(t).AsTask() ?? Task.CompletedTask; }
     /// <summary>Sets the trend chart's visible time window in seconds.</summary>
     private Task SetSpan(int s) { _span = s; return _chart?.SetTimeSpanAsync(s).AsTask() ?? Task.CompletedTask; }

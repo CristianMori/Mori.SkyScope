@@ -42,6 +42,7 @@ public sealed partial class TrendDriver : IFixtureDriver
         if (c.TryGetProperty("navigator", out var nvg)) cfg.Navigator = nvg.GetBoolean();
         if (Num(c, "navigatorHeight") is { } nh) cfg.NavigatorHeight = nh;
         if (c.TryGetProperty("navigatorFixedRange", out var nfr)) cfg.NavigatorFixedRange = nfr.GetBoolean();
+        if (c.TryGetProperty("measurePanel", out var mp)) cfg.MeasurePanel = mp.GetBoolean();
         if (Num(c, "digitalTrackHeight") is { } dth) cfg.DigitalTrackHeight = dth;
         if (Num(c, "digitalStackShare") is { } dss) cfg.DigitalStackShare = dss;
         if (Str(c, "legend") is { } lg) cfg.Legend = lg switch { "top-left" => LegendPosition.TopLeft, "top-right" => LegendPosition.TopRight, "bottom-left" => LegendPosition.BottomLeft, "bottom-right" => LegendPosition.BottomRight, "top" => LegendPosition.Top, "none" => LegendPosition.None, _ => LegendPosition.Right };

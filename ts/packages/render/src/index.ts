@@ -5,6 +5,7 @@ export * from "./canvas2d-painter.js";
 export * from "./webgl-lines.js";
 export * from "./trend-chart-view.js";
 export * from "./signal-tree-panel.js";
+export * from "./series-menu.js";
 export * from "./gauge-view.js";
 export * from "./chart-view.js";
 export * from "./scene-view.js";

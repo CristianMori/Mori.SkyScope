@@ -54,6 +54,11 @@ public sealed partial class TrendChartModel(SignalStore store, TrendChartConfig?
     public DragState? Drag { get; private set; }
     /// <summary>A lane header being dragged to reorder lanes.</summary>
     public LaneDragState? LaneDrag { get; private set; }
+    /// <summary>A lane gap being dragged to resize the two lanes around it.</summary>
+    public LaneResizeState? LaneResize { get; private set; }
+    /// <summary>A time cursor being dragged.</summary>
+    public CursorDragState? CursorDrag { get; private set; }
+    private readonly Dictionary<string, (string Key, Measurement Row)> _measureCache = [];
     /// <summary>A Y-axis being shifted or stretched by its scale ends.</summary>
     public AxisDragState? AxisDrag { get; private set; }
     /// <summary>The navigator frame being moved or resized.</summary>
@@ -75,6 +80,8 @@ public sealed partial class TrendChartModel(SignalStore store, TrendChartConfig?
     public IEnumerable<SeriesConfig> VisibleSeries() => Config.Series.Where(s => s.Visible);
     /// <summary>Visible series of a lane.</summary>
     public IEnumerable<SeriesConfig> SeriesIn(string laneId) => VisibleSeries().Where(s => LaneIdOf(s) == laneId);
+    /// <summary>Every series of a lane, hidden ones included (the legend lists them dimmed so they can be shown again).</summary>
+    public IEnumerable<SeriesConfig> AllSeriesIn(string laneId) => Config.Series.Where(s => LaneIdOf(s) == laneId);
     /// <summary>The explicit colour, or the palette entry for the series position.</summary>
     public string SeriesColor(SeriesConfig s) => s.Color ?? TrendChartConfig.SeriesPalette[Math.Max(0, Config.Series.IndexOf(s)) % TrendChartConfig.SeriesPalette.Length];
     /// <summary>The explicit name, else the channel name, else the series id.</summary>
@@ -133,7 +140,7 @@ public sealed partial class TrendChartModel(SignalStore store, TrendChartConfig?
     {
         var axes = AxesIn(l.Id);
         return new LaneLayoutInput(l.Id, l.Weight, axes.Where(a => a.Side == AxisSide.Left).Select(a => a.Id).ToList(), axes.Where(a => a.Side == AxisSide.Right).Select(a => a.Id).ToList()) { Collapsed = l.Collapsed, Tracks = DigitalTracks(l.Id).Count, Analog = SeriesIn(l.Id).Any(s => s.Kind != SeriesKind.Digital), Labels = LegendSeries(l.Id).Select(s => (s.Id, SeriesName(s), s.Kind == SeriesKind.Digital)).ToList() };
-    }).ToList(), VisibleSeries().Count(), CursorA is not null && CursorB is not null ? VisibleSeries().Count(s => s.Kind != SeriesKind.Digital) : 0);
+    }).ToList(), Config.Series.Count, CursorA is not null && CursorB is not null ? VisibleSeries().Count(s => s.Kind != SeriesKind.Digital) : 0);
 
     /// <summary>Time-to-pixel scale across the plot; in relative mode labels count back from the right edge.</summary>
     public TimeScale TimeScale(TrendLayout layout)

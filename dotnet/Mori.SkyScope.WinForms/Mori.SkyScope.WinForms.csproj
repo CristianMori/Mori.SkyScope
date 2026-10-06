@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Windows Forms controls for Mori.SkyScope: TrendChartControl with designer properties, GaugeControl, ChartControl, SceneControl, SignalTreeControl on SkiaSharp (CPU or OpenGL), SceneControl3D on OpenGL.</Description>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PackageTags>$(PackageTags);winforms</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Mori.SkyScope.Core/Mori.SkyScope.Core.csproj" />
+    <ProjectReference Include="../Mori.SkyScope.Render.Skia/Mori.SkyScope.Render.Skia.csproj" />
+    <ProjectReference Include="../Mori.SkyScope.Render.OpenTK/Mori.SkyScope.Render.OpenTK.csproj" />
+  </ItemGroup>
+</Project>

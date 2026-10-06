@@ -23,35 +23,30 @@ public static partial class TrendChartRenderer
     {
         var th = m.Config.Theme; var st = m.Config.Style; var pad = st.LegendPadding; var sw = st.LegendSwatchLength;
         p.Rect(r.X, r.Y, r.W, r.H, new Fill(th.LegendBackground) { Opacity = st.LegendOpacity }, new Stroke(th.LegendBorder), st.LegendRadius);
-        var cr = m.CursorReadouts();
         var y = r.Y + pad;
         var rowH = m.Config.LegendRowHeight;
         var lanes = m.Lanes();
         for (var i = 0; i < lanes.Count; i++)
         {
             if (i > 0) { p.Line(r.X + pad, y + 2, r.X + r.W - pad, y + 2, new Stroke(th.LegendBorder)); y += 4; }
-            foreach (var (_, series) in m.LegendGroups(lanes[i].Id))
+            foreach (var (_, series) in m.LegendGroups(lanes[i].Id, true))
             {
                 double first = -1, last = -1;
                 foreach (var s in series)
                 {
                     if (y + rowH > r.Y + r.H + 1) return;
-                    var dragging = m.Drag?.SeriesIds.Contains(s.Id) ?? false;
+                    // hidden signals stay in the legend, dimmed, so a click can bring them back
+                    var hidden = !s.Visible; var dim = hidden || (m.Drag?.SeriesIds.Contains(s.Id) ?? false);
                     var color = m.SeriesColor(s);
                     if (first < 0) first = y + rowH / 2;
                     last = y + rowH / 2;
-                    p.Line(r.X + pad, y + rowH / 2, r.X + pad + sw, y + rowH / 2, new Stroke(color) { Width = 2, Opacity = dragging ? 0.35 : 1 });
-                    p.Text(m.SeriesName(s), r.X + pad + sw + 6, y + rowH / 2, (dragging ? muted : text) with { Baseline = TextBaseline.Middle });
-                    var v = m.LegendValue(s);
+                    p.Line(r.X + pad, y + rowH / 2, r.X + pad + sw, y + rowH / 2, new Stroke(color) { Width = 2, Opacity = dim ? 0.35 : 1 });
+                    p.Text(m.SeriesName(s), r.X + pad + sw + 6, y + rowH / 2, (dim ? muted : text) with { Baseline = TextBaseline.Middle });
+                    var v = hidden ? null : m.LegendValue(s);
                     var unit = m.UnitOf(s);
-                    var shown = v is null ? "—" : s.Kind == SeriesKind.Digital ? (v.Value >= 0.5 ? "true" : "false") : FormatValue(v.Value) + (unit is null ? "" : $" {unit}");
-                    p.Text(shown, r.X + r.W - pad, y + rowH / 2, text with { Align = TextAlign.Right, Baseline = TextBaseline.Middle });
+                    var shown = hidden ? "hidden" : v is null ? "—" : s.Kind == SeriesKind.Digital ? (v.Value >= 0.5 ? "true" : "false") : FormatValue(v.Value) + (unit is null ? "" : $" {unit}");
+                    p.Text(shown, r.X + r.W - pad, y + rowH / 2, (hidden ? muted : text) with { Align = TextAlign.Right, Baseline = TextBaseline.Middle });
                     y += rowH;
-                    if (cr.Delta is { } delta && s.Kind != SeriesKind.Digital && delta.Values.FirstOrDefault(x => x.SeriesId == s.Id) is { } d)   // a difference of two logic levels means nothing
-                    {
-                        p.Text($"Δ {FormatValue(d.Delta)}", r.X + r.W - pad, y + rowH / 2 - 2, muted with { Align = TextAlign.Right, Baseline = TextBaseline.Middle });
-                        y += rowH - 4;
-                    }
                 }
                 // shared axis: a bracket on the left joins its rows
                 if (series.Count > 1 && first >= 0)
@@ -63,7 +58,43 @@ public static partial class TrendChartRenderer
                 }
             }
         }
-        if (cr.Delta is { } dd) p.Text($"Δt {FormatValue(dd.Dt)} s", r.X + pad, r.Y + r.H - pad + 2, muted with { Baseline = TextBaseline.Bottom });
+    }
+
+    /// <summary>Seconds as a compact label: ms below one second, else seconds with three decimals.</summary>
+    private static string FormatSeconds(double s) { var a = Math.Abs(s); return a < 1 ? $"{Ticks.FormatNumber(s * 1000, 1)} ms" : $"{Ticks.FormatNumber(s, 3)} s"; }
+
+    /// <summary>
+    /// The measurement table over the cursor span: a title row with Δt and its frequency, a header row, then per analog
+    /// signal the value at A and B, their difference, and the minimum, maximum and mean of the samples in the span.
+    /// </summary>
+    private static void DrawMeasurePanel(TrendChartModel m, IPainter p, TrendLayout layout, Ctx c)
+    {
+        if (layout.Measure is not { } r || m.Measurements() is not { } ms) return;
+        var th = m.Config.Theme; var st = m.Config.Style; var pad = st.LegendPadding; var rowH = m.Config.LegendRowHeight;
+        p.Rect(r.X, r.Y, r.W, r.H, new Fill(th.LegendBackground) { Opacity = st.LegendOpacity }, new Stroke(th.LegendBorder), st.LegendRadius);
+        p.Save();
+        p.ClipRect(r.X, r.Y, r.W, r.H);
+        var y = r.Y + pad;
+        var title = $"A → B   Δt {FormatSeconds(ms.Dt)}{(ms.Hz is { } hz ? $"   {Ticks.FormatNumber(hz, 3)} Hz" : "")}";
+        p.Text(title, r.X + pad, y + rowH / 2, c.Text with { Baseline = TextBaseline.Middle });
+        y += rowH;
+        var nameW = Math.Max(60, r.W * 0.22); var colW = (r.W - 2 * pad - nameW) / 6;
+        string[] cols = ["A", "B", "Δ", "min", "max", "mean"];
+        for (var i = 0; i < cols.Length; i++) p.Text(cols[i], r.X + pad + nameW + (i + 1) * colW, y + rowH / 2, c.Muted with { Align = TextAlign.Right, Baseline = TextBaseline.Middle });
+        p.Line(r.X + pad, y + rowH - 1, r.X + r.W - pad, y + rowH - 1, new Stroke(th.LegendBorder));
+        y += rowH;
+        foreach (var row in ms.Rows)
+        {
+            var s = m.Config.Series.FirstOrDefault(x => x.Id == row.SeriesId);
+            if (s is null) continue;
+            var color = m.SeriesColor(s);
+            p.Line(r.X + pad, y + rowH / 2, r.X + pad + st.LegendSwatchLength, y + rowH / 2, new Stroke(color) { Width = 2 });
+            p.Text(m.SeriesName(s), r.X + pad + st.LegendSwatchLength + 6, y + rowH / 2, c.Text with { Baseline = TextBaseline.Middle });
+            double?[] values = [row.A, row.B, row.Delta, row.Min, row.Max, row.Mean];
+            for (var i = 0; i < values.Length; i++) p.Text(values[i] is { } v ? FormatValue(v) : "—", r.X + pad + nameW + (i + 1) * colW, y + rowH / 2, c.Text with { Align = TextAlign.Right, Baseline = TextBaseline.Middle });
+            y += rowH;
+        }
+        p.Restore();
     }
 
     private static void DrawDragIndicator(TrendChartModel m, IPainter p, TrendLayout layout, TextStyle text)

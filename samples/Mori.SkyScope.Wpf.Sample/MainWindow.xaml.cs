@@ -181,4 +181,16 @@ public partial class MainWindow : Window
     private void OnPause(object sender, RoutedEventArgs e) { _paused = !_paused; if (_paused) Chart.Model.Pause(); else Chart.Model.Resume(); PauseButton.Content = _paused ? "Live" : "Pause"; }
     /// <summary>Resets the trend chart view and returns to live time.</summary>
     private void OnReset(object sender, RoutedEventArgs e) { Chart.Model.Reset(); _paused = false; PauseButton.Content = "Pause"; }
+    /// <summary>Writes the chart arrangement to a JSON layout file chosen in a save dialog.</summary>
+    private void OnSaveLayout(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "Layout (*.json)|*.json", FileName = "skyscope-layout.json" };
+        if (dlg.ShowDialog(this) == true) Chart.SaveLayout(dlg.FileName);
+    }
+    /// <summary>Replaces the chart arrangement with a JSON layout file chosen in an open dialog.</summary>
+    private void OnLoadLayout(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Layout (*.json)|*.json" };
+        if (dlg.ShowDialog(this) == true) { try { Chart.LoadLayout(dlg.FileName); Tree.Refresh(); } catch (Exception ex) { Status.Text = $"layout: {ex.Message}"; } }
+    }
 }

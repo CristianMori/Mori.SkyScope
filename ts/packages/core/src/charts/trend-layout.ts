@@ -56,7 +56,7 @@ export function layoutLabels(config: TrendChartConfig, lane: Rect, labels: { ser
  * Every lane gets the same axis column widths so plots line up vertically; collapsed lanes take a fixed thin height.
  * Mirrors `TrendLayoutEngine` in C#.
  */
-export function layoutTrendChart(config: TrendChartConfig, width: number, height: number, lanes: LaneLayoutInput[], legendRows = 0, legendDeltaRows = 0): TrendLayout {
+export function layoutTrendChart(config: TrendChartConfig, width: number, height: number, lanes: LaneLayoutInput[], legendRows = 0, measureRows = 0): TrendLayout {
   const m = config.margin;
   let x0 = m, x1 = width - m, y0 = m, y1 = height - m;
   let legend: Rect | null = null;
@@ -65,6 +65,13 @@ export function layoutTrendChart(config: TrendChartConfig, width: number, height
 
   let navigator: Rect | null = null;
   if (config.navigator) { navigator = { x: x0, y: y1 - config.navigatorHeight, w: Math.max(0, x1 - x0), h: config.navigatorHeight }; y1 = navigator.y - m; }
+  // measurement table over the cursor span: its own band above the navigator (title row, header row, one row per analog signal)
+  let measure: Rect | null = null;
+  if (config.measurePanel && measureRows > 0) {
+    const mh = Math.min(Math.max(0, y1 - y0) / 2, (measureRows + 2) * legendRowHeight(config) + 2 * config.style.legendPadding);
+    measure = { x: x0, y: y1 - mh, w: Math.max(0, x1 - x0), h: mh };
+    y1 = measure.y - m;
+  }
 
   const headerW = config.laneHeaders ? config.laneHeaderWidth : 0;
   const leftCols = Math.max(0, ...lanes.map((l) => l.leftAxes.length));
@@ -74,10 +81,11 @@ export function layoutTrendChart(config: TrendChartConfig, width: number, height
   const timeAxis: Rect = { x: plotX, y: y1 - config.timeAxisHeight, w: Math.max(0, plotRight - plotX), h: config.timeAxisHeight };
   const plotTop = y0, plotBottom = timeAxis.y;
   if (navigator) { navigator.x = plotX; navigator.w = Math.max(0, plotRight - plotX); }
+  if (measure) { measure.x = plotX; measure.w = Math.max(0, plotRight - plotX); }
 
   const plot: Rect = { x: plotX, y: plotTop, w: Math.max(0, plotRight - plotX), h: Math.max(0, plotBottom - plotTop) };
   if (OVERLAY_LEGENDS.includes(config.legend) && legendRows > 0) {
-    const lw = Math.min(config.legendWidth, plot.w), lh = Math.min(legendHeight(config, legendRows, lanes.length, legendDeltaRows), plot.h);
+    const lw = Math.min(config.legendWidth, plot.w), lh = Math.min(legendHeight(config, legendRows, lanes.length), plot.h);
     const right = config.legend.endsWith("right"), bottom = config.legend.startsWith("bottom");
     legend = { x: right ? plot.x + plot.w - lw - m : plot.x + m, y: bottom ? plot.y + plot.h - lh - m : plot.y + m, w: lw, h: lh };
   }
@@ -119,5 +127,5 @@ export function layoutTrendChart(config: TrendChartConfig, width: number, height
     out.push({ laneId: lane.laneId, rect, analog, stack, axes, header, labels, collapsed: !!lane.collapsed });
     y += h + config.laneGap;
   }
-  return { width, height, plot, lanes: out, timeAxis, legend, navigator };
+  return { width, height, plot, lanes: out, timeAxis, legend, navigator, measure };
 }

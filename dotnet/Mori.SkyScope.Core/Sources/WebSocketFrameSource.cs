@@ -28,6 +28,8 @@ public sealed class WebSocketFrameSource : ISource
     public string Type => "websocket";
     /// <summary>Binary frames decoded successfully since start.</summary>
     public long FramesReceived { get; private set; }
+    /// <summary>Binary layer messages (point clouds, meshes, other binary layer payloads) decoded since start.</summary>
+    public long LayerMessagesReceived { get; private set; }
     /// <summary>Binary payload bytes received since start (text messages excluded).</summary>
     public long BytesReceived { get; private set; }
     /// <summary>True while the socket is open; false between reconnect attempts.</summary>
@@ -82,6 +84,13 @@ public sealed class WebSocketFrameSource : ISource
     private void HandleFrame(SourceContext ctx, Action<Action> dispatch, byte[] payload)
     {
         BytesReceived += payload.Length;
+        if (LayerMessage.IsLayerMessage(payload))
+        {
+            // binary layer payloads (point clouds, meshes) share the socket with signal frames and carry their own magic
+            try { var (id, data) = LayerMessage.Decode(payload); LayerMessagesReceived++; dispatch(() => ctx.Layers.Push(id, data)); }
+            catch (Exception e) when (e is FormatException or InvalidOperationException) { ctx.Log(LogLevel.Warn, $"websocket: bad layer message ({e.Message})"); }
+            return;
+        }
         SkyScopeFrame frame;
         try { frame = FrameCodec.Decode(payload); }
         catch (FormatException e) { ctx.Log(LogLevel.Warn, $"websocket: bad frame ({e.Message})"); return; }

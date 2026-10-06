@@ -182,6 +182,8 @@ export interface TrendChartConfig {
   navigator: boolean;
   /** Height of the navigator strip in pixels. */
   navigatorHeight: number;
+  /** Show the measurement table (value at A and B, delta, min, max, mean per signal) while both cursors are set. */
+  measurePanel: boolean;
   /** Navigator frame keeps its width: dragging its edges is disabled, only moves apply. */
   navigatorFixedRange: boolean;
   /** Height of one logic-analyzer track when a lane mixes analog and digital signals (digital-only lanes share the whole lane). */
@@ -200,12 +202,30 @@ export function defaultTrendConfig(partial: TrendChartOptions = {}): TrendChartC
     timeSpan: 30, timeFormat: "relative", lanes: [], axes: [], series: [], thresholds: [], markers: [],
     legend: "top-left", showGrid: true, laneGap: 6, margin: 8, yAxisWidth: 48, timeAxisHeight: 22,
     legendWidth: 170, tickSpacing: 80, plotLabels: true, laneHeaders: true, laneHeaderWidth: 14, collapsedLaneHeight: 16,
-    navigator: false, navigatorHeight: 48, navigatorFixedRange: false, digitalTrackHeight: 18, digitalStackShare: 0.5, ...rest,
+    navigator: false, navigatorHeight: 48, navigatorFixedRange: false, digitalTrackHeight: 18, digitalStackShare: 0.5, measurePanel: true, ...rest,
     theme: { ...LIGHT_THEME, ...theme }, style: { ...DEFAULT_STYLE, ...style },
   };
 }
 
 /** In-place merge used by views: theme and style merge field-wise, everything else replaces. */
+/** Version of the layout file format written by `trendLayoutToJson`. */
+export const TREND_LAYOUT_VERSION = 1;
+/** A saved arrangement: everything a gesture can change (lanes, axes, series, thresholds, markers, legend, panels) without theme and style. */
+export interface TrendLayoutFile extends Omit<TrendChartOptions, "theme" | "style"> { version: number }
+/** Serialises the arrangement of a chart to JSON (theme and style stay with the application). */
+export function trendLayoutToJson(config: TrendChartConfig): string {
+  const { theme: _theme, style: _style, ...rest } = config;
+  const file: TrendLayoutFile = { version: TREND_LAYOUT_VERSION, ...rest };
+  return JSON.stringify(file, null, 2);
+}
+/** Parses a layout file back into options; throws on an unknown version. */
+export function trendLayoutFromJson(json: string): TrendChartOptions {
+  const file = JSON.parse(json) as Partial<TrendLayoutFile>;
+  if (file.version !== TREND_LAYOUT_VERSION) throw new Error(`unsupported layout version ${String(file.version)}`);
+  const { version: _v, ...rest } = file;
+  return rest as TrendChartOptions;
+}
+
 export function applyTrendOptions(config: TrendChartConfig, partial: TrendChartOptions): void {
   const { theme, style, ...rest } = partial;
   Object.assign(config, rest);
@@ -220,7 +240,7 @@ export interface LabelLayout { /** Series id. */ seriesId: string; /** Label box
 /** `analog` is the part numeric series draw in; `stack` (bottom of the lane) holds the logic-analyzer tracks, null when the lane has none. */
 export interface LaneLayout { /** Lane id. */ laneId: string; /** Whole lane in pixels. */ rect: Rect; /** Analog plot area (equals `rect` without a stack). */ analog: Rect; /** Logic-track stack at the bottom, or null. */ stack: Rect | null; /** Axis strips, left ones first. */ axes: AxisLayout[]; /** Header bar left of the axes; null when headers are off. */ header: Rect | null; /** In-plot label boxes. */ labels: LabelLayout[]; /** Folded lane: only `rect` and `header` are meaningful. */ collapsed: boolean }
 /** Where everything goes for a given canvas size; produced by `layoutTrendChart`. */
-export interface TrendLayout { /** Canvas width. */ width: number; /** Canvas height. */ height: number; /** Area spanned by the lanes above the time axis. */ plot: Rect; /** Lanes top to bottom. */ lanes: LaneLayout[]; /** Time axis row under the lanes. */ timeAxis: Rect; /** Legend rect; null when hidden or empty. */ legend: Rect | null; /** Navigator strip; null when disabled. */ navigator: Rect | null }
+export interface TrendLayout { /** Canvas width. */ width: number; /** Canvas height. */ height: number; /** Area spanned by the lanes above the time axis. */ plot: Rect; /** Lanes top to bottom. */ lanes: LaneLayout[]; /** Time axis row under the lanes. */ timeAxis: Rect; /** Legend rect; null when hidden or empty. */ legend: Rect | null; /** Navigator strip; null when disabled. */ navigator: Rect | null; /** Measurement table over the cursor span; null when hidden. */ measure: Rect | null }
 
 /**
  * Where a dragged series would land (ibaAnalyzer rules): onto an axis strip or a series label → the same axis as that
@@ -243,12 +263,21 @@ export type HitRegion =
   | { kind: "navigator"; zone: "leftEdge" | "rightEdge" | "inside" | "outside" }
   | { kind: "plot"; laneId: string }
   | { kind: "stack"; laneId: string }
+  /** The gap between two open lanes: drag to move height from one to the other. */
+  | { kind: "laneGap"; aboveLaneId: string; belowLaneId: string }
+  /** Within a few pixels of cursor A or B: drag to move it. */
+  | { kind: "cursor"; which: "a" | "b" }
+  /** The measurement table over the cursor span. */
+  | { kind: "measure" }
   | { kind: "timeAxis" }
   | { kind: "none" };
 
 /** A lane header being dragged to reorder lanes. */
 export interface LaneDragState { /** Lane being moved. */ laneId: string; /** Pointer x. */ x: number; /** Pointer y. */ y: number; /** Insertion slot under the pointer (0 = top). */ index: number }
-/** An axis being shifted (middle) or stretched (top/bottom) by the pointer. */
+/** A lane gap being dragged: the two lanes' heights and weights when the drag began. */
+export interface LaneResizeState { aboveLaneId: string; belowLaneId: string; y0: number; hA0: number; hB0: number; wA0: number; wB0: number }
+/** A time cursor being dragged. */
+export interface CursorDragState { which: "a" | "b" }/** An axis being shifted (middle) or stretched (top/bottom) by the pointer. */
 export interface AxisDragState { /** Axis being changed. */ axisId: string; /** Lane the axis was grabbed in. */ laneId: string; /** Part of the strip that was grabbed. */ zone: "top" | "middle" | "bottom"; /** Pointer y at pick-up. */ y0: number; /** Axis minimum at pick-up. */ min0: number; /** Axis maximum at pick-up. */ max0: number }
 /** The navigator frame being moved or resized. */
 export interface NavigatorDragState { /** Edge being stretched, or the frame being moved. */ zone: "leftEdge" | "rightEdge" | "inside"; /** Pointer x at pick-up. */ x0: number; /** Window start at pick-up (seconds). */ t0: number; /** Window end at pick-up (seconds). */ t1: number }
@@ -264,4 +293,6 @@ export interface DragState {
   /** Pointer x. */ x: number; /** Pointer y. */ y: number; /** Where the drop would land right now. */ target: DropTarget;
   /** Ctrl/Shift held: a group dropped on a new-lane target lands in one lane instead of one lane each. */
   group: boolean;
+  /** Set when the payload is known to be all digital (or not) before its channels are: a native drag-over can preview a logic-stack drop. */
+  digital?: boolean | undefined;
 }

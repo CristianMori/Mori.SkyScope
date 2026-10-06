@@ -11,6 +11,7 @@
     private IJSObjectReference? _module;
     private IJSObjectReference? _handle;
     private string? _lastConfigJson;
+    private DotNetObjectReference<TrendChart>? _self;
 
     /// <summary>The JS handle, for sibling components (the <see cref="SignalTree"/> attaches to it).</summary>
     internal IJSObjectReference? Handle => _handle;
@@ -35,6 +36,13 @@
     [Parameter] public string? Style { get; set; }
     /// <summary>Unmatched attributes, forwarded to the host element.</summary>
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+    /// <summary>
+    /// Channels dropped on the chart (HTML5 drag and drop from a <see cref="SignalTree"/> or any element carrying the channel
+    /// payload), before they are added: set <see cref="Core.Charts.ChannelDropEventArgs.Cancel"/> to refuse, replace the target to
+    /// redirect, or add the signals yourself with <see cref="AddChannelsAsync"/> and set <c>Handled</c>. Without a handler the chart
+    /// adds them by its drop rules.
+    /// </summary>
+    [Parameter] public Func<Core.Charts.ChannelDropEventArgs, Task>? OnChannelDrop { get; set; }
 
     private static string ToolName(Core.Scene.Tool t) => t switch { Core.Scene.Tool.BoxZoom => "boxZoom", Core.Scene.Tool.Cursor => "cursor", Core.Scene.Tool.Select => "select", _ => "pan" };
 
@@ -46,6 +54,7 @@
             _lastConfigJson = Config is null ? null : TrendChartJson.Serialize(Config);
             _handle = await _module.InvokeAsync<IJSObjectReference>("mountTrendChart", _host,
                 new { wsUrl = WsUrl, configJson = _lastConfigJson, tool = ToolName(Tool), webgl = WebGL, retentionSeconds = RetentionSeconds });
+            if (OnChannelDrop is not null) { _self = DotNetObjectReference.Create(this); await _handle.InvokeVoidAsync("setDropHandler", _self); }
             Mounted?.Invoke();
             return;
         }
@@ -64,6 +73,44 @@
     public ValueTask SetTimeSpanAsync(double seconds) => _handle?.InvokeVoidAsync("setTimeSpan", seconds) ?? ValueTask.CompletedTask;
     /// <summary>Switch the pointer tool.</summary>
     public ValueTask SetToolAsync(Core.Scene.Tool tool) => _handle?.InvokeVoidAsync("setTool", ToolName(tool)) ?? ValueTask.CompletedTask;
+    /// <summary>The arrangement as a JSON layout file (theme and style excluded).</summary>
+    public ValueTask<string> ExportLayoutAsync() => _handle?.InvokeAsync<string>("exportLayout") ?? ValueTask.FromResult("");
+    /// <summary>Replace the arrangement with a layout file; theme and style are kept.</summary>
+    public ValueTask ImportLayoutAsync(string json) => _handle?.InvokeVoidAsync("importLayout", json) ?? ValueTask.CompletedTask;
+    /// <summary>Let the browser download the layout file under <paramref name="fileName"/>.</summary>
+    public ValueTask DownloadLayoutAsync(string fileName = "layout.json") => _handle?.InvokeVoidAsync("downloadLayout", fileName) ?? ValueTask.CompletedTask;
+    /// <summary>
+    /// Add channels from code: a series per channel not in the chart yet, placed at <paramref name="target"/> with the drop rules
+    /// (default: the first lane, analog on an own axis, digital in the logic stack). Returns the series ids.
+    /// </summary>
+    public async ValueTask<IReadOnlyList<string>> AddChannelsAsync(IReadOnlyList<int> channelIds, Core.Charts.DropTarget? target = null, bool group = false)
+        => _handle is null ? [] : await _handle.InvokeAsync<string[]>("addChannels", channelIds, target is null ? null : TrendChartJson.SerializeLoose(DropTargetJson.ToJson(target)), group);
+
+    /// <summary>Called from the browser on a drop; runs <see cref="OnChannelDrop"/> and answers with the verdict.</summary>
+    [JSInvokable("OnChannelDrop")]
+    public async Task<string> HandleChannelDropAsync(string json)
+    {
+        if (OnChannelDrop is null) return "apply";
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var channels = root.GetProperty("channels").EnumerateArray().Select(c => new Core.Charts.ChannelDragItem(c.GetProperty("id").GetInt32(),
+            c.TryGetProperty("name", out var n) && n.ValueKind == System.Text.Json.JsonValueKind.String ? n.GetString() : null,
+            c.TryGetProperty("unit", out var u) && u.ValueKind == System.Text.Json.JsonValueKind.String ? u.GetString() : null,
+            c.TryGetProperty("kind", out var k) && k.ValueKind == System.Text.Json.JsonValueKind.String ? (k.GetString() == "digital" ? Core.Sources.ChannelKind.Digital : Core.Sources.ChannelKind.Analog) : null)).ToList();
+        var group = root.TryGetProperty("group", out var g) && g.ValueKind == System.Text.Json.JsonValueKind.True;
+        var args = new Core.Charts.ChannelDropEventArgs(new Core.Charts.ChannelDragPayload(channels, group), DropTargetJson.Parse(root.GetProperty("target")), root.GetProperty("x").GetDouble(), root.GetProperty("y").GetDouble());
+        var original = args.Target;
+        await OnChannelDrop(args);
+        if (args.Cancel) return "cancel";
+        if (args.Handled) return "handled";
+        if (!ReferenceEquals(original, args.Target) || args.Group != group)
+        {
+            // the handler redirected the drop: apply it from here with the new target, then tell the browser it is done
+            await AddChannelsAsync(args.ChannelIds, args.Target, args.Group);
+            return "handled";
+        }
+        return "apply";
+    }
 
     /// <summary>Disposes the JS chart and the module; a dropped circuit is ignored.</summary>
     public async ValueTask DisposeAsync()
@@ -74,5 +121,6 @@
             if (_module is not null) await _module.DisposeAsync();
         }
         catch (JSDisconnectedException) { }
+        _self?.Dispose();
     }
 }

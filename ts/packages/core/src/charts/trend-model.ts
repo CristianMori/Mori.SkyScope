@@ -6,7 +6,7 @@ import type { SignalStore } from "../sources/signal-store.js";
 import { LinearScale, TimeScale } from "../scales/scale.js";
 import type { Effect } from "../scene/interaction.js";
 import { rectContains, type Rect } from "../scene/geometry.js";
-import { defaultTrendConfig, legendRowHeight, SERIES_PALETTE, type TrendChartOptions, type AxisConfig, type AxisDragState, type DragState, type DropTarget, type HitRegion, type LaneConfig, type LaneDragState, type LaneLayout, type NavigatorDragState, type SeriesConfig, type TrendChartConfig, type TrendLayout } from "./trend-config.js";
+import { defaultTrendConfig, legendRowHeight, SERIES_PALETTE, type TrendChartOptions, type AxisConfig, type AxisDragState, type DragState, type DropTarget, type HitRegion, type LaneConfig, type LaneDragState, type LaneLayout, type NavigatorDragState, type SeriesConfig, type TrendChartConfig, type TrendLayout, trendLayoutToJson, trendLayoutFromJson, type LaneResizeState, type CursorDragState } from "./trend-config.js";
 import { layoutTrendChart } from "./trend-layout.js";
 
 /** One sample of one series. */
@@ -14,6 +14,10 @@ export interface SeriesValue { /** Series id. */ seriesId: string; /** Sample ti
 /** Values of every visible series at a time; series without a sample at or before it are absent. */
 export interface Readout { /** Requested time in chart seconds. */ time: number; /** One entry per series that had a sample. */ values: SeriesValue[] }
 /** Readouts at cursors A and B and their differences; `delta` is null unless both cursors are set. */
+/** One signal's figures over the cursor span; nulls when a cursor has no sample before it or the span holds no samples. */
+export interface Measurement { seriesId: string; a: number | null; b: number | null; delta: number | null; min: number | null; max: number | null; mean: number | null; count: number }
+/** The measurement table: span bounds, signed Δt (B − A), its frequency, one row per visible analog signal. */
+export interface Measurements { t0: number; t1: number; dt: number; hz: number | null; rows: Measurement[] }
 export interface CursorReadouts { /** Readout at cursor A, or null. */ a: Readout | null; /** Readout at cursor B, or null. */ b: Readout | null; /** `dt` = B − A in seconds and the value differences for series present in both readouts. */ delta: { dt: number; values: { seriesId: string; delta: number }[] } | null }
 
 /**
@@ -42,6 +46,11 @@ export class TrendChartModel {
   drag: DragState | null = null;
   /** A lane header being dragged to reorder lanes. */
   laneDrag: LaneDragState | null = null;
+  /** A lane gap being dragged to resize the two lanes around it. */
+  laneResize: LaneResizeState | null = null;
+  /** A time cursor being dragged. */
+  cursorDrag: CursorDragState | null = null;
+  private measureCache = new Map<string, { key: string; row: Measurement }>();
   /** A Y-axis being shifted or stretched by its scale ends. */
   axisDrag: AxisDragState | null = null;
   /** The navigator frame being moved or resized. */
@@ -72,6 +81,8 @@ export class TrendChartModel {
   visibleSeries(): SeriesConfig[] { return this.config.series.filter((s) => s.visible !== false); }
   /** Visible series of a lane, in config order. */
   seriesIn(laneId: string): SeriesConfig[] { return this.visibleSeries().filter((s) => this.laneIdOf(s) === laneId); }
+  /** Every series of a lane, hidden ones included (the legend lists them dimmed so they can be shown again). */
+  allSeriesIn(laneId: string): SeriesConfig[] { return this.config.series.filter((s) => this.laneIdOf(s) === laneId); }
   /** Stroke colour: explicit, else from the palette by configured index. */
   seriesColor(s: SeriesConfig): string { return s.color ?? SERIES_PALETTE[Math.max(0, this.config.series.indexOf(s)) % SERIES_PALETTE.length]!; }
   /** Display name: `name`, else the channel name, else the id. */
@@ -118,7 +129,7 @@ export class TrendChartModel {
     return layoutTrendChart(this.config, width, height, this.lanes().map((l) => {
       const axes = this.axesIn(l.id);
       return { laneId: l.id, weight: l.weight ?? 1, collapsed: l.collapsed === true, tracks: this.digitalTracks(l.id).length, analog: this.seriesIn(l.id).some((s) => s.kind !== "digital"), leftAxes: axes.filter((a) => (a.side ?? "left") === "left").map((a) => a.id), rightAxes: axes.filter((a) => a.side === "right").map((a) => a.id), labels: this.legendSeries(l.id).map((s) => ({ seriesId: s.id, name: this.seriesName(s), digital: s.kind === "digital" })) };
-    }), this.visibleSeries().length, this.cursorA !== null && this.cursorB !== null ? this.visibleSeries().filter((s) => s.kind !== "digital").length : 0);
+    }), this.config.series.length, this.cursorA !== null && this.cursorB !== null ? this.visibleSeries().filter((s) => s.kind !== "digital").length : 0);
   }
   /** Chart time to plot x over the visible window; relative labels count back from the right edge. */
   timeScale(layout: TrendLayout): TimeScale {
@@ -263,9 +274,9 @@ export class TrendChartModel {
     }
   }
   /** Series of a lane grouped by axis (first-appearance order): shared-axis series sit together in the legend and the labels. */
-  legendGroups(laneId: string): { axisId: string; series: SeriesConfig[] }[] {
+  legendGroups(laneId: string, includeHidden = false): { axisId: string; series: SeriesConfig[] }[] {
     const groups: { axisId: string; series: SeriesConfig[] }[] = [];
-    for (const s of this.seriesIn(laneId)) {
+    for (const s of includeHidden ? this.allSeriesIn(laneId) : this.seriesIn(laneId)) {
       const axisId = this.axisIdOf(s);
       const g = groups.find((x) => x.axisId === axisId);
       if (g) g.series.push(s); else groups.push({ axisId, series: [s] });
@@ -283,7 +294,7 @@ export class TrendChartModel {
     let yy = lg.y + this.config.style.legendPadding;
     for (const [i, lane] of this.lanes().entries()) {
       if (i > 0) yy += 4;
-      for (const s of this.legendSeries(lane.id)) { if (y >= yy && y < yy + rowH) return s.id; yy += rowH; }
+      for (const g of this.legendGroups(lane.id, true)) for (const s of g.series) { if (y >= yy && y < yy + rowH) return s.id; yy += rowH; }
     }
     return null;
   }
@@ -306,6 +317,18 @@ export class TrendChartModel {
       }
     }
     if (layout.navigator && rectContains(layout.navigator, x, y)) return { kind: "navigator", zone: this.navigatorZone(layout, x) };
+    if (layout.measure && rectContains(layout.measure, x, y)) return { kind: "measure" };
+    if (rectContains(layout.plot, x, y)) {
+      const ts = this.timeScale(layout);
+      if (this.cursorA !== null && Math.abs(ts.scale(this.cursorA) - x) <= 4) return { kind: "cursor", which: "a" };
+      if (this.cursorB !== null && Math.abs(ts.scale(this.cursorB) - x) <= 4) return { kind: "cursor", which: "b" };
+    }
+    for (let i = 0; i + 1 < layout.lanes.length; i++) {
+      const a = layout.lanes[i]!, b = layout.lanes[i + 1]!;
+      if (a.collapsed || b.collapsed) continue;
+      const x0 = a.header ? a.header.x : a.rect.x, x1 = a.rect.x + a.rect.w;
+      if (x >= x0 && x <= x1 && y >= a.rect.y + a.rect.h - 3 && y <= b.rect.y + 3) return { kind: "laneGap", aboveLaneId: a.laneId, belowLaneId: b.laneId };
+    }
     for (const lane of layout.lanes) if (!lane.collapsed && rectContains(lane.rect, x, y)) return lane.stack && rectContains(lane.stack, x, y) ? { kind: "stack", laneId: lane.laneId } : { kind: "plot", laneId: lane.laneId };
     if (rectContains(layout.timeAxis, x, y)) return { kind: "timeAxis" };
     return { kind: "none" };
@@ -380,13 +403,18 @@ export class TrendChartModel {
     }
     return false;
   }
-  /** Pick up one series or several (ctrl/shift group); `channelIds` adds series for channels not in the chart yet (signal tree). */
-  beginDrag(seriesIds: string | string[], x: number, y: number, group = false, channelIds: number[] = []): void {
+  /**
+   * Pick up one series or several (ctrl/shift group); `channelIds` adds series for channels not in the chart yet (a
+   * drag from a signal tree). `digital` tells the drop preview that the payload is all digital when its channels are
+   * not readable yet (a native drag-over) or unknown to the store.
+   */
+  beginDrag(seriesIds: string | string[], x: number, y: number, group = false, channelIds: number[] = [], digital?: boolean): void {
     const ids = typeof seriesIds === "string" ? [seriesIds] : [...seriesIds];
-    this.drag = { seriesId: ids[0] ?? (channelIds.length ? `ch:${channelIds[0]}` : ""), seriesIds: ids, channelIds, x, y, target: { kind: "none" }, group };
+    this.drag = { seriesId: ids[0] ?? (channelIds.length ? `ch:${channelIds[0]}` : ""), seriesIds: ids, channelIds, x, y, target: { kind: "none" }, group, ...(digital === undefined ? {} : { digital }) };
   }
   /** A drag carrying only digital signals (series or tree channels) targets logic stacks. */
   private dragIsDigital(d: DragState): boolean {
+    if (d.digital !== undefined) return d.digital;
     const series = d.seriesIds.map((id) => this.config.series.find((s) => s.id === id)).filter((s): s is SeriesConfig => !!s);
     const kinds = d.channelIds.map((ch) => this.store.get(ch)?.info.kind);
     return series.length + kinds.length > 0 && series.every((s) => s.kind === "digital") && kinds.every((k) => k === "digital");
@@ -407,6 +435,21 @@ export class TrendChartModel {
   }
   /** Abandons the drag without applying it. */
   cancelDrag(): void { this.drag = null; }
+  /**
+   * Add channels from code or from a drop: a series is created for each channel not in the chart yet (id `ch:<id>`),
+   * then the group is placed at `target` with the drop rules (shared axis, own axis, new lane, logic stack for digital).
+   * Without a target the channels land in the first lane, analog on their own axis, digital in its logic stack.
+   * `group` keeps several channels together as a Ctrl/Shift group would. Returns the series ids, in channel order;
+   * channels the store does not know are skipped.
+   */
+  addChannels(channelIds: number[], target?: DropTarget, group = false): string[] {
+    const ids: string[] = [];
+    for (const ch of channelIds) { const s = this.addSeriesForChannel(ch); if (s && !ids.includes(s.id)) ids.push(s.id); }
+    if (ids.length === 0) return ids;
+    const t: DropTarget = target ?? { kind: "ownAxis", laneId: this.lanes()[0]!.id };
+    if (t.kind !== "none") this.applyGroupDrop(ids, t, group || ids.length > 1);
+    return ids;
+  }
   /** A series for a channel of the store (id `ch:<channelId>`), created in the first lane when missing. */
   addSeriesForChannel(channelId: number): SeriesConfig | null {
     const existing = this.config.series.find((s) => s.channelId === channelId);
@@ -465,6 +508,104 @@ export class TrendChartModel {
   }
   /** Abandons the lane drag without reordering. */
   cancelLaneDrag(): void { this.laneDrag = null; }
+
+  // ---- lane resize ---------------------------------------------------------
+  /** Pick up the gap between two open lanes; dragging moves height from one to the other (weights change, their sum does not). */
+  beginLaneResize(layout: TrendLayout, aboveLaneId: string, belowLaneId: string, y: number): void {
+    const a = layout.lanes.find((l) => l.laneId === aboveLaneId), b = layout.lanes.find((l) => l.laneId === belowLaneId);
+    const ca = this.lanes().find((l) => l.id === aboveLaneId), cb = this.lanes().find((l) => l.id === belowLaneId);
+    if (!a || !b || !ca || !cb || a.collapsed || b.collapsed) return;
+    this.laneResize = { aboveLaneId, belowLaneId, y0: y, hA0: a.rect.h, hB0: b.rect.h, wA0: ca.weight ?? 1, wB0: cb.weight ?? 1 };
+  }
+  updateLaneResize(layout: TrendLayout, y: number): boolean {
+    const d = this.laneResize;
+    if (!d) return false;
+    const ca = this.lanes().find((l) => l.id === d.aboveLaneId), cb = this.lanes().find((l) => l.id === d.belowLaneId);
+    if (!ca || !cb) return false;
+    const total = d.hA0 + d.hB0, min = Math.min(24, total / 2);
+    const hA = Math.min(total - min, Math.max(min, d.hA0 + (y - d.y0)));
+    const w = d.wA0 + d.wB0;
+    ca.weight = w * hA / total; cb.weight = w - ca.weight;
+    return true;
+  }
+  endLaneResize(): void { this.laneResize = null; }
+
+  // ---- series as a control -------------------------------------------------
+  toggleSeries(seriesId: string): boolean { const s = this.config.series.find((x) => x.id === seriesId); if (!s) return false; s.visible = s.visible === false; return true; }
+  renameSeries(seriesId: string, name: string | null): boolean { const s = this.config.series.find((x) => x.id === seriesId); if (!s) return false; if (name === null || name.trim() === "") delete s.name; else s.name = name.trim(); return true; }
+  setSeriesColor(seriesId: string, color: string | null): boolean { const s = this.config.series.find((x) => x.id === seriesId); if (!s) return false; if (color === null) delete s.color; else s.color = color; return true; }
+  setSeriesWidth(seriesId: string, width: number | null): boolean { const s = this.config.series.find((x) => x.id === seriesId); if (!s) return false; if (width === null) delete s.width; else s.width = Math.max(0.5, width); return true; }
+  /** Remove a series from the chart (its channel stays in the store); empty lanes vanish. */
+  removeSeries(seriesId: string): boolean {
+    const i = this.config.series.findIndex((x) => x.id === seriesId);
+    if (i < 0) return false;
+    this.pinLanes();
+    this.config.series.splice(i, 1);
+    this.pruneEmptyLanes();
+    return true;
+  }
+
+  // ---- cursors and measurements --------------------------------------------
+  beginCursorDrag(which: "a" | "b"): void { this.cursorDrag = { which }; }
+  updateCursorDrag(layout: TrendLayout, x: number): boolean {
+    if (!this.cursorDrag) return false;
+    const { t0, t1 } = this.window();
+    const t = Math.min(t1, Math.max(t0, this.timeScale(layout).invert(x)));
+    this.setCursor(this.cursorDrag.which, t);
+    return true;
+  }
+  endCursorDrag(): void { this.cursorDrag = null; }
+  /**
+   * Per analog signal over the span between the cursors: value at A and at B, their difference, and the minimum, maximum
+   * and mean of the raw samples inside the span (inclusive). Null while a cursor is unset. Rows are cached until a cursor
+   * moves or samples enter or leave the span.
+   */
+  measurements(): Measurements | null {
+    if (this.cursorA === null || this.cursorB === null) return null;
+    const t0 = Math.min(this.cursorA, this.cursorB), t1 = Math.max(this.cursorA, this.cursorB), dt = this.cursorB - this.cursorA;
+    const rows: Measurement[] = [];
+    const live = new Set<string>();
+    for (const s of this.visibleSeries()) {
+      if (s.kind === "digital") continue;
+      live.add(s.id);
+      const buf = this.store.get(s.channelId)?.buffer;
+      const empty: Measurement = { seriesId: s.id, a: null, b: null, delta: null, min: null, max: null, mean: null, count: 0 };
+      if (!buf || buf.isEmpty) { rows.push(empty); continue; }
+      const latest = buf.timeAt(buf.headSeq - 1), earliest = buf.timeAt(buf.firstSeq);
+      const key = `${this.cursorA}|${this.cursorB}|${latest <= t1 ? buf.headSeq : 0}|${earliest >= t0 ? buf.firstSeq : 0}`;
+      const cached = this.measureCache.get(s.id);
+      if (cached && cached.key === key) { rows.push(cached.row); continue; }
+      const at = (t: number): number | null => { const seq = buf.indexAfterTime(t) - 1; return seq < buf.firstSeq ? null : buf.valueAt(seq); };
+      const a = at(this.cursorA), b = at(this.cursorB);
+      let min = Infinity, max = -Infinity, sum = 0, count = 0;
+      for (let seq = Math.max(buf.firstSeq, buf.indexAfterTime(t0) - 1); seq < buf.headSeq; seq++) {
+        const t = buf.timeAt(seq);
+        if (t > t1) break;
+        if (t < t0) continue;
+        const v = buf.valueAt(seq);
+        if (v < min) min = v; if (v > max) max = v; sum += v; count++;
+      }
+      const row: Measurement = { seriesId: s.id, a, b, delta: a !== null && b !== null ? b - a : null, min: count ? min : null, max: count ? max : null, mean: count ? sum / count : null, count };
+      this.measureCache.set(s.id, { key, row });
+      rows.push(row);
+    }
+    for (const id of this.measureCache.keys()) if (!live.has(id)) this.measureCache.delete(id);
+    return { t0, t1, dt, hz: Math.abs(dt) > 0 ? 1 / Math.abs(dt) : null, rows };
+  }
+
+  // ---- layout files --------------------------------------------------------
+  /** The arrangement as a JSON layout file (theme and style excluded). */
+  exportLayout(): string { return trendLayoutToJson(this.config); }
+  /** Replace the arrangement with a layout file written by `exportLayout` (theme and style are kept). */
+  importLayout(json: string): void {
+    const opts = trendLayoutFromJson(json);
+    const keep = { theme: this.config.theme, style: this.config.style };
+    for (const k of Object.keys(this.config) as (keyof TrendChartConfig)[]) if (k !== "theme" && k !== "style") delete (this.config as unknown as Record<string, unknown>)[k];
+    Object.assign(this.config, defaultTrendConfig(opts), keep);
+    this.timeSpan = this.config.timeSpan;
+    this.cursorA = this.cursorB = null;
+    this.measureCache.clear();
+  }
 
   // ---- Y axes ------------------------------------------------------------------
   private fixedAxis(axisId: string): AxisConfig {

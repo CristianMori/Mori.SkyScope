@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { Scene3DDemo } from "./Scene3DDemo.js";
 import { DARK_THEME, LIGHT_THEME, type Tool, type TrendChartOptions } from "@mori/skyscope-core";
-import type { TrendChartView } from "@mori/skyscope-render";
+import { saveFile, type TrendChartView } from "@mori/skyscope-render";
 import { AttitudeView, Button, CompassView, HeatmapView, KnobView, LedArrayView, LinearGaugeView, NumericDisplayView, PieChartView, PlaybackControls, PolarChartView, RadialGaugeView, RecordButton, SceneView, SignalTree, SliderView, SwitchView, TrendChart, XYChart, usePlayback, useSignalStore, useWebSocketSource } from "@mori/skyscope-react";
 import { McapRecorder, parseCsv, readRecording, type Recording } from "@mori/skyscope-core";
 import { pickFile } from "@mori/skyscope-render";
@@ -148,6 +148,9 @@ export function App() {
         <Button size="sm" active={mode === "live"} onClick={() => setMode("live")}>live</Button>
         <Button size="sm" active={mode === "playback"} onClick={() => setMode("playback")}>playback</Button>
         <Button size="sm" onClick={() => void openFile()}>open…</Button>
+        <span style={{ width: 8 }} />
+        <Button size="sm" variant="ghost" onClick={() => { if (view) saveFile(new Blob([view.exportLayout()], { type: "application/json" }), "skyscope-layout.json", "application/json"); }}>save layout</Button>
+        <Button size="sm" variant="ghost" onClick={() => { void pickFile(".json").then(async (f) => { if (f && view) view.importLayout(await f.text()); }); }}>load layout</Button>
         {mode === "live" && <RecordButton recorder={recorder} streamToFile />}
       </div>
       {/* transport bar, playback mode only */}
@@ -197,7 +200,7 @@ export function App() {
       </div>}
       {/* gesture cheat sheet for the trend chart */}
       <div style={{ fontSize: 12, color: "var(--skyscope-color-text-secondary)" }}>
-        drag = pan · wheel = zoom · shift+drag = box zoom · click = cursor A · shift+click = cursor B · double-click = reset · drag a signal label onto an axis (shared scale), into a lane (own scale) or onto the time axis (new lane) · Ctrl/Shift picks several · lane bar: drag to reorder, ▾ folds, ✕ removes · drag the Y-axis middle to shift, its ends to stretch, wheel zooms, double-click autoscales · navigator: drag the red frame, its edges, click to centre, ←/→
+        drag = pan · wheel = zoom · shift+drag = box zoom · click = cursor A · shift+click = cursor B · double-click = reset · drag a signal label onto an axis (shared scale), into a lane (own scale) or onto the time axis (new lane) · Ctrl/Shift picks several · lane bar: drag to reorder, ▾ folds, ✕ removes · drag the Y-axis middle to shift, its ends to stretch, wheel zooms, double-click autoscales · navigator: drag the red frame, its edges, click to centre, ←/→ · drag the gap between lanes to resize · click a signal name to hide/show it, right-click for colour, width, rename, remove · drag cursor A/B; both set = measurement table
       </div>
     </div>
   );

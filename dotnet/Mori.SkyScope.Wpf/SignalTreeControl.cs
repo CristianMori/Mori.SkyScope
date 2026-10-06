@@ -13,10 +13,12 @@ using Mori.SkyScope.Core.Sources;
 namespace Mori.SkyScope.Wpf;
 
 /// <summary>
-/// A searchable tree of every channel in a store (grouped by name prefix) whose rows are dragged onto a
-/// <see cref="TrendChartControl"/>: the drop obeys the chart's rules (axis strip → shared scale, lane → own scale, time
-/// axis → new lane). The list's own Ctrl/Shift selection picks several; a drag on a selected row carries the selection.
-/// Double-click on a group folds it; double-click on a channel adds it to the first lane.
+/// A searchable tree of every channel in a store (grouped by name prefix). Rows are ordinary WPF drag sources
+/// (<see cref="DragDrop.DoDragDrop"/> with a <see cref="ChannelDragData.Format"/> data object plus plain-text ids), so any
+/// <see cref="TrendChartControl"/> accepts them and the drop obeys the chart's rules (axis strip → shared scale, lane →
+/// own scale, time axis → new lane, logic stack for digital). The list's own Ctrl/Shift selection picks several; a drag
+/// on a selected row carries the selection as a group. Double-click on a group folds it; double-click on a channel adds
+/// it to the attached chart's first lane. The chart is optional: without it the tree lists <see cref="Store"/> and drags.
 /// </summary>
 public class SignalTreeControl : DockPanel
 {
@@ -66,13 +68,13 @@ public class SignalTreeControl : DockPanel
         _list.PreviewMouseMove += OnMove;
         _list.PreviewMouseLeftButtonUp += OnRelease;
         _list.MouseDoubleClick += OnDoubleClick;
-        _list.KeyDown += (_, e) => { if (e.Key == Key.Escape) { _list.UnselectAll(); Chart?.ExternalDragCancel(); } };
+        _list.KeyDown += (_, e) => { if (e.Key == Key.Escape) _list.UnselectAll(); };
         _timer.Tick += (_, _) => { if (Signature() != _signature) Refresh(); };
         Loaded += (_, _) => _timer.Start();
         Unloaded += (_, _) => _timer.Stop();
     }
 
-    /// <summary>The chart rows are dropped on; its store is listed unless <see cref="Store"/> is set.</summary>
+    /// <summary>Optional: a chart whose series are marked in the tree and that double-click adds to; its store is listed unless <see cref="Store"/> is set. Drops work on any chart without it.</summary>
     public TrendChartControl? Chart { get; set; }
     /// <summary>Store to list; defaults to the chart's.</summary>
     public SignalStore? Store { get => _store; set { _store = value; _model = null; Refresh(); } }
@@ -132,39 +134,45 @@ public class SignalTreeControl : DockPanel
         if (_pressed?.IsGroup == true && Keyboard.Modifiers == ModifierKeys.None) { _model?.ToggleGroup(_pressed.Id[2..]); Refresh(); e.Handled = true; }
     }
 
+    /// <summary>The payload a drag of <paramref name="channelId"/> carries: the selection when the row is selected, the row alone otherwise.</summary>
+    public ChannelDragPayload DragPayload(int channelId, bool group = false)
+    {
+        var m = EnsureModel();
+        var ids = m?.DragIds(channelId) ?? [channelId];
+        var store = _store ?? Chart?.Store;
+        return new ChannelDragPayload(ids.Select(id => { var info = store?.Get(id)?.Info; return new ChannelDragItem(id, info?.Name, info?.Unit, info?.Kind == ChannelKind.Digital ? ChannelKind.Digital : ChannelKind.Analog); }).ToList(), group || ids.Count > 1);
+    }
+
+    /// <summary>The data object a drag carries: the payload under <see cref="ChannelDragData.Format"/> and the ids as text.</summary>
+    public static DataObject ToDataObject(ChannelDragPayload payload)
+    {
+        var data = new DataObject();
+        data.SetData(ChannelDragData.Format, ChannelDragData.Encode(payload));
+        data.SetData(DataFormats.UnicodeText, string.Join(",", payload.Ids));
+        return data;
+    }
+
     private void OnMove(object sender, MouseEventArgs e)
     {
-        if (_pressed is null || e.LeftButton != MouseButtonState.Pressed) return;
-        if (_dragging) { Chart?.ExternalDragMove(_list.PointToScreen(e.GetPosition(_list))); return; }
-        if (_pressed.IsGroup || Chart is null || _model is null || _pressed.Source.ChannelId is not { } id) return;
+        if (_pressed is null || e.LeftButton != MouseButtonState.Pressed || _dragging) return;
+        if (_pressed.IsGroup || _pressed.Source.ChannelId is not { } id) return;
         var p = e.GetPosition(_list);
         if (Math.Abs(p.X - _pressAt.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(p.Y - _pressAt.Y) < SystemParameters.MinimumVerticalDragDistance) return;
         SyncSelection();
-        var ids = _model.DragIds(id);
-        var group = Keyboard.Modifiers.HasFlag(ModifierKeys.Control) || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) || ids.Count > 1;
+        var payload = DragPayload(id, Keyboard.Modifiers.HasFlag(ModifierKeys.Control) || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift));
         _dragging = true;
-        _list.CaptureMouse();
-        Chart.ExternalDragStart(ids, group);
-        Chart.ExternalDragMove(_list.PointToScreen(p));
+        try { DragDrop.DoDragDrop(_list, ToDataObject(payload), DragDropEffects.Copy); }
+        finally { _dragging = false; _pressed = null; Refresh(); }
     }
 
-    private void OnRelease(object sender, MouseButtonEventArgs e)
-    {
-        if (_dragging)
-        {
-            _dragging = false; _list.ReleaseMouseCapture();
-            Chart?.ExternalDrop(_list.PointToScreen(e.GetPosition(_list)));
-            Refresh();
-        }
-        _pressed = null;
-    }
+    private void OnRelease(object sender, MouseButtonEventArgs e) => _pressed = null;
 
     private void OnDoubleClick(object sender, MouseButtonEventArgs e)
     {
         var row = RowAt(e);
         if (row is null || row.IsGroup || Chart is null || row.Source.ChannelId is not { } id) return;
-        var m = Chart.Model;
-        if (m.AddSeriesForChannel(id) is { } s) { m.ApplyGroupDrop([s.Id], new DropTarget.OwnAxis(m.Lanes()[0].Id), false); Chart.InvalidateVisual(); Refresh(); }
+        Chart.AddChannels([id]);
+        Refresh();
     }
 
     private static DataTemplate RowTemplate()

@@ -83,8 +83,16 @@ public static class Fixtures
             var actualValue = actual[expected.Name];
             var expectedNode = JsonNode.Parse(expected.Value.GetRawText());
             if (!JsonNode.DeepEquals(expectedNode, actualValue))
+            {
+                // SKYSCOPE_FIXTURE_DUMP=<dir>: write the actual snapshot next to the failure for a side-by-side diff
+                if (Environment.GetEnvironmentVariable("SKYSCOPE_FIXTURE_DUMP") is { Length: > 0 } dir)
+                {
+                    System.IO.Directory.CreateDirectory(dir);
+                    File.WriteAllText(System.IO.Path.Combine(dir, string.Concat(fixture.Name.Select(ch => char.IsLetterOrDigit(ch) ? ch : (char)95)) + ".json"), actual.ToJsonString());
+                }
                 throw new Xunit.Sdk.XunitException(
                     $"[{fixture}] property \"{expected.Name}\"\n  expected: {expectedNode?.ToJsonString() ?? "null"}\n  actual:   {actualValue?.ToJsonString() ?? "null"}\n  snapshot: {actual.ToJsonString()}");
+            }
         }
     }
 }

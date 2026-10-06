@@ -17,6 +17,8 @@
       <Button Content="Cursor" Margin="0,0,16,0" Padding="8,2" Click="OnCursor" />
       <Button Content="Pause" x:Name="PauseButton" Margin="0,0,4,0" Padding="8,2" Click="OnPause" />
       <Button Content="Reset" Padding="8,2" Click="OnReset" />
+      <Button Content="Save layout" Margin="16,0,4,0" Padding="8,2" Click="OnSaveLayout" />
+      <Button Content="Load layout" Padding="8,2" Click="OnLoadLayout" />
       <sky:RecorderControl x:Name="Recorder" Margin="16,0,0,0" />
       <sky:PlaybackControl x:Name="Transport" Margin="16,0,0,0" MinWidth="520" Visibility="Collapsed" />
     </StackPanel>

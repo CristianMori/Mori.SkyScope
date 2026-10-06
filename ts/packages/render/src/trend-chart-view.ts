@@ -2,8 +2,10 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { TrendChartModel, applyTrendOptions, drawTrendChartBackground, drawTrendChartForeground, drawTrendChartSeries, seriesGeometry, initialInteraction, reduceInteraction, LiveClock,
+  CHANNEL_DRAG_MIME, CHANNEL_DRAG_DIGITAL_MIME, parseChannelDrag, channelDragIsDigital, type ChannelDragPayload, type DropTarget,
   type InputEvent, type InteractionState, type Modifiers, type Rect, type SignalStore, type TimeSource, type Tool, type TrendChartOptions, type TrendLayout } from "@mori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
+import { showSeriesMenu } from "./series-menu.js";
 import { WebGLLineRenderer, cssToRgba } from "./webgl-lines.js";
 
 /** Construction options of `TrendChartView`. */
@@ -130,30 +132,70 @@ export class TrendChartView {
   private hoverLegendRow: string | null = null;
   /** Series picked with Ctrl/Shift; the next drag moves them together. */
   readonly selection = new Set<string>();
-  private externalDrag = false;
+  /** True while a native drag (HTML5 drag and drop) hovers the chart; the model's drag then only carries the preview. */
+  private nativeDrag = false;
   /** Fired after a drop, a lane change or an axis change the host may want to persist. */
   onConfigChanged: (() => void) | null = null;
+  /**
+   * Fired when channels are dropped on the chart (HTML5 drag and drop with `CHANNEL_DRAG_MIME`, a JSON array of ids or
+   * plain text ids), before anything is applied. Set `cancel` to refuse the drop, change `target` to redirect it, or
+   * set `handled` after adding the signals yourself. Otherwise the chart calls `addChannels(ids, target, group)`.
+   */
+  onChannelDrop: ((e: ChannelDropEvent) => void) | null = null;
 
   /**
-   * A drag that started outside the chart (a signal tree): `channelIds` become series when dropped on the chart.
-   * Call `externalDragMove`/`externalDrop` with client coordinates; `group` keeps several channels in one lane.
+   * Add channels from code: a series per channel not in the chart yet, placed at `target` with the drop rules (default:
+   * the first lane, analog on an own axis, digital in the logic stack). Returns the series ids and fires `onConfigChanged`.
    */
-  externalDragStart(channelIds: number[], group = false): void { this.externalDrag = true; this.model.beginDrag([], -1000, -1000, group, channelIds); }
-  /** Moves an external drag; viewport (client) coordinates, so the pointer may still be over the tree. No-op without an external drag. */
-  externalDragMove(clientX: number, clientY: number): void { if (!this.externalDrag) return; const p = this.clientToLocal(clientX, clientY); this.model.updateDrag(this.currentLayout(), p.x, p.y); }
-  /** Finishes an external drag at viewport coordinates; returns true when the drop changed the configuration (and fires `onConfigChanged`). */
-  externalDrop(clientX: number, clientY: number): boolean {
-    if (!this.externalDrag) return false;
-    this.externalDrag = false;
-    const p = this.clientToLocal(clientX, clientY);
-    const changed = this.model.endDrag(this.currentLayout(), p.x, p.y);
-    this.layout = null;
-    if (changed) this.onConfigChanged?.();
-    return changed;
+  addChannels(channelIds: number[], target?: DropTarget, group = false): string[] {
+    const ids = this.model.addChannels(channelIds, target, group);
+    if (ids.length) this.changed();
+    return ids;
   }
-  /** Abandons an external drag (pointer cancel, Escape) without changing the chart. */
-  externalDragCancel(): void { this.externalDrag = false; this.model.cancelDrag(); }
+  /** Where a payload would land if dropped at viewport coordinates (for a custom preview); `none` outside the plot. */
+  dropTargetAt(clientX: number, clientY: number, digital = false): DropTarget { const p = this.clientToLocal(clientX, clientY); return this.model.dropTarget(this.currentLayout(), p.x, p.y, digital); }
+
+  private static dragTypes(dt: DataTransfer | null): boolean { return !!dt && Array.from(dt.types).some((t) => t === CHANNEL_DRAG_MIME || t === "text/plain" || t === "Text"); }
+  private static readPayload(dt: DataTransfer | null): ChannelDragPayload | null { return dt ? parseChannelDrag(dt.getData(CHANNEL_DRAG_MIME)) ?? parseChannelDrag(dt.getData("text/plain")) : null; }
+  /** The arrangement as a JSON layout file (theme and style excluded). */
+  exportLayout(): string { return this.model.exportLayout(); }
+  /** Replace the arrangement with a layout file; theme and style are kept. */
+  importLayout(json: string): void { this.model.importLayout(json); this.selection.clear(); this.changed(); }
+  /** Where a drag on a label or legend row started, to tell a click (hide/show) from a drag (move). */
+  private press: { x: number; y: number; seriesId: string } | null = null;
   private clientToLocal(clientX: number, clientY: number): { x: number; y: number } { const r = this.element.getBoundingClientRect(); return { x: clientX - r.left, y: clientY - r.top }; }
+
+  /** Native drag and drop: drag-over previews the drop target (the payload is not readable until the drop, so the digital hint travels as a MIME type), drop applies it through `onChannelDrop`. */
+  private bindDragDrop(on: <K extends keyof HTMLElementEventMap>(type: K, fn: (e: HTMLElementEventMap[K]) => void) => void): void {
+    const m = this.model;
+    const over = (e: DragEvent): void => {
+      if (!TrendChartView.dragTypes(e.dataTransfer)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      const p = this.clientToLocal(e.clientX, e.clientY);
+      if (!m.drag || !this.nativeDrag) { m.cancelDrag(); this.nativeDrag = true; const digital = !!e.dataTransfer && Array.from(e.dataTransfer.types).includes(CHANNEL_DRAG_DIGITAL_MIME); m.beginDrag([], p.x, p.y, false, [], digital); }
+      m.updateDrag(this.currentLayout(), p.x, p.y);
+    };
+    on("dragenter", over);
+    on("dragover", over);
+    on("dragleave", (e) => { if (this.nativeDrag && !(e.relatedTarget instanceof Node && this.element.contains(e.relatedTarget))) { this.nativeDrag = false; m.cancelDrag(); } });
+    on("drop", (e) => {
+      if (!this.nativeDrag && !TrendChartView.dragTypes(e.dataTransfer)) return;
+      e.preventDefault();
+      this.nativeDrag = false; m.cancelDrag();
+      const payload = TrendChartView.readPayload(e.dataTransfer);
+      if (!payload) return;
+      const p = this.clientToLocal(e.clientX, e.clientY);
+      const ids = payload.channels.map((c) => c.id);
+      const digital = channelDragIsDigital(payload, this.model.store);
+      const ev: ChannelDropEvent = { payload, channelIds: ids, target: m.dropTarget(this.currentLayout(), p.x, p.y, digital), x: p.x, y: p.y, group: payload.group, cancel: false, handled: false };
+      this.onChannelDrop?.(ev);
+      if (ev.cancel) { this.layout = null; return; }
+      if (ev.handled) { this.changed(); return; }
+      if (ev.target.kind === "none") { this.layout = null; return; }
+      this.addChannels(ids, ev.target, ev.group);
+    });
+  }
   private changed(): void { this.layout = null; this.onConfigChanged?.(); }
   private currentLayout(): TrendLayout { return this.layout ?? (this.layout = this.model.layout(this.width, this.height)); }
   private hoverCursor = "";
@@ -163,6 +205,9 @@ export class TrendChartView {
       case "header": return hit.part === "grip" ? "grab" : "pointer";
       case "axis": return hit.zone === "middle" ? "ns-resize" : "row-resize";
       case "navigator": return hit.zone === "inside" ? "grab" : hit.zone === "outside" ? "pointer" : "ew-resize";
+      case "laneGap": return "row-resize";
+      case "cursor": return "ew-resize";
+      case "measure": return "default";
       default: return "";
     }
   }
@@ -187,6 +232,7 @@ export class TrendChartView {
       el.addEventListener(type, fn, opts); this.unlisten.push(() => el.removeEventListener(type, fn));
     };
     const m = this.model;
+    this.bindDragDrop(on);
     on("pointerdown", (e) => {
       el.focus(); capture(el, e);
       const p = pos(e), layout = this.currentLayout(), hit = m.hitTest(layout, p.x, p.y), group = e.ctrlKey || e.metaKey || e.shiftKey;
@@ -194,6 +240,7 @@ export class TrendChartView {
         if (hit.kind === "label" || hit.kind === "legendRow") {
           if (group) this.selection.add(hit.seriesId);
           const ids = this.selection.has(hit.seriesId) ? [...this.selection] : [hit.seriesId];
+          this.press = { x: p.x, y: p.y, seriesId: hit.seriesId };
           m.beginDrag(ids, p.x, p.y, group);
           return;
         }
@@ -204,6 +251,9 @@ export class TrendChartView {
         }
         if (hit.kind === "axis") { m.beginAxisDrag(layout, hit.axisId, hit.laneId, hit.zone, p.y); return; }
         if (hit.kind === "navigator") { m.beginNavigatorDrag(layout, p.x); return; }
+        if (hit.kind === "laneGap") { m.beginLaneResize(layout, hit.aboveLaneId, hit.belowLaneId, p.y); return; }
+        if (hit.kind === "cursor") { m.beginCursorDrag(hit.which); return; }
+        if (hit.kind === "measure") return;
         if (!group) this.selection.clear();
       }
       this.dispatch({ type: "pointerdown", ...p, button: e.button, modifiers: mods(e) });
@@ -214,14 +264,24 @@ export class TrendChartView {
       if (m.laneDrag) { m.updateLaneDrag(this.currentLayout(), p.x, p.y); return; }
       if (m.axisDrag) { m.updateAxisDrag(this.currentLayout(), p.y); return; }
       if (m.navDrag) { m.updateNavigatorDrag(this.currentLayout(), p.x); return; }
+      if (m.laneResize) { if (m.updateLaneResize(this.currentLayout(), p.y)) this.layout = null; return; }
+      if (m.cursorDrag) { m.updateCursorDrag(this.currentLayout(), p.x); this.layout = null; return; }
       this.dispatch({ type: "pointermove", ...p, modifiers: mods(e) });
     });
     on("pointerup", (e) => {
       const p = pos(e);
-      if (m.drag) { if (m.endDrag(this.currentLayout(), p.x, p.y)) this.changed(); else this.layout = null; return; }
+      if (m.drag) {
+        // a press without movement on a label or legend row is a click: hide or show that signal
+        const press = this.press; this.press = null;
+        if (press && !m.drag.channelIds.length && Math.hypot(p.x - press.x, p.y - press.y) < 4 && !(e.ctrlKey || e.metaKey || e.shiftKey)) { m.cancelDrag(); m.toggleSeries(press.seriesId); this.changed(); return; }
+        if (m.endDrag(this.currentLayout(), p.x, p.y)) this.changed(); else this.layout = null;
+        return;
+      }
       if (m.laneDrag) { if (m.endLaneDrag(this.currentLayout(), p.x, p.y)) this.changed(); return; }
       if (m.axisDrag) { m.endAxisDrag(); this.onConfigChanged?.(); return; }
       if (m.navDrag) { m.endNavigatorDrag(); return; }
+      if (m.laneResize) { m.endLaneResize(); this.changed(); return; }
+      if (m.cursorDrag) { m.endCursorDrag(); return; }
       this.dispatch({ type: "pointerup", ...p, button: e.button, modifiers: mods(e) });
     });
     on("pointercancel", () => { m.cancelDrag(); m.cancelLaneDrag(); m.endAxisDrag(); m.endNavigatorDrag(); this.dispatch({ type: "pointercancel" }); });
@@ -235,16 +295,37 @@ export class TrendChartView {
     on("dblclick", (e) => {
       const p = pos(e), layout = this.currentLayout(), hit = m.hitTest(layout, p.x, p.y);
       if (hit.kind === "axis") { m.axisAutoscale(hit.axisId); this.onConfigChanged?.(); return; }
-      if (hit.kind === "navigator" || hit.kind === "header" || hit.kind === "label") return;
+      if (hit.kind === "navigator" || hit.kind === "header" || hit.kind === "label" || hit.kind === "laneGap" || hit.kind === "cursor" || hit.kind === "measure") return;
       this.dispatch({ type: "dblclick", ...p });
     });
     on("keydown", (e) => {
       if (e.key === " ") e.preventDefault();
-      if (e.key === "Escape") { m.cancelDrag(); m.cancelLaneDrag(); this.selection.clear(); }
+      if (e.key === "Escape") { m.cancelDrag(); m.cancelLaneDrag(); this.selection.clear(); this.nativeDrag = false; }
       if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && m.config.navigator) { e.preventDefault(); m.navigatorKey(e.key); return; }
       this.dispatch({ type: "keydown", key: e.key });
     });
     on("keyup", (e) => this.dispatch({ type: "keyup", key: e.key }));
-    on("contextmenu", (e) => e.preventDefault());
+    on("contextmenu", (e) => {
+      e.preventDefault();
+      const p = pos(e), hit = m.hitTest(this.currentLayout(), p.x, p.y);
+      if (hit.kind === "label" || hit.kind === "legendRow") showSeriesMenu(m, hit.seriesId, e.clientX, e.clientY, () => this.changed());
+    });
   }
+}
+
+/** What `TrendChartView.onChannelDrop` receives: the payload, the drop target the chart resolved, the point in chart pixels, and the verdict fields. */
+export interface ChannelDropEvent {
+  /** The dragged payload as read from the data transfer. */
+  payload: ChannelDragPayload;
+  /** The channel ids, in drag order. */
+  channelIds: number[];
+  /** Where the drop lands by the chart's rules; replace it to redirect the drop. */
+  target: DropTarget;
+  /** Drop point in chart pixels. */ x: number; /** Drop point in chart pixels. */ y: number;
+  /** Keep the channels together (one axis, one lane) as a Ctrl/Shift group; from the payload, may be changed. */
+  group: boolean;
+  /** Set to refuse the drop. */
+  cancel: boolean;
+  /** Set after adding the signals yourself (the chart then only repaints and fires `onConfigChanged`). */
+  handled: boolean;
 }

@@ -5,7 +5,8 @@
   "license": "Apache-2.0",
   "workspaces": [
     "ts/packages/*",
-    "samples/react-sample"
+    "samples/react-sample",
+    "samples/vanilla-ts"
   ],
   "scripts": {
     "build": "npm run design && npm run build -w @mori/skyscope-core -w @mori/skyscope-tokens -w @mori/skyscope-render -w @mori/skyscope-sources -w @mori/skyscope-react -w @mori/skyscope-source-template && npm run bundle:blazor",
@@ -13,6 +14,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b ts/packages/core ts/packages/render ts/packages/sources ts/packages/react ts/packages/blazor ts/packages/source-template",
     "sample": "npm run dev -w react-sample",
+    "sample:vanilla": "npm run dev -w vanilla-ts-sample",
     "design": "node tools/build-design.mjs",
     "frames": "npm run build -w @mori/skyscope-core && node tools/gen-frames.mjs",
     "bundle:blazor": "tsc -b ts/packages/core ts/packages/render ts/packages/sources ts/packages/blazor && esbuild ts/packages/blazor/src/index.ts --bundle --format=esm --target=es2020 --minify --sourcemap --outfile=dotnet/Mori.SkyScope.Blazor/wwwroot/skyscope.js",

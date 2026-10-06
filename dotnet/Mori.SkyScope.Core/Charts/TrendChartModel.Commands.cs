@@ -123,10 +123,10 @@ public sealed partial class TrendChartModel
     }
 
     /// <summary>Series of a lane grouped by axis (first-appearance order): shared-axis series sit together in the legend and the labels.</summary>
-    public List<(string AxisId, List<SeriesConfig> Series)> LegendGroups(string laneId)
+    public List<(string AxisId, List<SeriesConfig> Series)> LegendGroups(string laneId, bool includeHidden = false)
     {
         var groups = new List<(string AxisId, List<SeriesConfig> Series)>();
-        foreach (var s in SeriesIn(laneId))
+        foreach (var s in includeHidden ? AllSeriesIn(laneId) : SeriesIn(laneId))
         {
             var axisId = AxisIdOf(s);
             var i = groups.FindIndex(g => g.AxisId == axisId);
@@ -147,7 +147,7 @@ public sealed partial class TrendChartModel
         for (var i = 0; i < lanes.Count; i++)
         {
             if (i > 0) yy += 4;
-            foreach (var s in LegendSeries(lanes[i].Id)) { if (y >= yy && y < yy + rowH) return s.Id; yy += rowH; }
+            foreach (var g in LegendGroups(lanes[i].Id, true)) foreach (var s in g.Series) { if (y >= yy && y < yy + rowH) return s.Id; yy += rowH; }
         }
         return null;
     }
@@ -173,6 +173,20 @@ public sealed partial class TrendChartModel
                 }
         }
         if (layout.Navigator is { } nav && nav.Contains(x, y)) return new HitRegion.Navigator(NavigatorZoneAt(layout, x));
+        if (layout.Measure is { } me && me.Contains(x, y)) return new HitRegion.Measure();
+        if (layout.Plot.Contains(x, y))
+        {
+            var ts = TimeScale(layout);
+            if (CursorA is { } ca && Math.Abs(ts.Apply(ca) - x) <= 4) return new HitRegion.Cursor('a');
+            if (CursorB is { } cb && Math.Abs(ts.Apply(cb) - x) <= 4) return new HitRegion.Cursor('b');
+        }
+        for (var i = 0; i + 1 < layout.Lanes.Count; i++)
+        {
+            var a = layout.Lanes[i]; var b = layout.Lanes[i + 1];
+            if (a.Collapsed || b.Collapsed) continue;
+            var x0 = a.Header is { } hh ? hh.X : a.Rect.X; var x1 = a.Rect.X + a.Rect.W;
+            if (x >= x0 && x <= x1 && y >= a.Rect.Y + a.Rect.H - 3 && y <= b.Rect.Y + 3) return new HitRegion.LaneGap(a.LaneId, b.LaneId);
+        }
         foreach (var lane in layout.Lanes) if (!lane.Collapsed && lane.Rect.Contains(x, y)) return lane.Stack is { } st && st.Contains(x, y) ? new HitRegion.Stack(lane.LaneId) : new HitRegion.Plot(lane.LaneId);
         if (layout.TimeAxis.Contains(x, y)) return new HitRegion.TimeAxis();
         return new HitRegion.None();
@@ -260,15 +274,20 @@ public sealed partial class TrendChartModel
 
     /// <summary>Picks up one series at pixel (x, y).</summary>
     public void BeginDrag(string seriesId, double x, double y) => BeginDrag([seriesId], x, y);
-    /// <summary>Pick up series (ctrl/shift group); <paramref name="channelIds"/> adds series for channels not in the chart yet (signal tree).</summary>
-    public void BeginDrag(IReadOnlyList<string> seriesIds, double x, double y, bool group = false, IReadOnlyList<int>? channelIds = null)
+    /// <summary>
+    /// Pick up series (ctrl/shift group); <paramref name="channelIds"/> adds series for channels not in the chart yet (a drag
+    /// from a signal tree). <paramref name="digital"/> tells the drop preview that the payload is all digital when its
+    /// channels are unknown to the store.
+    /// </summary>
+    public void BeginDrag(IReadOnlyList<string> seriesIds, double x, double y, bool group = false, IReadOnlyList<int>? channelIds = null, bool? digital = null)
     {
         channelIds ??= [];
-        Drag = new DragState(seriesIds.Count > 0 ? seriesIds[0] : channelIds.Count > 0 ? $"ch:{channelIds[0]}" : "", seriesIds.ToList(), channelIds.ToList(), x, y, new DropTarget.None(), group);
+        Drag = new DragState(seriesIds.Count > 0 ? seriesIds[0] : channelIds.Count > 0 ? $"ch:{channelIds[0]}" : "", seriesIds.ToList(), channelIds.ToList(), x, y, new DropTarget.None(), group) { Digital = digital };
     }
     /// <summary>A drag carrying only digital signals (series or tree channels) targets logic stacks.</summary>
     private bool DragIsDigital(DragState d)
     {
+        if (d.Digital is { } known) return known;
         var series = d.SeriesIds.Select(id => Config.Series.FirstOrDefault(s => s.Id == id)).Where(s => s is not null).Select(s => s!).ToList();
         var kinds = d.ChannelIds.Select(ch => Store.Get(ch)?.Info.Kind).ToList();
         return series.Count + kinds.Count > 0 && series.All(s => s.Kind == SeriesKind.Digital) && kinds.All(k => k == ChannelKind.Digital);
@@ -291,6 +310,22 @@ public sealed partial class TrendChartModel
     /// <summary>Abandons the drag without applying anything.</summary>
     public void CancelDrag() => Drag = null;
 
+    /// <summary>
+    /// Add channels from code or from a drop: a series is created for each channel not in the chart yet (id <c>ch:&lt;id&gt;</c>),
+    /// then the group is placed at <paramref name="target"/> with the drop rules (shared axis, own axis, new lane, logic stack
+    /// for digital). Without a target the channels land in the first lane, analog on their own axis, digital in its logic stack.
+    /// <paramref name="group"/> keeps several channels together as a Ctrl/Shift group would. Returns the series ids in channel
+    /// order; channels the store does not know are skipped.
+    /// </summary>
+    public IReadOnlyList<string> AddChannels(IReadOnlyList<int> channelIds, DropTarget? target = null, bool group = false)
+    {
+        var ids = new List<string>();
+        foreach (var ch in channelIds) if (AddSeriesForChannel(ch) is { } s && !ids.Contains(s.Id)) ids.Add(s.Id);
+        if (ids.Count == 0) return ids;
+        var t = target ?? new DropTarget.OwnAxis(Lanes()[0].Id);
+        if (t is not DropTarget.None) ApplyGroupDrop(ids, t, group || ids.Count > 1);
+        return ids;
+    }
     /// <summary>A series for a channel of the store (id <c>ch:&lt;channelId&gt;</c>), created in the first lane when missing.</summary>
     public SeriesConfig? AddSeriesForChannel(int channelId)
     {
@@ -354,6 +389,114 @@ public sealed partial class TrendChartModel
     }
     /// <summary>Abandons the lane drag.</summary>
     public void CancelLaneDrag() => LaneDrag = null;
+
+    // ---- lane resize ---------------------------------------------------------
+    /// <summary>Pick up the gap between two open lanes; dragging moves height from one to the other (weights change, their sum does not).</summary>
+    public void BeginLaneResize(TrendLayout layout, string aboveLaneId, string belowLaneId, double y)
+    {
+        var a = layout.Lanes.FirstOrDefault(l => l.LaneId == aboveLaneId); var b = layout.Lanes.FirstOrDefault(l => l.LaneId == belowLaneId);
+        var ca = Lanes().FirstOrDefault(l => l.Id == aboveLaneId); var cb = Lanes().FirstOrDefault(l => l.Id == belowLaneId);
+        if (a is null || b is null || ca is null || cb is null || a.Collapsed || b.Collapsed) return;
+        LaneResize = new LaneResizeState(aboveLaneId, belowLaneId, y, a.Rect.H, b.Rect.H, ca.Weight, cb.Weight);
+    }
+    /// <summary>Moves the gap to <paramref name="y"/>; each lane keeps at least 24 px (or half the pair when smaller).</summary>
+    public bool UpdateLaneResize(TrendLayout layout, double y)
+    {
+        if (LaneResize is not { } d) return false;
+        var ca = Lanes().FirstOrDefault(l => l.Id == d.AboveLaneId); var cb = Lanes().FirstOrDefault(l => l.Id == d.BelowLaneId);
+        if (ca is null || cb is null) return false;
+        var total = d.HA0 + d.HB0; var min = Math.Min(24, total / 2);
+        var hA = Math.Min(total - min, Math.Max(min, d.HA0 + (y - d.Y0)));
+        var w = d.WA0 + d.WB0;
+        ca.Weight = w * hA / total; cb.Weight = w - ca.Weight;
+        return true;
+    }
+    public void EndLaneResize() => LaneResize = null;
+
+    // ---- series as a control -------------------------------------------------
+    /// <summary>Hide a shown series or show a hidden one.</summary>
+    public bool ToggleSeries(string seriesId) { var s = Config.Series.FirstOrDefault(x => x.Id == seriesId); if (s is null) return false; s.Visible = !s.Visible; return true; }
+    /// <summary>Set the display name; null or blank restores the channel name.</summary>
+    public bool RenameSeries(string seriesId, string? name) { var s = Config.Series.FirstOrDefault(x => x.Id == seriesId); if (s is null) return false; s.Name = string.IsNullOrWhiteSpace(name) ? null : name!.Trim(); return true; }
+    /// <summary>Set the colour; null restores the palette colour.</summary>
+    public bool SetSeriesColor(string seriesId, string? color) { var s = Config.Series.FirstOrDefault(x => x.Id == seriesId); if (s is null) return false; s.Color = color; return true; }
+    /// <summary>Set the line width in pixels (at least 0.5); null restores the style default.</summary>
+    public bool SetSeriesWidth(string seriesId, double? width) { var s = Config.Series.FirstOrDefault(x => x.Id == seriesId); if (s is null) return false; s.Width = width is { } w ? Math.Max(0.5, w) : null; return true; }
+    /// <summary>Remove a series from the chart (its channel stays in the store); empty lanes vanish.</summary>
+    public bool RemoveSeries(string seriesId)
+    {
+        var i = Config.Series.FindIndex(x => x.Id == seriesId);
+        if (i < 0) return false;
+        PinLanes();
+        Config.Series.RemoveAt(i);
+        PruneEmptyLanes();
+        return true;
+    }
+
+    // ---- cursors and measurements --------------------------------------------
+    /// <summary>Pick up cursor 'a' or 'b'.</summary>
+    public void BeginCursorDrag(char which) => CursorDrag = new CursorDragState(which);
+    /// <summary>Move the dragged cursor to the time under <paramref name="x"/>, clamped to the window.</summary>
+    public bool UpdateCursorDrag(TrendLayout layout, double x)
+    {
+        if (CursorDrag is not { } d) return false;
+        var (t0, t1) = Window();
+        var t = Math.Min(t1, Math.Max(t0, TimeScale(layout).Invert(x)));
+        SetCursor(d.Which, t);
+        return true;
+    }
+    public void EndCursorDrag() => CursorDrag = null;
+
+    /// <summary>
+    /// Per analog signal over the span between the cursors: value at A and at B, their difference, and the minimum, maximum
+    /// and mean of the raw samples inside the span (inclusive). Null while a cursor is unset. Rows are cached until a cursor
+    /// moves or samples enter or leave the span.
+    /// </summary>
+    public Measurements? Measurements()
+    {
+        if (CursorA is not { } ca || CursorB is not { } cb) return null;
+        double t0 = Math.Min(ca, cb), t1 = Math.Max(ca, cb), dt = cb - ca;
+        var rows = new List<Measurement>();
+        var live = new HashSet<string>();
+        foreach (var s in VisibleSeries())
+        {
+            if (s.Kind == SeriesKind.Digital) continue;
+            live.Add(s.Id);
+            var buf = Store.Get(s.ChannelId)?.Buffer;
+            if (buf is null || buf.IsEmpty) { rows.Add(new Measurement(s.Id, null, null, null, null, null, null, 0)); continue; }
+            double latest = buf.TimeAt(buf.HeadSeq - 1), earliest = buf.TimeAt(buf.FirstSeq);
+            var key = $"{ca:R}|{cb:R}|{(latest <= t1 ? buf.HeadSeq : 0)}|{(earliest >= t0 ? buf.FirstSeq : 0)}";
+            if (_measureCache.TryGetValue(s.Id, out var cached) && cached.Key == key) { rows.Add(cached.Row); continue; }
+            double? At(double t) { var seq = buf.IndexAfterTime(t) - 1; return seq < buf.FirstSeq ? null : buf.ValueAt(seq); }
+            var a = At(ca); var b = At(cb);
+            double min = double.PositiveInfinity, max = double.NegativeInfinity, sum = 0; var count = 0;
+            for (var seq = Math.Max(buf.FirstSeq, buf.IndexAfterTime(t0) - 1); seq < buf.HeadSeq; seq++)
+            {
+                var t = buf.TimeAt(seq);
+                if (t > t1) break;
+                if (t < t0) continue;
+                var v = buf.ValueAt(seq);
+                if (v < min) min = v; if (v > max) max = v; sum += v; count++;
+            }
+            var row = new Measurement(s.Id, a, b, a is { } va && b is { } vb ? vb - va : null, count > 0 ? min : null, count > 0 ? max : null, count > 0 ? sum / count : null, count);
+            _measureCache[s.Id] = (key, row);
+            rows.Add(row);
+        }
+        foreach (var id in _measureCache.Keys.Where(k => !live.Contains(k)).ToList()) _measureCache.Remove(id);
+        return new Measurements(t0, t1, dt, Math.Abs(dt) > 0 ? 1 / Math.Abs(dt) : null, rows);
+    }
+
+    // ---- layout files --------------------------------------------------------
+    /// <summary>The arrangement as a JSON layout file (theme and style excluded).</summary>
+    public string ExportLayout() => TrendLayoutFile.ToJson(Config);
+    /// <summary>Replace the arrangement with a layout file written by <see cref="ExportLayout"/> (theme and style are kept).</summary>
+    public void ImportLayout(string json)
+    {
+        TrendLayoutFile.Apply(Config, TrendLayoutFile.Parse(json));
+        TimeSpan = Config.TimeSpan;
+        CursorA = CursorB = null;
+        _measureCache.Clear();
+    }
 
     // ---- Y axes --------------------------------------------------------------
     private AxisConfig FixedAxis(string axisId)

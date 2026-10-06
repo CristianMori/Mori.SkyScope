@@ -1,13 +1,12 @@
 // Mori.SkyScope — DOM panel for the signal tree: search box, grouped rows, selection, and drag of channels onto a trend chart.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { SignalTreeModel, type SignalStore, type SignalTreeRow } from "@mori/skyscope-core";
-import { capture } from "./canvas2d-painter.js";
+import { CHANNEL_DRAG_DIGITAL_MIME, CHANNEL_DRAG_MIME, encodeChannelDrag, SignalTreeModel, type ChannelDragPayload, type SignalStore, type SignalTreeRow } from "@mori/skyscope-core";
 import type { TrendChartView } from "./trend-chart-view.js";
 
 /** Options for `SignalTreePanel`. */
 export interface SignalTreePanelOptions {
-  /** The chart channels are dragged onto; can be attached later with `attach`. */
+  /** Optional: a chart to mark rows already plotted and to add channels on double-click. Drops work on any chart on the page without it. */
   chart?: TrendChartView | null | undefined;
   /** Placeholder text of the search box (default "search signals…"). */
   placeholder?: string | undefined;
@@ -32,9 +31,11 @@ const CSS = `
 `;
 
 /**
- * A searchable tree of every channel in a store (grouped by name prefix) whose rows are dragged onto a TrendChart:
- * the drop obeys the chart's rules (axis strip → shared scale, lane → own scale, time axis → new lane). Ctrl/Shift
- * while picking up selects several; a group drag keeps them together. Double-click adds a channel to the first lane.
+ * A searchable tree of every channel in a store (grouped by name prefix). Rows are native drag sources (HTML5 drag and
+ * drop) carrying a channel payload (`CHANNEL_DRAG_MIME`, plus plain-text ids), so any TrendChart on the page accepts
+ * them and the drop obeys the chart's rules (axis strip → shared scale, lane → own scale, time axis → new lane, logic
+ * stack for digital). Ctrl/Shift click selects several; a drag on a selected row carries the selection as a group.
+ * Double-click adds a channel to the attached chart's first lane.
  */
 export class SignalTreePanel {
   /** The core tree model (query, expansion, selection); mutate it and call `refresh` to re-render. */
@@ -45,8 +46,11 @@ export class SignalTreePanel {
   private readonly list: HTMLDivElement;
   private readonly timer: ReturnType<typeof setInterval>;
   private signature = "";
-  private press: { x: number; y: number; channelId: number; group: boolean; rowId: string } | null = null;
-  private dragging = false;
+  /** Builds the payload a drag of `channelId` carries: the selection when the row is selected, the row alone otherwise. */
+  dragPayload(channelId: number, group = false): ChannelDragPayload {
+    const ids = this.model.dragIds(channelId);
+    return { channels: ids.map((id) => { const info = this.store.get(id)?.info; return { id, name: info?.name, unit: info?.unit, kind: info?.kind === "digital" ? "digital" : "analog" }; }), group: group || ids.length > 1 };
+  }
 
   /**
    * Builds the panel inside `element` over `store`, injects the stylesheet once per document and starts a 500 ms poll
@@ -67,7 +71,7 @@ export class SignalTreePanel {
     this.timer = setInterval(() => { if (this.currentSignature() !== this.signature) this.refresh(); }, 500);
   }
 
-  /** The chart rows are dropped on. */
+  /** The chart whose series are marked in the tree and that double-click adds to; not needed for drag and drop. */
   attach(chart: TrendChartView | null): void { this.chart = chart; this.refresh(); }
 
   private currentSignature(): string {
@@ -88,6 +92,7 @@ export class SignalTreePanel {
     const el = document.createElement("div");
     el.className = "skyscope-tree-row"; el.dataset.id = r.id; el.dataset.kind = r.kind; el.dataset.selected = String(r.selected);
     el.style.paddingLeft = `${6 + r.depth * 14}px`;
+    if (r.kind === "channel") el.draggable = true;
     const caret = document.createElement("span"); caret.className = "skyscope-tree-caret"; caret.textContent = r.kind === "group" ? (r.expanded ? "▾" : "▸") : "";
     const name = document.createElement("span"); name.className = "skyscope-tree-name"; name.textContent = r.name; name.title = r.name;
     el.append(caret, name);
@@ -107,40 +112,29 @@ export class SignalTreePanel {
 
   private bind(): void {
     const list = this.list;
-    list.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0) return;
+    list.addEventListener("click", (e) => {
       const r = this.rowAt(e);
       if (!r) return;
-      const group = e.ctrlKey || e.metaKey || e.shiftKey;
-      if (r.kind === "group") { this.model.click(r.id, { ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey }); this.refresh(); return; }
-      this.press = { x: e.clientX, y: e.clientY, channelId: r.channelId!, group, rowId: r.id };
-      capture(list, e);
-    });
-    list.addEventListener("pointermove", (e) => {
-      if (!this.press) return;
-      if (this.dragging) { this.chart?.externalDragMove(e.clientX, e.clientY); return; }
-      if (Math.hypot(e.clientX - this.press.x, e.clientY - this.press.y) < 4 || !this.chart) return;
-      // a drag on an unselected row carries that row alone; on a selected row it carries the selection
-      const ids = this.model.dragIds(this.press.channelId);
-      this.dragging = true;
-      this.chart.externalDragStart(ids, this.press.group || ids.length > 1);
-      this.chart.externalDragMove(e.clientX, e.clientY);
-    });
-    const finish = (e: PointerEvent, drop: boolean): void => {
-      const press = this.press; this.press = null;
-      if (!press) return;
-      if (this.dragging) { this.dragging = false; if (drop) this.chart?.externalDrop(e.clientX, e.clientY); else this.chart?.externalDragCancel(); }
-      else if (drop) this.model.click(press.rowId, { ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey });
+      this.model.click(r.id, { ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey });
       this.refresh();
-    };
-    list.addEventListener("pointerup", (e) => finish(e, true));
-    list.addEventListener("pointercancel", (e) => finish(e, false));
+    });
+    list.addEventListener("dragstart", (e) => {
+      const r = this.rowAt(e);
+      if (!r || r.kind !== "channel" || r.channelId === undefined || !e.dataTransfer) { e.preventDefault(); return; }
+      // a drag on an unselected row carries that row alone; on a selected row it carries the selection (and a selected-but-not-pressed row keeps the selection)
+      if (!r.selected) { this.model.click(r.id, { ctrl: false, shift: false }); this.refresh(); }
+      const payload = this.dragPayload(r.channelId, e.ctrlKey || e.metaKey || e.shiftKey);
+      e.dataTransfer.effectAllowed = "copy";
+      e.dataTransfer.setData(CHANNEL_DRAG_MIME, encodeChannelDrag(payload));
+      e.dataTransfer.setData("text/plain", payload.channels.map((c) => c.id).join(","));
+      if (payload.channels.every((c) => c.kind === "digital")) e.dataTransfer.setData(CHANNEL_DRAG_DIGITAL_MIME, "");
+    });
+    list.addEventListener("dragend", () => this.refresh());
     list.addEventListener("dblclick", (e) => {
       const r = this.rowAt(e);
-      if (!r || r.kind !== "channel" || !this.chart) return;
-      const m = this.chart.model;
-      const s = m.addSeriesForChannel(r.channelId!);
-      if (s) { m.applyGroupDrop([s.id], { kind: "ownAxis", laneId: m.lanes()[0]!.id }, false); this.chart.onConfigChanged?.(); this.refresh(); }
+      if (!r || r.kind !== "channel" || r.channelId === undefined || !this.chart) return;
+      this.chart.addChannels([r.channelId]);
+      this.refresh();
     });
     list.addEventListener("keydown", (e) => { if (e.key === "Escape") { this.model.clearSelection(); this.refresh(); } });
   }

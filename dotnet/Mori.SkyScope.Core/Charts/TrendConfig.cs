@@ -50,6 +50,12 @@ public abstract record HitRegion
     public sealed record Stack(string LaneId) : HitRegion;
     /// <summary>The time axis band.</summary>
     public sealed record TimeAxis : HitRegion;
+    /// <summary>The gap between two open lanes: drag to move height from one to the other.</summary>
+    public sealed record LaneGap(string AboveLaneId, string BelowLaneId) : HitRegion;
+    /// <summary>Within a few pixels of cursor A or B: drag to move it.</summary>
+    public sealed record Cursor(char Which) : HitRegion;
+    /// <summary>The measurement table over the cursor span.</summary>
+    public sealed record Measure : HitRegion;
     /// <summary>Nothing of interest.</summary>
     public sealed record None : HitRegion;
 }
@@ -61,9 +67,21 @@ public enum AxisZone { Top, Middle, Bottom }
 public enum NavigatorZone { LeftEdge, RightEdge, Inside, Outside }
 
 /// <summary>Series (or channels from a signal tree) being dragged; a group dropped into free space shares one axis.</summary>
-public sealed record DragState(string SeriesId, IReadOnlyList<string> SeriesIds, IReadOnlyList<int> ChannelIds, double X, double Y, DropTarget Target, bool Group);
+public sealed record DragState(string SeriesId, IReadOnlyList<string> SeriesIds, IReadOnlyList<int> ChannelIds, double X, double Y, DropTarget Target, bool Group)
+{
+    /// <summary>Set when the payload is known to be all digital (or not) before its channels are: a native drag-over can preview a logic-stack drop.</summary>
+    public bool? Digital { get; init; }
+}
 /// <summary>A lane header being dragged: the lane, the pointer position and the current insertion index.</summary>
 public sealed record LaneDragState(string LaneId, double X, double Y, int Index);
+/// <summary>A lane gap being dragged: the two lanes' heights and weights when the drag began.</summary>
+public sealed record LaneResizeState(string AboveLaneId, string BelowLaneId, double Y0, double HA0, double HB0, double WA0, double WB0);
+/// <summary>A time cursor ('a' or 'b') being dragged.</summary>
+public sealed record CursorDragState(char Which);
+/// <summary>One signal's figures over the cursor span; nulls when a cursor has no sample before it or the span holds no samples.</summary>
+public sealed record Measurement(string SeriesId, double? A, double? B, double? Delta, double? Min, double? Max, double? Mean, int Count);
+/// <summary>The measurement table: span bounds, signed Δt (B − A), its frequency, one row per visible analog signal.</summary>
+public sealed record Measurements(double T0, double T1, double Dt, double? Hz, IReadOnlyList<Measurement> Rows);
 /// <summary>An axis being dragged: the zone grabbed, the pointer y at the start and the axis range at that moment.</summary>
 public sealed record AxisDragState(string AxisId, string LaneId, AxisZone Zone, double Y0, double Min0, double Max0);
 /// <summary>The navigator frame being dragged: the zone grabbed, the pointer x at the start and the window at that moment.</summary>
@@ -288,6 +306,8 @@ public sealed class TrendChartConfig
     public double NavigatorHeight { get; set; } = 48;
     /// <summary>Navigator frame keeps its width: dragging its edges is disabled, only moves apply.</summary>
     public bool NavigatorFixedRange { get; set; }
+    /// <summary>Show the measurement table (value at A and B, delta, min, max, mean per signal) while both cursors are set.</summary>
+    public bool MeasurePanel { get; set; } = true;
     /// <summary>Height of one logic-analyzer track when a lane mixes analog and digital signals (digital-only lanes share the whole lane).</summary>
     public double DigitalTrackHeight { get; set; } = 18;
     /// <summary>Largest share of a mixed lane the digital stack may take.</summary>
@@ -301,7 +321,7 @@ public sealed record LabelLayout(string SeriesId, Rect Rect);
 /// <summary><paramref name="Analog"/> is the part numeric series draw in; <paramref name="Stack"/> (bottom of the lane) holds the logic-analyzer tracks, null when the lane has none.</summary>
 public sealed record LaneLayout(string LaneId, Rect Rect, Rect Analog, Rect? Stack, IReadOnlyList<AxisLayout> Axes, Rect? Header, IReadOnlyList<LabelLayout> Labels, bool Collapsed);
 /// <summary>Pixel layout of the whole chart: the plot, the lanes, the time axis, and the legend and navigator rectangles when present.</summary>
-public sealed record TrendLayout(double Width, double Height, Rect Plot, IReadOnlyList<LaneLayout> Lanes, Rect TimeAxis, Rect? Legend, Rect? Navigator);
+public sealed record TrendLayout(double Width, double Height, Rect Plot, IReadOnlyList<LaneLayout> Lanes, Rect TimeAxis, Rect? Legend, Rect? Navigator, Rect? Measure);
 /// <summary>What the layout engine needs to know about a lane; built by <see cref="TrendChartModel.Layout"/>.</summary>
 public sealed record LaneLayoutInput(string LaneId, double Weight, IReadOnlyList<string> LeftAxes, IReadOnlyList<string> RightAxes)
 {
@@ -360,8 +380,8 @@ public static class TrendLayoutEngine
         return result;
     }
 
-    /// <summary>Computes the full layout; <paramref name="legendRows"/> sizes an overlay legend and <paramref name="legendDeltaRows"/> adds its cursor-delta rows.</summary>
-    public static TrendLayout Layout(TrendChartConfig config, double width, double height, IReadOnlyList<LaneLayoutInput> lanes, int legendRows = 0, int legendDeltaRows = 0)
+    /// <summary>Computes the full layout; <paramref name="legendRows"/> sizes an overlay legend and <paramref name="measureRows"/> the measurement table (0 hides it).</summary>
+    public static TrendLayout Layout(TrendChartConfig config, double width, double height, IReadOnlyList<LaneLayoutInput> lanes, int legendRows = 0, int measureRows = 0)
     {
         var m = config.Margin;
         double x0 = m, x1 = width - m, y0 = m, y1 = height - m;
@@ -371,6 +391,14 @@ public static class TrendLayoutEngine
 
         Rect? navigator = null;
         if (config.Navigator) { navigator = new Rect(x0, y1 - config.NavigatorHeight, Math.Max(0, x1 - x0), config.NavigatorHeight); y1 = navigator.Value.Y - m; }
+        // measurement table over the cursor span: its own band above the navigator (title row, header row, one row per analog signal)
+        Rect? measure = null;
+        if (config.MeasurePanel && measureRows > 0)
+        {
+            var mh = Math.Min(Math.Max(0, y1 - y0) / 2, (measureRows + 2) * config.LegendRowHeight + 2 * config.Style.LegendPadding);
+            measure = new Rect(x0, y1 - mh, Math.Max(0, x1 - x0), mh);
+            y1 = measure.Value.Y - m;
+        }
 
         var headerW = config.LaneHeaders ? config.LaneHeaderWidth : 0;
         var leftCols = lanes.Count == 0 ? 0 : lanes.Max(l => l.LeftAxes.Count);
@@ -380,11 +408,12 @@ public static class TrendLayoutEngine
         var timeAxis = new Rect(plotX, y1 - config.TimeAxisHeight, Math.Max(0, plotRight - plotX), config.TimeAxisHeight);
         double plotTop = y0, plotBottom = timeAxis.Y;
         if (navigator is { } nv) navigator = nv with { X = plotX, W = Math.Max(0, plotRight - plotX) };
+        if (measure is { } mv) measure = mv with { X = plotX, W = Math.Max(0, plotRight - plotX) };
 
         var plot = new Rect(plotX, plotTop, Math.Max(0, plotRight - plotX), Math.Max(0, plotBottom - plotTop));
         if (IsOverlay(config.Legend) && legendRows > 0)
         {
-            double lw = Math.Min(config.LegendWidth, plot.W), lh = Math.Min(LegendHeight(config, legendRows, lanes.Count, legendDeltaRows), plot.H);
+            double lw = Math.Min(config.LegendWidth, plot.W), lh = Math.Min(LegendHeight(config, legendRows, lanes.Count), plot.H);
             bool right = config.Legend is LegendPosition.TopRight or LegendPosition.BottomRight, bottom = config.Legend is LegendPosition.BottomLeft or LegendPosition.BottomRight;
             legend = new Rect(right ? plot.X + plot.W - lw - m : plot.X + m, bottom ? plot.Y + plot.H - lh - m : plot.Y + m, lw, lh);
         }
@@ -433,6 +462,6 @@ public static class TrendLayoutEngine
             result.Add(new LaneLayout(lane.LaneId, rect, analog, stack, axes, header, labels, lane.Collapsed));
             y += h + config.LaneGap;
         }
-        return new TrendLayout(width, height, plot, result, timeAxis, legend, navigator);
+        return new TrendLayout(width, height, plot, result, timeAxis, legend, navigator, measure);
     }
 }

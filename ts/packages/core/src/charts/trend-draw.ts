@@ -3,9 +3,11 @@
 
 import type { Painter, Stroke, TextStyle } from "../paint/painter.js";
 import { formatNumber } from "../scales/ticks.js";
+import { formatTimeTick } from "../scales/format.js";
 import { clipTransform, type ClipTransform } from "../scales/clip.js";
 import type { Rect } from "../scene/geometry.js";
 import { legendRowHeight, type LaneLayout, type TrendLayout } from "./trend-config.js";
+import { estimateTextWidth } from "./trend-layout.js";
 import type { TrendChartModel } from "./trend-model.js";
 
 /** Legend/readout number formatting shared with C#: fewer decimals for bigger magnitudes. */
@@ -144,8 +146,15 @@ export function drawTrendChartForeground(m: TrendChartModel, p: Painter, layout:
       if (mk.label) p.text(mk.label, x + 3, r.y + 3, { ...c.text, color: mk.color ?? c.th.marker, baseline: "top" });
     }
     if (m.hoverTime !== null) { const x = c.ts.scale(m.hoverTime); p.line(x, r.y, x, r.y + r.h, { color: c.th.hover, width: st.cursorWidth, dash: st.hoverDash }); }
+    if (m.cursorA !== null && m.cursorB !== null) { const xa = c.ts.scale(m.cursorA), xb = c.ts.scale(m.cursorB); p.rect(Math.min(xa, xb), r.y, Math.abs(xb - xa), r.h, { color: c.th.cursorA, opacity: 0.06 }); }
     if (m.cursorA !== null) { const x = c.ts.scale(m.cursorA); p.line(x, r.y, x, r.y + r.h, { color: c.th.cursorA, width: st.cursorWidth }); }
     if (m.cursorB !== null) { const x = c.ts.scale(m.cursorB); p.line(x, r.y, x, r.y + r.h, { color: c.th.cursorB, width: st.cursorWidth }); }
+    if (lane === layout.lanes.find((l) => !l.collapsed)) {
+      // the cursors' times at the top of the first open lane
+      const tag = (t: number, color: string, label: string): void => { const x = c.ts.scale(t); const s = `${label} ${formatTimeTick(t - c.ts.origin, 0.001, c.ts.mode, 3, Math.abs(c.ts.domain[1] - c.ts.domain[0]))}`; const w = estimateTextWidth(s, c.th.fontSize) + 8; p.rect(x + 2, r.y + 2, w, c.th.fontSize + 4, { color, opacity: 0.85 }, undefined, 2); p.text(s, x + 6, r.y + 4 + c.th.fontSize / 2, { ...c.text, color: c.th.background, baseline: "middle" }); };
+      if (m.cursorA !== null) tag(m.cursorA, c.th.cursorA, "A");
+      if (m.cursorB !== null) tag(m.cursorB, c.th.cursorB, "B");
+    }
     drawPlotLabels(m, p, lane, c.text, c.muted);
     p.restore();
 
@@ -174,6 +183,7 @@ export function drawTrendChartForeground(m: TrendChartModel, p: Painter, layout:
   }
 
   if (layout.navigator) drawNavigator(m, p, layout, c);
+  if (layout.measure) drawMeasurePanel(m, p, layout, c);
   if (layout.legend) drawLegend(m, p, layout.legend, c.text, c.muted);
   if (m.laneDrag) drawLaneDragIndicator(m, p, layout);
   if (m.drag) drawDragIndicator(m, p, layout, c.text);
@@ -295,31 +305,27 @@ function yTickCount(height: number, spacing: number): number { return Math.max(2
 function drawLegend(m: TrendChartModel, p: Painter, r: Rect, text: TextStyle, muted: TextStyle): void {
   const th = m.config.theme, st = m.config.style, pad = st.legendPadding, sw = st.legendSwatchLength;
   p.rect(r.x, r.y, r.w, r.h, { color: th.legendBackground, opacity: st.legendOpacity }, { color: th.legendBorder, width: 1 }, st.legendRadius);
-  const cr = m.cursorReadouts();
   let y = r.y + pad;
   const rowH = legendRowHeight(m.config);
   const lanes = m.lanes();
   for (const [i, lane] of lanes.entries()) {
     if (i > 0) { p.line(r.x + pad, y + 2, r.x + r.w - pad, y + 2, { color: th.legendBorder, width: 1 }); y += 4; }
-    for (const g of m.legendGroups(lane.id)) {
+    for (const g of m.legendGroups(lane.id, true)) {
       let first = -1, last = -1;
       for (const s of g.series) {
         if (y + rowH > r.y + r.h + 1) return;
-        const dragging = m.drag?.seriesIds.includes(s.id) ?? false;
+        // hidden signals stay in the legend, dimmed, so a click can bring them back
+        const hidden = s.visible === false, dim = hidden || (m.drag?.seriesIds.includes(s.id) ?? false);
         const color = m.seriesColor(s);
         if (first < 0) first = y + rowH / 2;
         last = y + rowH / 2;
-        p.line(r.x + pad, y + rowH / 2, r.x + pad + sw, y + rowH / 2, { color, width: 2, opacity: dragging ? 0.35 : 1 });
-        p.text(m.seriesName(s), r.x + pad + sw + 6, y + rowH / 2, { ...(dragging ? muted : text), baseline: "middle" });
-        const v = m.legendValue(s);
+        p.line(r.x + pad, y + rowH / 2, r.x + pad + sw, y + rowH / 2, { color, width: 2, opacity: dim ? 0.35 : 1 });
+        p.text(m.seriesName(s), r.x + pad + sw + 6, y + rowH / 2, { ...(dim ? muted : text), baseline: "middle" });
+        const v = hidden ? null : m.legendValue(s);
         const unit = m.unitOf(s);
-        const shown = v === null ? "—" : s.kind === "digital" ? (v >= 0.5 ? "true" : "false") : formatValue(v) + (unit ? ` ${unit}` : "");
-      p.text(shown, r.x + r.w - pad, y + rowH / 2, { ...text, align: "right", baseline: "middle" });
+        const shown = hidden ? "hidden" : v === null ? "—" : s.kind === "digital" ? (v >= 0.5 ? "true" : "false") : formatValue(v) + (unit ? ` ${unit}` : "");
+        p.text(shown, r.x + r.w - pad, y + rowH / 2, { ...(hidden ? muted : text), align: "right", baseline: "middle" });
         y += rowH;
-        if (cr.delta && s.kind !== "digital") {   // a difference of two logic levels means nothing
-          const d = cr.delta.values.find((x) => x.seriesId === s.id);
-          if (d) { p.text(`Δ ${formatValue(d.delta)}`, r.x + r.w - pad, y + rowH / 2 - 2, { ...muted, align: "right", baseline: "middle" }); y += rowH - 4; }
-        }
       }
       // shared axis: a bracket on the left joins its rows
       if (g.series.length > 1 && first >= 0) {
@@ -330,7 +336,41 @@ function drawLegend(m: TrendChartModel, p: Painter, r: Rect, text: TextStyle, mu
       }
     }
   }
-  if (cr.delta) p.text(`Δt ${formatValue(cr.delta.dt)} s`, r.x + pad, r.y + r.h - pad + 2, { ...muted, baseline: "bottom" });
+}
+
+/** Seconds as a compact label: ms below one second, else seconds with three decimals. */
+function formatSeconds(s: number): string { const a = Math.abs(s); return a < 1 ? `${formatNumber(s * 1000, 1)} ms` : `${formatNumber(s, 3)} s`; }
+
+/**
+ * The measurement table over the cursor span: a title row with Δt and its frequency, a header row, then per analog
+ * signal the value at A and B, their difference, and the minimum, maximum and mean of the samples in the span.
+ */
+function drawMeasurePanel(m: TrendChartModel, p: Painter, layout: TrendLayout, c: Ctx): void {
+  const r = layout.measure, ms = m.measurements();
+  if (!r || !ms) return;
+  const th = m.config.theme, st = m.config.style, pad = st.legendPadding, rowH = legendRowHeight(m.config);
+  p.rect(r.x, r.y, r.w, r.h, { color: th.legendBackground, opacity: st.legendOpacity }, { color: th.legendBorder, width: 1 }, st.legendRadius);
+  p.save();
+  p.clipRect(r.x, r.y, r.w, r.h);
+  let y = r.y + pad;
+  const title = `A → B   Δt ${formatSeconds(ms.dt)}${ms.hz !== null ? `   ${formatNumber(ms.hz, 3)} Hz` : ""}`;
+  p.text(title, r.x + pad, y + rowH / 2, { ...c.text, baseline: "middle" });
+  y += rowH;
+  const nameW = Math.max(60, r.w * 0.22), colW = (r.w - 2 * pad - nameW) / 6;
+  const cols = ["A", "B", "Δ", "min", "max", "mean"];
+  cols.forEach((h, i) => p.text(h, r.x + pad + nameW + (i + 1) * colW, y + rowH / 2, { ...c.muted, align: "right", baseline: "middle" }));
+  p.line(r.x + pad, y + rowH - 1, r.x + r.w - pad, y + rowH - 1, { color: th.legendBorder, width: 1 });
+  y += rowH;
+  for (const row of ms.rows) {
+    const s = m.config.series.find((x) => x.id === row.seriesId);
+    if (!s) continue;
+    const color = m.seriesColor(s);
+    p.line(r.x + pad, y + rowH / 2, r.x + pad + st.legendSwatchLength, y + rowH / 2, { color, width: 2 });
+    p.text(m.seriesName(s), r.x + pad + st.legendSwatchLength + 6, y + rowH / 2, { ...c.text, baseline: "middle" });
+    [row.a, row.b, row.delta, row.min, row.max, row.mean].forEach((v, i) => p.text(v === null ? "—" : formatValue(v), r.x + pad + nameW + (i + 1) * colW, y + rowH / 2, { ...c.text, align: "right", baseline: "middle" }));
+    y += rowH;
+  }
+  p.restore();
 }
 
 /** One analog series prepared for a GPU line pass. */

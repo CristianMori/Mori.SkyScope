@@ -10,7 +10,7 @@ markers, meshes and URDF robots.
 
 One headless core is implemented twice, in **TypeScript** and in **C#**, and the two are kept identical by a shared
 fixture suite that compares layout numbers, model state and recorded drawing calls. The same chart therefore runs in
-the browser through **React** or **Blazor** and on the desktop through **WPF**, fed by the same binary stream.
+the browser through **React** or **Blazor** and on the desktop through **WPF** or **Windows Forms**, fed by the same binary stream.
 
 Apache-2.0. Copyright 2026 Cristian Mori.
 
@@ -21,8 +21,9 @@ Apache-2.0. Copyright 2026 Cristian Mori.
 - [Screenshots](#screenshots)
 - [What is in the box](#what-is-in-the-box)
 - [Quick start](#quick-start)
+- [Samples](#samples)
 - [Using the trend chart](#using-the-trend-chart)
-- [Hosting it: React, Blazor, WPF](#hosting-it-react-blazor-wpf)
+- [Hosting it: React, Blazor, WPF, Windows Forms](#hosting-it-react-blazor-wpf-windows-forms)
 - [Data plane](#data-plane)
 - [Sources](#sources)
 - [Recording and playback](#recording-and-playback)
@@ -38,6 +39,19 @@ Apache-2.0. Copyright 2026 Cristian Mori.
 ---
 
 ## Screenshots
+
+**The same dashboard on every host.** React (browser), Blazor (browser, Razor components), WPF and Windows Forms
+(desktop, SkiaSharp), all fed by the demo server's stream; the plain TypeScript one uses the DOM views without a framework.
+
+| React | Blazor |
+|---|---|
+| ![React dashboard](docs/screenshots/react-dashboard.jpg) | ![Blazor dashboard](docs/screenshots/blazor-dashboard.jpg) |
+
+| WPF | Windows Forms (OpenGL) |
+|---|---|
+| ![WPF dashboard](docs/images/wpf-dashboard-snapshot.png) | ![Windows Forms dashboard](docs/screenshots/winforms-dashboard-gpu.png) |
+
+![Plain TypeScript dashboard](docs/screenshots/vanilla-ts-dashboard.jpg)
 
 **The trend chart with the signal tree and the navigator** (React sample, `?focus=trend`). Lane header bars on the
 left, signal labels inside each lane, the legend grouped by lane and by shared axis, the navigator under the time
@@ -57,6 +71,11 @@ that scale.
 dashed frame means "this lane, own axis".
 
 ![Dragging a channel from the tree into a lane](docs/screenshots/trend-tree-drag-own-axis.jpg)
+
+**Any drag source will do.** The plain TypeScript sample drags `ch6` from a hand-made list (right) over the saw lane;
+the chart previews the drop like it does for its own tree, and the drop hook reports it in the status line.
+
+![Dragging from a custom list](docs/screenshots/vanilla-ts-drag-preview.jpg)
 
 **Lanes and the navigator.** One lane folded to a summary bar, another dragged to the bottom by its header, and the
 navigator frame pulled back into the history, so the chart is reviewing while the silhouette keeps growing on the
@@ -78,16 +97,24 @@ dropped into a digital lane gets its own axis above the tracks. Analog content n
 
 ![Mixed analog and digital lanes](docs/screenshots/trend-logic-analyzer-mixed-lanes.png)
 
+**Measurements.** Cursors A and B dragged into place; the table under the time axis lists value at A and B, Δ, min, max and mean per signal, with Δt and its frequency.
+
+![Measurements](docs/screenshots/trend-measurements.jpg)
+
+**The series menu** on a right-click: show or hide, rename, colour, line width, remove.
+
+![Series menu](docs/screenshots/trend-series-menu.png)
+
 **Digital I/O from the demo server** in the signal tree and in the chart.
 
 ![Digital I/O channels](docs/screenshots/trend-digital-io.png)
 
-**Analytic charts, the 2D scene view, the 3D view and the WPF dashboard** (offscreen renders from the WPF sample).
+**Analytic charts, the 2D scene view and the 3D view** (offscreen renders from the WPF sample).
 
 | | |
 |---|---|
 | ![Analytic charts](docs/images/analytic-charts.png) | ![Scene view](docs/images/scene-view.png) |
-| ![3D view](docs/images/scene-3d.png) | ![WPF dashboard](docs/images/wpf-dashboard-snapshot.png) |
+| ![3D view](docs/images/scene-3d.png) | ![Logic analyzer](docs/images/logic-analyzer.png) |
 
 ---
 
@@ -116,7 +143,8 @@ The flagship. A strip chart for hundreds of channels at 1 kHz with everything an
   stack; a mixed lane gives the stack a fixed height per track and the analog signals the rest.
 - **Legend**: in any corner or as a column, grouped by lane and, inside a lane, by shared axis with a bracket; live
   values, cursor values, true/false for digital signals.
-- **Cursors**: two time cursors with per-signal values, deltas and the time difference; hover readout.
+- **Cursors and measurements**: two draggable time cursors with their times tagged and the span shaded; with both set, a table under the time axis gives per signal the value at A and B, the difference, and the minimum, maximum and mean over the span, plus Δt and its frequency.
+- **Lanes resize** by dragging the gap between them; the legend doubles as a control (click to hide or show, right-click for rename, colour, width, remove); the arrangement saves to and loads from a JSON layout file in every host.
 - **Theme and style**: every colour in `ChartTheme`, every metric in `ChartStyle`, light and dark presets.
 - **Rendering**: three passes (background, series, foreground) so WebGL can take the series pass in the browser;
   SkiaSharp on the desktop.
@@ -165,7 +193,7 @@ template for your own. See [docs/PLUGINS.md](docs/PLUGINS.md).
 
 ## Quick start
 
-Prerequisites: Node 24 and the .NET 10 SDK. Windows is needed only for the WPF projects.
+Prerequisites: Node 24 and the .NET 10 SDK. Windows is needed only for the WPF and Windows Forms projects.
 
 ```bash
 npm install
@@ -177,8 +205,10 @@ dotnet run --project samples/Mori.SkyScope.DemoServer -- --channels 16 --rate 10
 
 # 2. any of the dashboards
 npm run sample                                 # React  → http://localhost:5173  (add ?focus=trend for tree + chart only)
+npm run sample:vanilla                         # plain TypeScript, no framework → http://localhost:5174
 dotnet run --project samples/Mori.SkyScope.Blazor.Sample
 dotnet run --project samples/Mori.SkyScope.Wpf.Sample -- --ws ws://localhost:5055/ws
+dotnet run --project samples/Mori.SkyScope.WinForms.Sample -- --ws ws://localhost:5055/ws --gpu
 ```
 
 Demo server options: `--channels N`, `--rate Hz`, `--batch-ms ms`, `--seed n`, `--quantized true`, `--scene3d false`,
@@ -190,7 +220,24 @@ In the React sample: `?ws=ws://host:port/ws` points at another server, `?mcap=<u
 playback mode, **open…** opens a local `.mcap` or `.csv`, **Record** records what is on screen.
 
 Offscreen renders without a window: `Mori.SkyScope.Wpf.Sample.exe --snapshot out.png`, `--logic out.png`,
-`--charts out.png`, `--scene out.png` (`--dark`, `--width`, `--height`).
+`--charts out.png`, `--scene out.png` (`--dark`, `--width`, `--height`). `Mori.SkyScope.WinForms.Sample.exe --snapshot out.png`
+renders the Windows Forms dashboard with synthetic data; `--screen out.png --gpu` captures it live, composing the
+pixels each control reads back, so it also works on a desktop no one is looking at.
+
+---
+
+## Samples
+
+One dashboard per host under [samples/](samples/README.md), all fed by the demo server:
+
+| Sample | Host | What it adds |
+|---|---|---|
+| `Mori.SkyScope.DemoServer` | C#, ASP.NET Core | synthetic signals and digital I/O at 1 kHz, a synthetic 2D/3D robot scene, server-side MCAP recording |
+| `react-sample` | TypeScript, React | the full dashboard: tree, trend chart, scene views, gauges, analytic charts, spectrogram, recording, playback |
+| `vanilla-ts` | TypeScript, no framework | the DOM views used directly; a hand-made list as a second drag source, the drop hook, adding signals from code |
+| `Mori.SkyScope.Blazor.Sample` | C#, Blazor Server | the Razor components, configuration over interop, a server-pushed spectrogram |
+| `Mori.SkyScope.Wpf.Sample` | C#, WPF | the desktop dashboard on SkiaSharp and OpenTK, offscreen renders |
+| `Mori.SkyScope.WinForms.Sample` | C#, Windows Forms | the chart configured in the designer file, CPU/GPU toggle, live capture from the controls' own pixels |
 
 ---
 
@@ -205,12 +252,16 @@ The gestures, as the samples wire them:
 | Plot | Shift + drag | box zoom (time and the lane's axes) |
 | Plot | click / Shift + click | cursor A / cursor B |
 | Plot | double-click | reset to live, autoscale |
+| Cursor line | drag | move cursor A or B; with both set, the measurement table shows value at A and B, Δ, min, max, mean per signal, Δt and frequency |
 | Signal label or legend row | drag onto a Y-axis strip | join that axis (shared scale) |
 | Signal label or legend row | drag into a lane's free area | that lane, own axis |
 | Signal label or legend row | drag onto the time axis, a gap or above the first lane | new lane there |
+| Signal label or legend row | click (no movement) | hide or show the signal (hidden ones stay in the legend, dimmed) |
+| Signal label or legend row | right-click | menu: show/hide, rename, colour, line width, remove |
 | Signal label or legend row | Ctrl / Shift + pick up | add to the selection; the next drag moves the selection |
 | Digital signal | drag anywhere inside a lane | that lane's logic stack |
 | Analog signal | drag onto a digital track or its label | that lane, own axis above the stack |
+| Lane gap | drag | resize the two lanes around it |
 | Lane header | drag | reorder lanes (a frame marks the slot) |
 | Lane header | arrow / cross | fold / remove the lane |
 | Y-axis strip | drag the middle | shift the range |
@@ -218,15 +269,16 @@ The gestures, as the samples wire them:
 | Y-axis strip | wheel / double-click | zoom about the pointer / autoscale |
 | Navigator | drag inside the frame / drag an edge | move / resize the window |
 | Navigator | click outside the frame / ← → | centre there / step by a tenth |
-| Signal tree | drag a row (or a Ctrl / Shift selection) into the chart | adds the channels, same drop rules |
+| Signal tree, or anything that drags channels | drag a row (or a Ctrl / Shift selection) into the chart | adds the channels, same drop rules |
 | Signal tree | double-click a row | adds the channel to the first lane |
 | Anywhere | Esc | cancel the drag, clear the selection |
 
 Everything above is model state. The model exposes `hitTest(layout, x, y)` → `HitRegion`, `dropTarget(…)` →
 `DropTarget`, and commands such as `beginDrag`, `applyGroupDrop`, `moveLane`, `setLaneCollapsed`, `beginAxisDrag`,
 `axisZoomAt`, `axisAutoscale`, `beginNavigatorDrag`, `navigatorKey`; every host (web view, WPF control) routes
-its pointer events through the same calls, and the fixtures pin their results in both languages. A host that wants
-to persist an arrangement serialises the chart config after `onConfigChanged` (`ConfigChanged` in WPF).
+its pointer events through the same calls, and the fixtures pin their results in both languages. A host persists an
+arrangement with `exportLayout()` / `importLayout(json)` (a versioned JSON without theme and style), or by serialising the
+config itself after `onConfigChanged` (`ConfigChanged` in WPF).
 
 ### Configuration
 
@@ -253,7 +305,7 @@ The C# configuration is the same shape (`TrendChartConfig`, `LaneConfig`, `AxisC
 
 ---
 
-## Hosting it: React, Blazor, WPF
+## Hosting it: React, Blazor, WPF, Windows Forms
 
 ### React
 
@@ -276,6 +328,7 @@ function Dashboard() {
 
 Data never passes through React props: the socket writes into the store, the view reads the store on its own
 render loop. `onReady` hands you the view for pause, resume, reset, time span, and `view.model` for everything else.
+`onChannelDrop` sees every drop before it is applied, `onConfigChanged` fires after any change of the arrangement.
 Other components: `RadialGaugeView`, `LinearGaugeView`, `LedArrayView`, `NumericDisplayView`, `CompassView`,
 `AttitudeView`, `KnobView`, `SwitchView`, `SliderView`, `XYChart`, `PieChartView`, `PolarChartView`, `HeatmapView`,
 `SceneView`, `Scene3DView`, `PlaybackControls` with `usePlayback`, `RecordButton` with `useRecorder`.
@@ -313,6 +366,77 @@ ws.StartAsync(new SourceContext(Chart.Store, layers, Chart.Clock, log),
 `TrendChartControl` paints with SkiaSharp on a 30 fps dispatcher timer, routes mouse, wheel and keys through the
 same hit test as the web view and raises `ConfigChanged` after a gesture changed the arrangement. `SceneControl3D`
 draws through OpenTK with a Skia HUD on top.
+
+### Adding signals: drag and drop, or code
+
+The chart is a standard drop target on every host, and the signal tree is just one possible drag source. Any control,
+grid or list can drag channels into a chart by putting the channel payload on the platform's data transfer:
+
+| Host | Data format | Payload |
+|---|---|---|
+| Browser (React, Blazor, plain DOM) | `application/x-skyscope-channels` (`CHANNEL_DRAG_MIME`), plus `text/plain` | `{"channels":[{"id":1,"name":"speed","unit":"m/s","kind":"analog"}],"group":false}` |
+| WPF, Windows Forms | `Mori.SkyScope.Channels` (`ChannelDragData.Format`), plus unicode text | the same JSON |
+
+Only the ids are required; name, unit and kind let a drop work before the chart's store knows the channel, and
+`group` keeps several channels together (one shared axis, one lane) as a Ctrl/Shift group does. Plain text with a
+JSON array of ids or ids separated by commas or whitespace is accepted too, so a drag from a spreadsheet cell works.
+`encodeChannelDrag`/`parseChannelDrag` (TypeScript) and `ChannelDragData.Encode`/`TryParse` (C#) read and write it.
+The drop obeys the chart's rules (axis strip → shared scale, lane → own scale, time axis → new lane, logic stack for
+digital) and previews the target while the pointer hovers.
+
+```ts
+// a custom drag source in the browser
+row.draggable = true;
+row.addEventListener("dragstart", (e) => {
+  e.dataTransfer!.setData(CHANNEL_DRAG_MIME, encodeChannelDrag({ channels: [{ id: 7, name: "pump", kind: "digital" }], group: false }));
+  e.dataTransfer!.setData("text/plain", "7");
+});
+// see the drop before it lands, redirect it, or refuse it
+view.onChannelDrop = (e) => { if (e.channelIds.includes(99)) e.cancel = true; };
+// or add from code: first lane by default, digital in its logic stack; explicit targets apply the same rules
+view.addChannels([7, 8]);
+view.addChannels([3], { kind: "newLane", index: 0, afterLaneId: null });
+```
+
+```csharp
+// WPF or Windows Forms: a custom drag source
+DragDrop.DoDragDrop(list, SignalTreeControl.ToDataObject(ChannelDragPayload.Of([7, 8], group: true)), DragDropEffects.Copy);
+// the chart's event, before the drop is applied
+chart.ChannelDrop += (_, e) => { if (e.Target is DropTarget.NewLane) e.Target = new DropTarget.OwnAxis("analog"); };
+// from code
+chart.AddChannels([7, 8]);
+```
+
+Blazor: `<TrendChart OnChannelDrop="OnDrop" />` with a `Func<ChannelDropEventArgs, Task>`, and `AddChannelsAsync`.
+Every host raises `ConfigChanged` (`onConfigChanged`) afterwards, so a custom tree can refresh its "in chart" marks.
+
+### Windows Forms
+
+Drop the controls from the toolbox and lay the chart out in the property grid: `Lanes`, `Axes`, `Series`,
+`Thresholds` and `Markers` are collection properties with their own editors, next to `TimeSpanSeconds`,
+`TimeFormat`, `Legend`, `Theme`, `PlotLabels`, `LaneHeaders`, `Navigator` and `MeasurePanel`. What the designer
+writes into `InitializeComponent` is plain code, so the same lines work by hand:
+
+```csharp
+chart.Lanes.Add(new LaneDefinition { Id = "analog", Weight = 2 });
+chart.Axes.Add(new AxisDefinition { Id = "axis:analog", Label = "sine / tri" });
+chart.Series.Add(new SeriesDefinition { Id = "s1", ChannelId = 1, LaneId = "analog" });
+chart.Series.Add(new SeriesDefinition { Id = "pump", ChannelId = 200, LaneId = "io", Digital = true });
+chart.Rendering = RenderingMode.Gpu;         // or Cpu; the designer always paints on the CPU
+tree.Chart = chart;                          // the tree drags channels into this chart
+var ws = new WebSocketFrameSource();
+ws.StartAsync(new SourceContext(chart.Store, layers, chart.Clock, log),
+              new WebSocketSourceConfig(new Uri("ws://localhost:5055/ws")) { Dispatch = a => BeginInvoke(a) });
+```
+
+Every control has a `Rendering` property: **Cpu** paints with SkiaSharp into a bitmap (works everywhere, remote
+sessions included), **Gpu** puts an OpenGL 3.3 core context on the control's own window and lets SkiaSharp draw on
+it. `EffectiveRendering` tells which one is in use; a session without OpenGL falls back to the CPU on its own.
+`SceneControl3D` always runs on the OpenGL surface (the scene through OpenTK, the HUD through Skia on the same
+framebuffer) and shows a notice where no context can be made. `Snapshot()` returns any control's pixels, read back
+from the framebuffer on the GPU path. Controls: `TrendChartControl`, `SignalTreeControl`, `GaugeControl`,
+`ChartControl`, `SceneControl`, `SceneControl3D`, `PlaybackControl`, `RecorderControl`, with the same gestures,
+the series context menu and `SaveLayout`/`LoadLayout` as in WPF.
 
 ---
 
@@ -421,6 +545,7 @@ TypeScript                                   C#
 @mori/skyscope-render    Canvas2D, WebGL,    Mori.SkyScope.Render.Skia   SkiaSharp painter
                          WebGL2 3D, views    Mori.SkyScope.Render.OpenTK OpenGL 3D painter
 @mori/skyscope-react     React components    Mori.SkyScope.Wpf           WPF controls
+                                             Mori.SkyScope.WinForms      Windows Forms controls (designer, CPU/GPU)
 @mori/skyscope-blazor    JS bridge (bundled) Mori.SkyScope.Blazor        Razor components + bundle
 @mori/skyscope-sources   WebSocket, MQTT,    Mori.SkyScope.Streaming     broadcaster, ASP.NET endpoint
                          synthetic           Mori.SkyScope.Sources.*     Mqtt, Ros2, Template
@@ -436,9 +561,9 @@ TypeScript                                   C#
   and compare the two cores op for op. Layout uses a painter-free text width estimate so both cores place labels
   identically without a font engine.
 - **Hosts are thin.** The web view owns three canvases (2D background, WebGL series, 2D foreground), a resize
-  observer and a render loop; the WPF control owns a Skia surface and a timer. Both route input through the model's
-  hit test and commands, and both can be driven from outside (a signal tree drops channels through
-  `externalDragStart/Move/Drop`).
+  observer and a render loop; the WPF and Windows Forms controls own a Skia surface and a timer. All route input through the model's
+  hit test and commands, and all accept the platform's drag and drop with one channel payload (`ChannelDragData`),
+  so the signal tree is optional: anything that drags channels, or `addChannels` from code, feeds a chart.
 - **Data never crosses a framework boundary.** Sources write into a store; views read it on their own schedule.
   Blazor and React only carry configuration.
 
@@ -448,11 +573,12 @@ TypeScript                                   C#
 
 ```
 ts/packages/        core, render, react, blazor (bridge), sources, tokens, source-template
-dotnet/             Mori.SkyScope.Core (+ .Tests), Render.Skia, Render.OpenTK, Wpf, Blazor, Streaming,
+dotnet/             Mori.SkyScope.Core (+ .Tests), Render.Skia, Render.OpenTK, Wpf, WinForms, Blazor, Streaming,
                     Sources.Mqtt, Sources.Ros2, Sources.Template; Mori.SkyScope.slnx
 spec/               fixtures (32 files), golden frames, meshes, an MCAP sample
 design/             tokens and the shared stylesheet
-samples/            DemoServer, react-sample, Mori.SkyScope.Blazor.Sample, Mori.SkyScope.Wpf.Sample
+samples/            DemoServer, react-sample, vanilla-ts, Mori.SkyScope.Blazor.Sample, Mori.SkyScope.Wpf.Sample,
+                    Mori.SkyScope.WinForms.Sample (see samples/README.md)
 tools/              build-design, gen-frames, gen-demo-csv, pack-npm, bench-ingest
 docs/               COMPONENTS.md (every component with its files and fixture), PLUGINS.md, PLAN.md, STATUS.md,
                     screenshots/, images/
@@ -469,8 +595,9 @@ docs/               COMPONENTS.md (every component with its files and fixture), 
 | `@mori/skyscope-render` — Canvas2D + WebGL painters, views, signal tree panel | `Mori.SkyScope.Render.Skia` — SkiaSharp painter |
 | `@mori/skyscope-react` — React components and hooks | `Mori.SkyScope.Render.OpenTK` — OpenGL 3D painter |
 | `@mori/skyscope-sources` — WebSocket, MQTT, synthetic sources | `Mori.SkyScope.Wpf` — WPF controls |
-| `@mori/skyscope-tokens` — design tokens | `Mori.SkyScope.Blazor` — Razor components + bundled JS |
-| `@mori/skyscope-source-template` — plugin starting point | `Mori.SkyScope.Streaming` — frame broadcaster, ASP.NET endpoint |
+| `@mori/skyscope-tokens` — design tokens | `Mori.SkyScope.WinForms` — Windows Forms controls, designer properties, CPU or OpenGL |
+| `@mori/skyscope-source-template` — plugin starting point | `Mori.SkyScope.Blazor` — Razor components + bundled JS |
+| | `Mori.SkyScope.Streaming` — frame broadcaster, ASP.NET endpoint |
 | | `Mori.SkyScope.Sources.Mqtt`, `.Sources.Ros2`, `.Sources.Template` |
 
 `npm run pack` and `dotnet pack dotnet/Mori.SkyScope.slnx -c Release -o artifacts/nuget` produce the tarballs and
@@ -493,7 +620,7 @@ npm run frames         # regenerate the golden binary frames from the TypeScript
 The fixture suite is the contract between the two cores: when you change behaviour, change the TypeScript side,
 regenerate the fixture expectations with its driver, then make the C# side reproduce them. `docs/COMPONENTS.md`
 lists every component with its files and its fixture. CI (`.github/workflows/ci.yml`) runs both suites on Windows
-so the WPF projects build too.
+so the WPF and Windows Forms projects build too.
 
 ---
 

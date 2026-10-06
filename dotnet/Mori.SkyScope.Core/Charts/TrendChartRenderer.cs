@@ -133,8 +133,21 @@ public static partial class TrendChartRenderer
                 if (mk.Label is not null) p.Text(mk.Label, x + 3, r.Y + 3, c.Text with { Color = color, Baseline = TextBaseline.Top });
             }
             if (m.HoverTime is { } ht) { var x = c.Ts.Apply(ht); p.Line(x, r.Y, x, r.Y + r.H, new Stroke(c.Th.Hover) { Width = st.CursorWidth, Dash = st.HoverDash }); }
+            if (m.CursorA is { } sa && m.CursorB is { } sb) { double xa = c.Ts.Apply(sa), xb = c.Ts.Apply(sb); p.Rect(Math.Min(xa, xb), r.Y, Math.Abs(xb - xa), r.H, new Fill(c.Th.CursorA) { Opacity = 0.06 }); }
             if (m.CursorA is { } ca) { var x = c.Ts.Apply(ca); p.Line(x, r.Y, x, r.Y + r.H, new Stroke(c.Th.CursorA) { Width = st.CursorWidth }); }
             if (m.CursorB is { } cb) { var x = c.Ts.Apply(cb); p.Line(x, r.Y, x, r.Y + r.H, new Stroke(c.Th.CursorB) { Width = st.CursorWidth }); }
+            if (lane == layout.Lanes.FirstOrDefault(l => !l.Collapsed))
+            {
+                // the cursors' times at the top of the first open lane
+                void Tag(double t, string color, string label)
+                {
+                    var x = c.Ts.Apply(t); var s = $"{label} {TimeFormatting.FormatTick(t - c.Ts.Origin, 0.001, c.Ts.Mode, 3, Math.Abs(c.Ts.D1 - c.Ts.D0))}"; var w = TrendLayoutEngine.EstimateTextWidth(s, c.Th.FontSize) + 8;
+                    p.Rect(x + 2, r.Y + 2, w, c.Th.FontSize + 4, new Fill(color) { Opacity = 0.85 }, null, 2);
+                    p.Text(s, x + 6, r.Y + 4 + c.Th.FontSize / 2, c.Text with { Color = c.Th.Background, Baseline = TextBaseline.Middle });
+                }
+                if (m.CursorA is { } cta) Tag(cta, c.Th.CursorA, "A");
+                if (m.CursorB is { } ctb) Tag(ctb, c.Th.CursorB, "B");
+            }
             DrawPlotLabels(m, p, lane, c.Text, c.Muted);
             p.Restore();
 
@@ -166,6 +179,7 @@ public static partial class TrendChartRenderer
         }
 
         if (layout.Navigator is not null) DrawNavigator(m, p, layout, c);
+        if (layout.Measure is not null) DrawMeasurePanel(m, p, layout, c);
         if (layout.Legend is { } legend) DrawLegend(m, p, legend, c.Text, c.Muted);
         if (m.LaneDrag is not null) DrawLaneDragIndicator(m, p, layout);
         if (m.Drag is not null) DrawDragIndicator(m, p, layout, c.Text);

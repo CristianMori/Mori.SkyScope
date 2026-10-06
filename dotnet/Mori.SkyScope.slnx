@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="../samples/Mori.SkyScope.Blazor.Sample/Mori.SkyScope.Blazor.Sample.csproj" />
   <Project Path="../samples/Mori.SkyScope.DemoServer/Mori.SkyScope.DemoServer.csproj" />
+  <Project Path="../samples/Mori.SkyScope.WinForms.Sample/Mori.SkyScope.WinForms.Sample.csproj" />
   <Project Path="../samples/Mori.SkyScope.Wpf.Sample/Mori.SkyScope.Wpf.Sample.csproj" />
   <Project Path="Mori.SkyScope.Blazor/Mori.SkyScope.Blazor.csproj" />
   <Project Path="Mori.SkyScope.Core.Tests/Mori.SkyScope.Core.Tests.csproj" />
@@ -11,5 +12,6 @@
   <Project Path="Mori.SkyScope.Sources.Ros2/Mori.SkyScope.Sources.Ros2.csproj" />
   <Project Path="Mori.SkyScope.Sources.Template/Mori.SkyScope.Sources.Template.csproj" />
   <Project Path="Mori.SkyScope.Streaming/Mori.SkyScope.Streaming.csproj" />
+  <Project Path="Mori.SkyScope.WinForms/Mori.SkyScope.WinForms.csproj" />
   <Project Path="Mori.SkyScope.Wpf/Mori.SkyScope.Wpf.csproj" />
 </Solution>

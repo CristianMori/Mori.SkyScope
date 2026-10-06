@@ -4,7 +4,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Mori.SkyScope.Core.Charts;
+using Mori.SkyScope.Core.Scales;
 using Mori.SkyScope.Core.Paint;
+using Mori.SkyScope.Core.Sources;
 
 namespace Mori.SkyScope.Core.Tests.Fixtures;
 
@@ -41,9 +43,14 @@ public sealed partial class TrendDriver
         HitRegion.Plot pl => new { kind = "plot", laneId = pl.LaneId },
         HitRegion.Stack sk => new { kind = "stack", laneId = sk.LaneId },
         HitRegion.TimeAxis => new { kind = "timeAxis" },
+        HitRegion.LaneGap g => new { kind = "laneGap", aboveLaneId = g.AboveLaneId, belowLaneId = g.BelowLaneId },
+        HitRegion.Cursor cu => new { kind = "cursor", which = cu.Which.ToString() },
+        HitRegion.Measure => new { kind = "measure" },
         _ => new { kind = "none" },
     };
     private static List<string> Strings(JsonElement e) => e.EnumerateArray().Select(x => x.GetString()!).ToList();
+    private static object DragJson(ChannelDragPayload p) => new { channels = p.Channels.Select(c => new { id = c.Id, name = c.Name, unit = c.Unit, kind = c.Kind is { } k ? (k == ChannelKind.Digital ? "digital" : "analog") : null }).ToList(), group = p.Group };
+    private static ChannelDragPayload ParsePayload(JsonElement e) => new(e.GetProperty("channels").EnumerateArray().Select(c => new ChannelDragItem(c.GetProperty("id").GetInt32(), Str(c, "name"), Str(c, "unit"), Str(c, "kind") switch { "digital" => ChannelKind.Digital, "analog" => ChannelKind.Analog, _ => (ChannelKind?)null })).ToList(), Bool(e, "group") ?? false);
     private static object Ro(Readout r) => new { time = Round.R9(r.Time), values = r.Values.Select(v => new { seriesId = v.SeriesId, time = Round.R9(v.Time), value = Round.R9(v.Value) }).ToList() };
 
     /// <summary>Applies the model commands (time window, cursors, series and lane moves, drags, axis and navigator interaction, effects) and answers layout, hit-test, drag state, config, window, domain, polyline, readout, legend, drop-target and draw queries; structural changes invalidate the cached layout.</summary>
@@ -67,15 +74,28 @@ public sealed partial class TrendDriver
                 {
                     var ids = step.TryGetProperty("seriesIds", out var sids) ? Strings(sids) : [step.GetProperty("seriesId").GetString()!];
                     var chs = step.TryGetProperty("channelIds", out var cids) ? cids.EnumerateArray().Select(x => x.GetInt32()).ToList() : [];
-                    m.BeginDrag(ids, step.GetProperty("x").GetDouble(), step.GetProperty("y").GetDouble(), Bool(step, "group") ?? false, chs);
+                    m.BeginDrag(ids, step.GetProperty("x").GetDouble(), step.GetProperty("y").GetDouble(), Bool(step, "group") ?? false, chs, Bool(step, "digital"));
                     break;
                 }
+            case "addChannels": m.AddChannels(step.GetProperty("channelIds").EnumerateArray().Select(x => x.GetInt32()).ToList(), step.TryGetProperty("target", out var at) ? ParseTarget(at) : null, Bool(step, "group") ?? false); s.Layout = null; break;
             case "applyGroupDrop": m.ApplyGroupDrop(Strings(step.GetProperty("seriesIds")), ParseTarget(step.GetProperty("target")), Bool(step, "group") ?? false); s.Layout = null; break;
             case "setSeriesVisible": m.SetSeriesVisible(step.GetProperty("seriesId").GetString()!, Bool(step, "visible") ?? true); s.Layout = null; break;
             case "moveLane": m.MoveLane(step.GetProperty("laneId").GetString()!, step.GetProperty("index").GetInt32()); s.Layout = null; break;
             case "setLaneCollapsed": m.SetLaneCollapsed(step.GetProperty("laneId").GetString()!, Bool(step, "collapsed") ?? true); s.Layout = null; break;
             case "removeLane": m.RemoveLane(step.GetProperty("laneId").GetString()!); s.Layout = null; break;
             case "beginLaneDrag": m.BeginLaneDrag(step.GetProperty("laneId").GetString()!, step.GetProperty("x").GetDouble(), step.GetProperty("y").GetDouble()); break;
+            case "beginLaneResize": m.BeginLaneResize(s.Ensure(), step.GetProperty("aboveLaneId").GetString()!, step.GetProperty("belowLaneId").GetString()!, step.GetProperty("y").GetDouble()); break;
+            case "updateLaneResize": m.UpdateLaneResize(s.Ensure(), step.GetProperty("y").GetDouble()); s.Layout = null; break;
+            case "endLaneResize": m.EndLaneResize(); break;
+            case "beginCursorDrag": m.BeginCursorDrag(step.GetProperty("which").GetString()![0]); break;
+            case "updateCursorDrag": m.UpdateCursorDrag(s.Ensure(), step.GetProperty("x").GetDouble()); s.Layout = null; break;
+            case "endCursorDrag": m.EndCursorDrag(); break;
+            case "toggleSeries": m.ToggleSeries(step.GetProperty("seriesId").GetString()!); s.Layout = null; break;
+            case "renameSeries": m.RenameSeries(step.GetProperty("seriesId").GetString()!, Str(step, "name")); s.Layout = null; break;
+            case "setSeriesColor": m.SetSeriesColor(step.GetProperty("seriesId").GetString()!, Str(step, "color")); break;
+            case "setSeriesWidth": m.SetSeriesWidth(step.GetProperty("seriesId").GetString()!, Num(step, "width")); break;
+            case "removeSeries": m.RemoveSeries(step.GetProperty("seriesId").GetString()!); s.Layout = null; break;
+            case "importLayout": m.ImportLayout(step.GetProperty("json").GetString()!); s.Layout = null; break;
             case "updateLaneDrag": m.UpdateLaneDrag(s.Ensure(), step.GetProperty("x").GetDouble(), step.GetProperty("y").GetDouble()); break;
             case "endLaneDrag": m.EndLaneDrag(s.Ensure(), step.GetProperty("x").GetDouble(), step.GetProperty("y").GetDouble()); s.Layout = null; break;
             case "beginAxisDrag": m.BeginAxisDrag(s.Ensure(), step.GetProperty("axisId").GetString()!, step.GetProperty("laneId").GetString()!, ParseZone(Str(step, "zone")), step.GetProperty("y").GetDouble()); break;
@@ -100,12 +120,31 @@ public sealed partial class TrendDriver
                     var l = s.Ensure();
                     q.Add(new
                     {
-                        plot = Round.Rect(l.Plot), timeAxis = Round.Rect(l.TimeAxis), legend = Round.Rect(l.Legend), navigator = Round.Rect(l.Navigator),
+                        plot = Round.Rect(l.Plot), timeAxis = Round.Rect(l.TimeAxis), legend = Round.Rect(l.Legend), navigator = Round.Rect(l.Navigator), measure = Round.Rect(l.Measure),
                         lanes = l.Lanes.Select(ln => new { laneId = ln.LaneId, rect = Round.Rect(ln.Rect), analog = Round.Rect(ln.Analog), stack = Round.Rect(ln.Stack), collapsed = ln.Collapsed, header = Round.Rect(ln.Header), axes = ln.Axes.Select(a => new { axisId = a.AxisId, side = a.Side == AxisSide.Left ? "left" : "right", rect = Round.Rect(a.Rect) }).ToList(), labels = ln.Labels.Select(lb => new { seriesId = lb.SeriesId, rect = Round.Rect(lb.Rect) }).ToList() }).ToList(),
                     });
                 }
                 else if (step.TryGetProperty("hitTest", out var ht)) { var a = SignalSteps.Doubles(ht); q.Add(HitJson(m.HitTest(s.Ensure(), a[0], a[1]))); }
                 else if (step.TryGetProperty("laneDrag", out _)) q.Add(m.LaneDrag is { } ld ? new { laneId = ld.LaneId, index = ld.Index } : null);
+                else if (step.TryGetProperty("laneWeights", out _)) q.Add(m.Lanes().Select(l => new { id = l.Id, weight = Round.R9(l.Weight) }).ToList());
+                else if (step.TryGetProperty("measurements", out _)) { var ms = m.Measurements(); q.Add(ms is null ? null : new { t0 = Round.R9(ms.T0), t1 = Round.R9(ms.T1), dt = Round.R9(ms.Dt), hz = Opt(ms.Hz), rows = ms.Rows.Select(x => new { seriesId = x.SeriesId, a = Opt(x.A), b = Opt(x.B), delta = Opt(x.Delta), min = Opt(x.Min), max = Opt(x.Max), mean = Opt(x.Mean), count = x.Count }).ToList() }); }
+                else if (step.TryGetProperty("seriesStyle", out var ss)) { var sc = m.Config.Series.FirstOrDefault(x => x.Id == ss.GetString()); q.Add(sc is null ? null : new { name = sc.Name, color = sc.Color, width = Opt(sc.Width), visible = sc.Visible }); }
+                else if (step.TryGetProperty("layoutJson", out _))
+                {
+                    // canonical projection of the file so both cores compare the same facts regardless of which default keys they write
+                    var f = JsonNode.Parse(m.ExportLayout())!.AsObject();
+                    var cfg = TrendLayoutFile.Parse(m.ExportLayout());
+                    q.Add(new
+                    {
+                        version = f["version"]!.GetValue<int>(), timeSpan = Round.R9(cfg.TimeSpan), timeFormat = cfg.TimeFormat == TimeFormat.Utc ? "utc" : "relative",
+                        legend = cfg.Legend switch { LegendPosition.TopLeft => "top-left", LegendPosition.TopRight => "top-right", LegendPosition.BottomLeft => "bottom-left", LegendPosition.BottomRight => "bottom-right", LegendPosition.Top => "top", LegendPosition.None => "none", _ => "right" },
+                        theme = f.ContainsKey("theme"), style = f.ContainsKey("style"),
+                        lanes = cfg.Lanes.Select(l => new { id = l.Id, weight = Round.R9(l.Weight), collapsed = l.Collapsed }).ToList(),
+                        axes = cfg.Axes.Select(a => new { id = a.Id, label = a.Label, unit = a.Unit, min = Opt(a.Min), max = Opt(a.Max), side = a.Side == AxisSide.Right ? "right" : "left" }).ToList(),
+                        series = cfg.Series.Select(x => new { id = x.Id, channelId = x.ChannelId, laneId = x.LaneId, axisId = x.AxisId, name = x.Name, color = x.Color, width = Opt(x.Width), visible = x.Visible, kind = x.Kind == SeriesKind.Digital ? "digital" : "analog" }).ToList(),
+                        thresholds = cfg.Thresholds.Count, markers = cfg.Markers.Count,
+                    });
+                }
                 else if (step.TryGetProperty("axisDrag", out _)) q.Add(m.AxisDrag is { } ad ? new { axisId = ad.AxisId, zone = Zone(ad.Zone), min0 = Round.R9(ad.Min0), max0 = Round.R9(ad.Max0) } : null);
                 else if (step.TryGetProperty("laneConfig", out _)) q.Add(m.Lanes().Select(l => new { id = l.Id, collapsed = l.Collapsed }).ToList());
                 else if (step.TryGetProperty("seriesIds", out _)) q.Add(m.Config.Series.Select(x => new { id = x.Id, channelId = x.ChannelId, lane = m.LaneIdOf(x), axis = m.AxisIdOf(x), visible = x.Visible }).ToList());
@@ -133,6 +172,8 @@ public sealed partial class TrendDriver
                 else if (step.TryGetProperty("tracks", out var tr)) q.Add(m.DigitalTracks(tr.GetString()!).Select(x => x.Id).ToList());
                 else if (step.TryGetProperty("seriesRange", out var sr)) { var sc = m.Config.Series.First(x => x.Id == sr.GetString()); var lane = s.Ensure().Lanes.First(l => l.LaneId == m.LaneIdOf(sc)); var sc2 = m.SeriesScale(sc, lane); q.Add(new[] { Round.R9(sc2.R0), Round.R9(sc2.R1) }); }
                 else if (step.TryGetProperty("legendRect", out _)) q.Add(Round.Rect(s.Ensure().Legend));
+                else if (step.TryGetProperty("parseChannelDrag", out var pcd)) q.Add(ChannelDragData.TryParse(pcd.GetString(), out var pp) ? DragJson(pp) : null);
+                else if (step.TryGetProperty("channelDragRoundTrip", out var rt)) q.Add(ChannelDragData.TryParse(ChannelDragData.Encode(ParsePayload(rt)), out var rp) ? DragJson(rp) : null);
                 else if (step.TryGetProperty("dropTarget", out var dt)) { var a = SignalSteps.Doubles(dt); q.Add(TargetJson(m.DropTargetAt(s.Ensure(), a[0], a[1]))); }
                 else if (step.TryGetProperty("dropTargetDigital", out var dtd)) { var a = SignalSteps.Doubles(dtd); q.Add(TargetJson(m.DropTargetAt(s.Ensure(), a[0], a[1], true))); }
                 else if (step.TryGetProperty("legendRowAt", out var lr)) { var a = SignalSteps.Doubles(lr); q.Add(m.LegendRowAt(s.Ensure(), a[0], a[1])); }

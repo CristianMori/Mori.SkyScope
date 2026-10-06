@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { SignalStore, TimeSource, Tool, TrendChartOptions } from "@mori/skyscope-core";
-import { TrendChartView } from "@mori/skyscope-render";
+import { TrendChartView, type ChannelDropEvent } from "@mori/skyscope-render";
 import { cx } from "./cx.js";
 
 /** Props of `TrendChart`. `store`, `clock`, `webgl` and `maxFps` remount the view when they change; `config` and `tool` are applied in place. */
@@ -26,14 +26,22 @@ export interface TrendChartProps {
   style?: CSSProperties | undefined;
   /** Access the underlying view (model, pause/resume, …). */
   onReady?: ((view: TrendChartView) => void) | undefined;
+  /** Channels dropped on the chart (native drag and drop), before they are added: cancel, redirect or handle the drop. */
+  onChannelDrop?: ((e: ChannelDropEvent) => void) | undefined;
+  /** The arrangement changed through a gesture, a drop or a layout import. */
+  onConfigChanged?: (() => void) | undefined;
 }
 
 /** A live strip chart bound to a SignalStore. Fills its parent; give the parent a height. */
-export function TrendChart({ store, config, tool, clock, webgl, maxFps, className, style, onReady }: TrendChartProps) {
+export function TrendChart({ store, config, tool, clock, webgl, maxFps, className, style, onReady, onChannelDrop, onConfigChanged }: TrendChartProps) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<TrendChartView | null>(null);
+  const dropRef = useRef(onChannelDrop); dropRef.current = onChannelDrop;
+  const changedRef = useRef(onConfigChanged); changedRef.current = onConfigChanged;
   useEffect(() => {
     const v = new TrendChartView(host.current!, { store, config, tool, clock, webgl, maxFps });
+    v.onChannelDrop = (e) => dropRef.current?.(e);
+    v.onConfigChanged = () => changedRef.current?.();
     view.current = v;
     v.start();
     onReady?.(v);
