@@ -1,5 +1,10 @@
 # Mori.SkyScope
 
+[![CI](https://github.com/CristianMori/Mori.SkyScope/actions/workflows/ci.yml/badge.svg)](https://github.com/CristianMori/Mori.SkyScope/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/Mori.SkyScope.Core?label=NuGet%20Mori.SkyScope.Core)](https://www.nuget.org/packages?q=Mori.SkyScope)
+[![npm](https://img.shields.io/npm/v/%40cmori%2Fskyscope-react?label=npm%20%40cmori%2Fskyscope-react)](https://www.npmjs.com/org/cmori)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
 Real-time data visualization for robotics, automation and other data-heavy applications.
 
 SkyScope draws live strip charts the way an engineering analyzer does: signals are picked up by name and dropped onto
@@ -14,10 +19,30 @@ the browser through **React** or **Blazor** and on the desktop through **WPF** o
 
 Apache-2.0. Copyright 2026 Cristian Mori.
 
+## Install
+
+Pick the package for your host; it brings the engine and the painters it needs.
+
+```bash
+dotnet add package Mori.SkyScope.Wpf          # WPF
+dotnet add package Mori.SkyScope.WinForms     # Windows Forms (designer support included)
+dotnet add package Mori.SkyScope.Blazor       # Blazor (the browser bundle is inside)
+dotnet add package Mori.SkyScope.Streaming    # the ASP.NET Core stream endpoint and broadcaster
+dotnet add package Mori.SkyScope.Core         # the engine alone
+
+npm install @cmori/skyscope-react @cmori/skyscope-sources    # React
+npm install @cmori/skyscope-render @cmori/skyscope-sources   # plain DOM, Vue, Angular, Svelte
+npm install @cmori/skyscope-core                             # the engine alone, Node included
+```
+
+All packages are on [nuget.org](https://www.nuget.org/packages?q=Mori.SkyScope) and [npmjs.com](https://www.npmjs.com/org/cmori);
+the [Packages](#packages) section lists every one with its purpose.
+
 ---
 
 ## Contents
 
+- [Install](#install)
 - [Screenshots](#screenshots)
 - [What is in the box](#what-is-in-the-box)
 - [Quick start](#quick-start)
@@ -655,6 +680,9 @@ docs/               COMPONENTS.md (every component with its files and fixture), 
 ---
 
 ## Packages
+
+Published on [nuget.org](https://www.nuget.org/packages?q=Mori.SkyScope) and [npmjs.com](https://www.npmjs.com/org/cmori); every package shares one version
+(see [CHANGELOG.md](CHANGELOG.md)).
 
 | npm | NuGet |
 |---|---|
