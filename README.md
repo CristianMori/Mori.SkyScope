@@ -689,6 +689,23 @@ regenerate the fixture expectations with its driver, then make the C# side repro
 lists every component with its files and its fixture. CI (`.github/workflows/ci.yml`) runs both suites on Windows
 so the WPF and Windows Forms projects build too.
 
+### Releasing
+
+One version number serves every package: `<Version>` in `dotnet/Directory.Build.props` for NuGet, and the npm
+workspaces with their mutual pins. Published versions can never change on nuget.org or npm, so each release is a new
+number:
+
+```bash
+node tools/release.mjs 0.1.1 --notes "what changed"   # sets the version everywhere, opens a CHANGELOG section, commits, tags v0.1.1
+git push origin main --follow-tags                     # or add --push above
+```
+
+The `release` workflow (`.github/workflows/release.yml`) runs on the tag: build, both test suites, pack, a GitHub
+release with the packages attached, and a push to nuget.org when the repository has a `NUGET_API_KEY` secret (and to
+npm with `NPM_TOKEN`). Without the secrets the packages are only attached to the GitHub release; push them by hand
+with `dotnet nuget push "artifacts/nuget/*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key <key>`.
+[CHANGELOG.md](CHANGELOG.md) lists every version.
+
 ---
 
 ## Status and known limits

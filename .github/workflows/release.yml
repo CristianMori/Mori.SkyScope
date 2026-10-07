@@ -1,0 +1,67 @@
+name: release
+
+# Runs when a version tag (v0.1.1) is pushed: builds and tests like CI, packs, attaches the packages to a GitHub
+# release, and publishes them to nuget.org when the NUGET_API_KEY secret exists (and to npm when NPM_TOKEN does).
+# Create the tag with `node tools/release.mjs <version> --push`; versions already published cannot be replaced.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check that the tag matches the version in Directory.Build.props
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}".TrimStart("v")
+          $props = Get-Content dotnet/Directory.Build.props -Raw
+          if ($props -notmatch "<Version>$([regex]::Escape($tag))</Version>") { throw "tag $tag does not match <Version> in dotnet/Directory.Build.props" }
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run pack
+
+      - run: dotnet build dotnet/Mori.SkyScope.slnx -c Release
+      - run: dotnet test dotnet/Mori.SkyScope.Core.Tests -c Release --no-build
+      - run: dotnet pack dotnet/Mori.SkyScope.slnx -c Release --no-build -o artifacts/nuget
+
+      - name: Publish to nuget.org
+        if: ${{ env.NUGET_API_KEY != '' }}
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "artifacts/nuget/*.nupkg" --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key $env:NUGET_API_KEY
+
+      - name: Publish to npm
+        if: ${{ env.NODE_AUTH_TOKEN != '' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: pwsh
+        run: |
+          foreach ($p in @("tokens", "core", "render", "sources", "react", "source-template")) {
+            npm publish --access public -w "@mori/skyscope-$p"
+            if ($LASTEXITCODE -ne 0) { throw "npm publish failed for $p" }
+          }
+
+      - name: GitHub release with the packages attached
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/nuget/*.nupkg
+            artifacts/npm/*.tgz
+          generate_release_notes: true
