@@ -1,8 +1,8 @@
 // Mori.SkyScope — Blazor bridge for the 3D scene view: layers, transforms and binary payloads from the shared socket.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { SceneLayerSink, applyLayerPayload, createLayer, type Scene3DTool } from "@mori/skyscope-core";
-import { Scene3DView, type Scene3DViewOptions } from "@mori/skyscope-render";
+import { SceneLayerSink, applyLayerPayload, createLayer, type Scene3DTool } from "@cmori/skyscope-core";
+import { Scene3DView, type Scene3DViewOptions } from "@cmori/skyscope-render";
 import { acquire } from "./shared.js";
 
 /**

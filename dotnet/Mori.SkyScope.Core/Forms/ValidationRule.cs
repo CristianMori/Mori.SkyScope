@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace Mori.SkyScope.Core.Forms;
 
 /// <summary>
-/// A declarative validation rule. Semantics are shared with <c>@mori/skyscope-core</c> and pinned by
+/// A declarative validation rule. Semantics are shared with <c>@cmori/skyscope-core</c> and pinned by
 /// <c>spec/fixtures/field.json</c>: change one side, and the other side's tests go red.
 /// </summary>
 public abstract record ValidationRule

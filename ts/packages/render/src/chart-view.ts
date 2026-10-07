@@ -1,7 +1,7 @@
 // Mori.SkyScope — Canvas host for the analytic chart models: hover, legend clicks, box zoom, wheel zoom, double-click reset.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import type { Painter } from "@mori/skyscope-core";
+import type { Painter } from "@cmori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
 
 /**

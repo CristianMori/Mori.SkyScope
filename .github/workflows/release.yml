@@ -54,7 +54,7 @@ jobs:
         shell: pwsh
         run: |
           foreach ($p in @("tokens", "core", "render", "sources", "react", "source-template")) {
-            npm publish --access public -w "@mori/skyscope-$p"
+            npm publish --access public -w "@cmori/skyscope-$p"
             if ($LASTEXITCODE -ne 0) { throw "npm publish failed for $p" }
           }
 

@@ -56,8 +56,8 @@ toolbars, legends, dialogs). All get renamed; nothing is thrown away.
 |---|---|
 | Repo folder | `D:\DataDrive\Mori.SkyScope` (rename `domos` on day 1; git history kept) |
 | .NET packages | `Mori.SkyScope.Core`, `.Core.Tests`, `.Render.Skia`, `.Wpf`, `.WinForms`, `.Blazor`, `.Streaming`, `.Sources.Ros2`, `.Sources.Mqtt`, `.Sources.Playback` |
-| npm packages | `@mori/skyscope-core`, `-tokens`, `-render`, `-react`, `-blazor` (JS bridge), `-sources` |
-| Source plugins | `Mori.SkyScope.Sources.<Name>` (.NET), `@mori/skyscope-source-<name>` (TS) |
+| npm packages | `@cmori/skyscope-core`, `-tokens`, `-render`, `-react`, `-blazor` (JS bridge), `-sources` |
+| Source plugins | `Mori.SkyScope.Sources.<Name>` (.NET), `@cmori/skyscope-source-<name>` (TS) |
 | CSS / tokens prefix | `--skyscope-*`, `.skyscope-*` |
 | Wire format | `SkyScopeFrame` |
 | Root namespace (C#) | `Mori.SkyScope` |
@@ -69,14 +69,14 @@ spec/fixtures/*.json + spec/frames/*.bin   behaviour fixtures + golden binary fr
 design/tokens, design/styles               tokens feed painters too (chart palette, gauge colours)
 
 TS (web — React AND Blazor share it)
-  @mori/skyscope-core      headless: ring buffers, M4 buckets, frame codec, scales/ticks, layout, camera,
+  @cmori/skyscope-core      headless: ring buffers, M4 buckets, frame codec, scales/ticks, layout, camera,
                            scene/layer model, hit-testing, interaction state machines, gauge geometry
-  @mori/skyscope-render    Painter impls: Canvas2D (axes/text/gauges/overlays), WebGL (line series),
+  @cmori/skyscope-render    Painter impls: Canvas2D (axes/text/gauges/overlays), WebGL (line series),
                            layer surface cache; Worker ingest (WebSocket → SharedArrayBuffer ring buffers)
-  @mori/skyscope-react     TrendChart, Gauge*, XYChart, BarChart, PieChart, PolarChart, Heatmap,
+  @cmori/skyscope-react     TrendChart, Gauge*, XYChart, BarChart, PieChart, PolarChart, Heatmap,
                            SceneView (+ Button/TextField chrome)
-  @mori/skyscope-blazor    same engine behind mount(el, config) / update / dispose for JS interop
-  @mori/skyscope-sources   built-in source plugins: WebSocketFrameSource, MqttSource, PlaybackSource, SyntheticSource
+  @cmori/skyscope-blazor    same engine behind mount(el, config) / update / dispose for JS interop
+  @cmori/skyscope-sources   built-in source plugins: WebSocketFrameSource, MqttSource, PlaybackSource, SyntheticSource
 
 .NET
   Mori.SkyScope.Core             headless mirror of skyscope-core (same fixtures)
@@ -103,7 +103,7 @@ ISource            id, displayName, capabilities (signals | layers | playback), 
   ctx.log
 ISourceRegistry    register(factory) ; list() ; create(id, config)
 ```
-- Identical shape in TS (`@mori/skyscope-core`) and C# (`Mori.SkyScope.Core`); fixtures pin the
+- Identical shape in TS (`@cmori/skyscope-core`) and C# (`Mori.SkyScope.Core`); fixtures pin the
   sink semantics (channel declaration, out-of-order pushes, clock mapping).
 - Built-in this week: `WebSocketFrameSource` (SkyScopeFrame over WS), `MqttSource`, `PlaybackSource`
   (CSV/MCAP), `Ros2Source` (.NET only), `SyntheticSource` (demo/bench generator).

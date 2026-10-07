@@ -3,11 +3,11 @@
 
 import { useMemo, useState } from "react";
 import { Scene3DDemo } from "./Scene3DDemo.js";
-import { DARK_THEME, LIGHT_THEME, type Tool, type TrendChartOptions } from "@mori/skyscope-core";
-import { saveFile, type TrendChartView } from "@mori/skyscope-render";
-import { AttitudeView, Button, ChartEditor, CompassView, HeatmapView, KnobView, LedArrayView, LinearGaugeView, NumericDisplayView, PieChartView, PlaybackControls, PolarChartView, RadialGaugeView, RecordButton, SceneView, SignalTree, SliderView, SwitchView, TrendChart, XYChart, usePlayback, useSignalStore, useWebSocketSource } from "@mori/skyscope-react";
-import { McapRecorder, parseCsv, readRecording, type Recording } from "@mori/skyscope-core";
-import { pickFile } from "@mori/skyscope-render";
+import { DARK_THEME, LIGHT_THEME, type Tool, type TrendChartOptions } from "@cmori/skyscope-core";
+import { saveFile, type TrendChartView } from "@cmori/skyscope-render";
+import { AttitudeView, Button, ChartEditor, CompassView, HeatmapView, KnobView, LedArrayView, LinearGaugeView, NumericDisplayView, PieChartView, PlaybackControls, PolarChartView, RadialGaugeView, RecordButton, SceneView, SignalTree, SliderView, SwitchView, TrendChart, XYChart, usePlayback, useSignalStore, useWebSocketSource } from "@cmori/skyscope-react";
+import { McapRecorder, parseCsv, readRecording, type Recording } from "@cmori/skyscope-core";
+import { pickFile } from "@cmori/skyscope-render";
 
 /** A 20 s recording generated in code (the same shape as samples/demo-recording.csv) so the playback mode needs no file. */
 function demoCsv(): string {
@@ -16,10 +16,10 @@ function demoCsv(): string {
   for (let i = 0; i <= rate * 20; i++) { const t = i / rate; lines.push([t.toFixed(3), (2.5 * Math.sin(t * 0.7 * 2 * Math.PI / 3)).toFixed(4), (3 * (2 * Math.abs((t * 0.47) % 1 - 0.5) - 0.5)).toFixed(4), (2 * ((t * 0.84) % 1) - 1).toFixed(4), ((rnd() - 0.5) * 2).toFixed(4)].join(",")); }
   return lines.join("\n");
 }
-import { FanoutLayerSink, GridLayer, SceneLayerSink, SCENE_DARK, SCENE_LIGHT, type SceneTool } from "@mori/skyscope-core";
-import type { Heatmap } from "@mori/skyscope-core";
+import { FanoutLayerSink, GridLayer, SceneLayerSink, SCENE_DARK, SCENE_LIGHT, type SceneTool } from "@cmori/skyscope-core";
+import type { Heatmap } from "@cmori/skyscope-core";
 import { useRef } from "react";
-import { GAUGE_DARK, GAUGE_LIGHT } from "@mori/skyscope-core";
+import { GAUGE_DARK, GAUGE_LIGHT } from "@cmori/skyscope-core";
 import { useEffect } from "react";
 
 // the stream follows the page host, so a dashboard opened from another machine talks to the same server

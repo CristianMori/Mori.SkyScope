@@ -3,7 +3,7 @@
 
 import { describe, it, expect } from "vitest";
 import { WebSocketServer } from "ws";
-import { encodeFrame, ManualClock, NullLayerSink, SignalStore, type SourceContext } from "@mori/skyscope-core";
+import { encodeFrame, ManualClock, NullLayerSink, SignalStore, type SourceContext } from "@cmori/skyscope-core";
 import { WebSocketFrameSource } from "./websocket-source.js";
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -43,7 +43,7 @@ describe("WebSocketFrameSource", () => {
 
 describe("WebSocketFrameSource binary layers", () => {
   it("routes SkyScopeLayer messages to the layer sink with typed arrays intact", async () => {
-    const { encodeLayerMessage, Scene, SceneLayerSink, PointCloud3DLayer } = await import("@mori/skyscope-core");
+    const { encodeLayerMessage, Scene, SceneLayerSink, PointCloud3DLayer } = await import("@cmori/skyscope-core");
     const wss = new WebSocketServer({ port: 0 });
     const port = (wss.address() as { port: number }).port;
     wss.on("connection", (ws) => {

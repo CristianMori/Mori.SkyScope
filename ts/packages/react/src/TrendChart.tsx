@@ -2,8 +2,8 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import type { SignalStore, TimeSource, Tool, TrendChartOptions } from "@mori/skyscope-core";
-import { TrendChartView, type ChannelDropEvent } from "@mori/skyscope-render";
+import type { SignalStore, TimeSource, Tool, TrendChartOptions } from "@cmori/skyscope-core";
+import { TrendChartView, type ChannelDropEvent } from "@cmori/skyscope-render";
 import { cx } from "./cx.js";
 
 /** Props of `TrendChart`. `store`, `clock`, `webgl` and `maxFps` remount the view when they change; `config` and `tool` are applied in place. */

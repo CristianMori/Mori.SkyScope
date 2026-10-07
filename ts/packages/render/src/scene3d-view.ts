@@ -1,7 +1,7 @@
 // Mori.SkyScope — Host for the 3D scene view: a WebGL2 canvas for the scene and a 2D canvas for the HUD, pointer and keyboard routing.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { Scene3DController, type InputEvent, type Modifiers, type Scene3DControllerOptions } from "@mori/skyscope-core";
+import { Scene3DController, type InputEvent, type Modifiers, type Scene3DControllerOptions } from "@cmori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
 import { WebGLPainter3D } from "./webgl-painter3d.js";
 

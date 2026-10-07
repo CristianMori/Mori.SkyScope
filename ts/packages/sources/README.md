@@ -1,4 +1,4 @@
-# @mori/skyscope-sources
+# @cmori/skyscope-sources
 
 Source plugins for Mori.SkyScope: WebSocket frame stream, MQTT, synthetic signals.
 

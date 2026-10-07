@@ -2,8 +2,8 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useEffect, useMemo, useRef, type CSSProperties } from "react";
-import { CartesianChart, Heatmap, PieChart, PolarChart, type CartesianChartOptions, type HeatmapOptions, type PieChartOptions, type PolarChartOptions } from "@mori/skyscope-core";
-import { ChartView, type ChartLike } from "@mori/skyscope-render";
+import { CartesianChart, Heatmap, PieChart, PolarChart, type CartesianChartOptions, type HeatmapOptions, type PieChartOptions, type PolarChartOptions } from "@cmori/skyscope-core";
+import { ChartView, type ChartLike } from "@cmori/skyscope-render";
 import { cx } from "./cx.js";
 
 interface HostProps { className?: string | undefined; style?: CSSProperties | undefined }

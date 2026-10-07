@@ -1,10 +1,10 @@
 // Mori.SkyScope — Blazor bridge entry point: mounts the trend chart and re-exports the other mounts; bundled into the Razor package.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import type { Tool, TrendChartOptions } from "@mori/skyscope-core";
+import type { Tool, TrendChartOptions } from "@cmori/skyscope-core";
 import { acquire } from "./shared.js";
-import { TrendChartView, saveFile } from "@mori/skyscope-render";
-import type { DropTarget } from "@mori/skyscope-core";
+import { TrendChartView, saveFile } from "@cmori/skyscope-render";
+import type { DropTarget } from "@cmori/skyscope-core";
 
 /**
  * The JS side of the Blazor components. Bundled by esbuild into

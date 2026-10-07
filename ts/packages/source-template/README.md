@@ -1,4 +1,4 @@
-# @mori/skyscope-source-template
+# @cmori/skyscope-source-template
 
 A minimal, working Mori.SkyScope source plugin (a counting ramp on a timer) to copy and rename. See docs/PLUGINS.md in the repository.
 

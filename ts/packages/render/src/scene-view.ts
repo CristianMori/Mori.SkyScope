@@ -1,7 +1,7 @@
 // Mori.SkyScope — Canvas host for a SceneController: translates pointer/wheel/keyboard events into core InputEvents and redraws on demand (interaction, inv…
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { SceneController, type InputEvent, type Modifiers, type SceneControllerOptions } from "@mori/skyscope-core";
+import { SceneController, type InputEvent, type Modifiers, type SceneControllerOptions } from "@cmori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
 
 /** Controller options plus the host's own: `maxFps` caps the redraw rate in frames per second (default 60). */

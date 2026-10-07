@@ -4,5 +4,5 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": { "dev": "vite --port 5174", "build": "vite build" },
-  "dependencies": { "@mori/skyscope-core": "0.1.0", "@mori/skyscope-render": "0.1.0", "@mori/skyscope-sources": "0.1.0", "@mori/skyscope-tokens": "0.1.0" }
+  "dependencies": { "@cmori/skyscope-core": "0.1.0", "@cmori/skyscope-render": "0.1.0", "@cmori/skyscope-sources": "0.1.0", "@cmori/skyscope-tokens": "0.1.0" }
 }

@@ -1,7 +1,7 @@
 // Mori.SkyScope — DOM panel that edits a trend chart's structure at runtime: lanes, axes, series, thresholds and markers as a tree, a property form for the selected item, and the chart-level settings.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { DARK_THEME, LIGHT_THEME, type EditorRow, type LegendPosition, type TimeFormat } from "@mori/skyscope-core";
+import { DARK_THEME, LIGHT_THEME, type EditorRow, type LegendPosition, type TimeFormat } from "@cmori/skyscope-core";
 import type { TrendChartView } from "./trend-chart-view.js";
 
 /** Options for `ChartEditorPanel`. */

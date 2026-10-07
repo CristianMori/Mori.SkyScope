@@ -1,5 +1,5 @@
 {
-  "name": "@mori/skyscope-source-template",
+  "name": "@cmori/skyscope-source-template",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "author": "Cristian Mori",
@@ -21,7 +21,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@mori/skyscope-core": "0.1.0"
+    "@cmori/skyscope-core": "0.1.0"
   },
   "sideEffects": false,
   "publishConfig": {

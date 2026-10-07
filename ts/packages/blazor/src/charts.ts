@@ -1,8 +1,8 @@
 // Mori.SkyScope — Blazor bridge for the analytic charts: mounts an XY, pie, polar or heatmap view and takes options and data as JSON.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { CartesianChart, Heatmap, PieChart, PolarChart } from "@mori/skyscope-core";
-import { ChartView, type ChartLike } from "@mori/skyscope-render";
+import { CartesianChart, Heatmap, PieChart, PolarChart } from "@cmori/skyscope-core";
+import { ChartView, type ChartLike } from "@cmori/skyscope-render";
 
 /** Which analytic chart model `mountChart` builds; also selects which options JSON shape is expected. */
 export type ChartKind = "xy" | "pie" | "polar" | "heatmap";

@@ -2,7 +2,7 @@
 
 Everything that produces data for Mori.SkyScope is a **source plugin**. The core never knows a protocol: a
 source pushes into two sinks (signals and scene layers), reads chart time from a clock, and logs through the
-context it was started with. The same contract exists in TypeScript (`@mori/skyscope-core`) and C#
+context it was started with. The same contract exists in TypeScript (`@cmori/skyscope-core`) and C#
 (`Mori.SkyScope.Core`), and both are pinned by the shared fixtures in `spec/fixtures/`.
 
 ## The contract
@@ -41,7 +41,7 @@ Two minimal, working plugins live next to the real ones and are the recommended 
 
 | Language | Location | Package name |
 |---|---|---|
-| TypeScript | `ts/packages/source-template` | `@mori/skyscope-source-template` |
+| TypeScript | `ts/packages/source-template` | `@cmori/skyscope-source-template` |
 | C# | `dotnet/Mori.SkyScope.Sources.Template` | `Mori.SkyScope.Sources.Template` |
 
 Each implements a "counter" source: it declares one channel and pushes a regular-rate ramp from a timer, shows
@@ -52,7 +52,7 @@ timer with your protocol.
 ### TypeScript walkthrough
 
 ```ts
-import { type Source, type SourceContext, type SourceFactory } from "@mori/skyscope-core";
+import { type Source, type SourceContext, type SourceFactory } from "@cmori/skyscope-core";
 
 export interface CounterConfig { channelId?: number; rate?: number }
 

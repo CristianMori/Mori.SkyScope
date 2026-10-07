@@ -2,13 +2,13 @@
 // tree, a hand-made channel list as a second drag source, the chart's drop hook, and adding signals from code.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import "@mori/skyscope-tokens/tokens.css";
+import "@cmori/skyscope-tokens/tokens.css";
 import {
   CHANNEL_DRAG_DIGITAL_MIME, CHANNEL_DRAG_MIME, Compass, LinearGauge, LiveClock, NumericDisplay, RadialGauge, SignalStore, encodeChannelDrag,
   type DropTarget, type Tool, type TrendChartOptions,
-} from "@mori/skyscope-core";
-import { ChartEditorPanel, GaugeView, SignalTreePanel, TrendChartView, pickFile, saveFile, type ChannelDropEvent } from "@mori/skyscope-render";
-import { WebSocketFrameSource } from "@mori/skyscope-sources";
+} from "@cmori/skyscope-core";
+import { ChartEditorPanel, GaugeView, SignalTreePanel, TrendChartView, pickFile, saveFile, type ChannelDropEvent } from "@cmori/skyscope-render";
+import { WebSocketFrameSource } from "@cmori/skyscope-sources";
 
 // ---- page skeleton -------------------------------------------------------------------------------------------------
 const WS_URL = new URLSearchParams(location.search).get("ws") ?? `ws://${location.hostname}:5055/ws`;

@@ -1,4 +1,4 @@
-# @mori/skyscope-render
+# @cmori/skyscope-render
 
 Canvas2D and WebGL painters plus the chart, gauge and scene views for Mori.SkyScope.
 

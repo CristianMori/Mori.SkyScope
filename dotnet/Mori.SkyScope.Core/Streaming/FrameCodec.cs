@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace Mori.SkyScope.Core.Streaming;
 
 /// <summary>
-/// SkyScopeFrame v1 binary codec. Mirrors <c>encodeFrame</c>/<c>decodeFrame</c> in <c>@mori/skyscope-core</c>
+/// SkyScopeFrame v1 binary codec. Mirrors <c>encodeFrame</c>/<c>decodeFrame</c> in <c>@cmori/skyscope-core</c>
 /// (see that file for the byte layout); pinned by the golden files in <c>spec/frames/</c>.
 /// </summary>
 public static class FrameCodec

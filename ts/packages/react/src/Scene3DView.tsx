@@ -2,8 +2,8 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import type { Scene3DController, Scene3DTool } from "@mori/skyscope-core";
-import { Scene3DView as Scene3DViewHost, type Scene3DViewOptions } from "@mori/skyscope-render";
+import type { Scene3DController, Scene3DTool } from "@cmori/skyscope-core";
+import { Scene3DView as Scene3DViewHost, type Scene3DViewOptions } from "@cmori/skyscope-render";
 import { cx } from "./cx.js";
 
 /** Props of `Scene3DView`. */

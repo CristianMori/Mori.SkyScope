@@ -1,7 +1,7 @@
 // Mori.SkyScope — Synthetic source: deterministic waveforms pushed as frames from a timer, for demos and benches.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { synthesize, type ChannelKind, type SynthSpec, type Source, type SourceContext, type SourceFactory, type FrameChannel } from "@mori/skyscope-core";
+import { synthesize, type ChannelKind, type SynthSpec, type Source, type SourceContext, type SourceFactory, type FrameChannel } from "@cmori/skyscope-core";
 
 /** One generated channel: the waveform spec plus its channel `id` (required, unique) and optional `name` (default `ch<id>`), `unit` and `kind`. */
 export interface SyntheticChannelConfig extends SynthSpec { id: number; name?: string | undefined; unit?: string | undefined; kind?: ChannelKind | undefined }

@@ -9,4 +9,4 @@ Every version of the NuGet and npm packages, newest first. The day-by-day log is
   3D viewer with meshes and URDF robots; MCAP recording and playback; WebSocket, MQTT, ROS 2 and CSV sources.
 - Hosts: React, plain DOM, Blazor, WPF and Windows Forms (with designer support).
 - Packages: Mori.SkyScope.Core, Render.Skia, Render.OpenTK, Wpf, WinForms, Blazor, Streaming, Sources.Mqtt,
-  Sources.Ros2 on NuGet; @mori/skyscope-core, -render, -sources, -react, -tokens, -source-template on npm.
+  Sources.Ros2 on NuGet; @cmori/skyscope-core, -render, -sources, -react, -tokens, -source-template on npm.

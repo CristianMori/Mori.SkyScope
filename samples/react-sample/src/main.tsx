@@ -3,7 +3,7 @@
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@mori/skyscope-react/styles.css";
+import "@cmori/skyscope-react/styles.css";
 import { App } from "./App";
 
 // Mount the dashboard into the #root element of index.html; StrictMode double-invokes effects in development, which the hosts tolerate.

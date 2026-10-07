@@ -4,5 +4,5 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": { "dev": "vite", "build": "vite build" },
-  "dependencies": { "@mori/skyscope-react": "0.1.0", "react": "^19.1.0", "react-dom": "^19.1.0" }
+  "dependencies": { "@cmori/skyscope-react": "0.1.0", "react": "^19.1.0", "react-dom": "^19.1.0" }
 }

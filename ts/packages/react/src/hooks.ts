@@ -2,8 +2,8 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useEffect, useMemo, useState } from "react";
-import { LiveClock, NullLayerSink, SignalStore, type LayerSink, type SignalSink, type SignalStoreOptions, type Source, type SourceContext } from "@mori/skyscope-core";
-import { WebSocketFrameSource, type WebSocketSourceConfig } from "@mori/skyscope-sources";
+import { LiveClock, NullLayerSink, SignalStore, type LayerSink, type SignalSink, type SignalStoreOptions, type Source, type SourceContext } from "@cmori/skyscope-core";
+import { WebSocketFrameSource, type WebSocketSourceConfig } from "@cmori/skyscope-sources";
 
 /** A SignalStore that lives as long as the component. */
 export function useSignalStore(options?: SignalStoreOptions): SignalStore {

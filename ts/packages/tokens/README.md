@@ -1,4 +1,4 @@
-# @mori/skyscope-tokens
+# @cmori/skyscope-tokens
 
 Design tokens for Mori.SkyScope (CSS variables and TypeScript constants).
 

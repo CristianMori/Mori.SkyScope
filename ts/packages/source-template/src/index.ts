@@ -1,7 +1,7 @@
 // Mori.SkyScope — Template source plugin: declares one regular-rate channel and pushes a counting ramp from a timer.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import type { Source, SourceContext, SourceFactory } from "@mori/skyscope-core";
+import type { Source, SourceContext, SourceFactory } from "@cmori/skyscope-core";
 
 /**
  * Template source plugin: declares one regular-rate channel and pushes a counting ramp from a timer.

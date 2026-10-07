@@ -1,7 +1,7 @@
 // Mori.SkyScope — WebSocket frame source: binary frames into a store, catalog and layer messages relayed, optional Web Worker, reconnect.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { decodeFrame, decodeLayerMessage, isLayerMessage, type ChannelInfo, type Source, type SourceContext, type SourceFactory } from "@mori/skyscope-core";
+import { decodeFrame, decodeLayerMessage, isLayerMessage, type ChannelInfo, type Source, type SourceContext, type SourceFactory } from "@cmori/skyscope-core";
 
 /** Configuration of `WebSocketFrameSource`. */
 export interface WebSocketSourceConfig {

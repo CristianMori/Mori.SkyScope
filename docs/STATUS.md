@@ -5,7 +5,7 @@
 Everything below exists in **both** cores and is pinned by shared fixtures (`spec/fixtures/*.json`,
 run by xUnit and Vitest) unless marked otherwise. TS: 96 tests, C#: 90 tests, all green.
 
-| Area | TS (`@mori/skyscope-core`) | C# (`Mori.SkyScope.Core`) | Fixture |
+| Area | TS (`@cmori/skyscope-core`) | C# (`Mori.SkyScope.Core`) | Fixture |
 |---|---|---|---|
 | Rename to Mori.SkyScope, Apache-2.0, authorship | ✅ | ✅ | — |
 | `SignalBuffer` ring buffer (regular runs + timestamped) | `signals/signal-buffer.ts` | `Signals/SignalBuffer.cs` | `signal-buffer.json` (12) |
@@ -14,9 +14,9 @@ run by xUnit and Vitest) unless marked otherwise. TS: 96 tests, C#: 90 tests, al
 | Scales: linear / log / time, 1-2-5 ticks, time ladder, UTC + relative labels | `scales/*` | `Scales/*` | `scales.json` (20) |
 | Source contracts: `Source`, `SourceFactory`, `SourceRegistry`, `SignalSink`, `LayerSink`, `TimeSource` | `sources/contracts.ts` | `Sources/Contracts.cs` (+ `[SkyScopeSource]` scanning) | — |
 | `SignalStore` (rate×retention sizing, auto-declare, timing conversion, drop accounting, notifications) | `sources/signal-store.ts` | `Sources/SignalStore.cs` | `signal-store.json` (9) |
-| Deterministic synth generator + `SyntheticSource` plugin | `sources/synth.ts`, `@mori/skyscope-sources` | `Sources/Synth.cs`, `Sources/SyntheticSource.cs` | `synthetic.json` (8) |
+| Deterministic synth generator + `SyntheticSource` plugin | `sources/synth.ts`, `@cmori/skyscope-sources` | `Sources/Synth.cs`, `Sources/SyntheticSource.cs` | `synthetic.json` (8) |
 | `Painter` contract + `RecordingPainter` | `paint/*` | `Paint/*` | `paint.json` (2) |
-| Real painters | `Canvas2DPainter` (`@mori/skyscope-render`) | `SkiaPainter` (`Mori.SkyScope.Render.Skia`, SkiaSharp 4.151) | manual for now |
+| Real painters | `Canvas2DPainter` (`@cmori/skyscope-render`) | `SkiaPainter` (`Mori.SkyScope.Render.Skia`, SkiaSharp 4.151) | manual for now |
 | Design tokens → CSS vars / TS / C# consts; shared component stylesheet | ✅ | ✅ | — |
 | Chrome (pre-pivot): `Field` validation core, Blazor `Button`/`TextField` | ✅ | ✅ | `field.json` (19) |
 
@@ -29,7 +29,7 @@ run by xUnit and Vitest) unless marked otherwise. TS: 96 tests, C#: 90 tests, al
 
 ### Not done / carried forward
 - React `Button`/`TextField` and the sample apps are still empty shells (pre-pivot chrome; low priority).
-- Blazor package still exports only chrome; the JS bridge (`@mori/skyscope-blazor`) starts day 3.
+- Blazor package still exports only chrome; the JS bridge (`@cmori/skyscope-blazor`) starts day 3.
 - WPF GL host, WinForms host: later days.
 
 ## Day 2 (2026-09-05) — scene engine + data plane ✅
@@ -46,8 +46,8 @@ cross-language smoke run (C# demo server → TS client: 100 ch × 1 kHz, 198 000
 | Built-in layers: `PolylineLayer`, `PointsLayer`, `GridLayer` (auto 1-2-5 spacing) | `scene/layers.ts` | `Scene/Layers.cs` |
 | Interaction reducer: click vs drag slop, pan / box-zoom / cursor / select gestures, shift & middle-button & space overrides, wheel zoom, Escape/cancel, dblclick reset; `applyCameraEffect` | `scene/interaction.ts` | `Scene/Interaction.cs` |
 | `clipTransform` (data → GL clip space with x-origin for epoch precision) | `scales/clip.ts` | `Scales/ClipTransform.cs` |
-| **WebGL line renderer** (one GPU buffer per series, uniform transform, 1-px LINE_STRIP) | `@mori/skyscope-render/webgl-lines.ts` | — |
-| **WebSocketFrameSource** (binary frames + JSON channel catalog, reconnect; optional Blob-worker socket with transferable frames) | `@mori/skyscope-sources` | `Core/Sources/WebSocketFrameSource.cs` (background receive task, optional `Dispatch` marshalling) |
+| **WebGL line renderer** (one GPU buffer per series, uniform transform, 1-px LINE_STRIP) | `@cmori/skyscope-render/webgl-lines.ts` | — |
+| **WebSocketFrameSource** (binary frames + JSON channel catalog, reconnect; optional Blob-worker socket with transferable frames) | `@cmori/skyscope-sources` | `Core/Sources/WebSocketFrameSource.cs` (background receive task, optional `Dispatch` marshalling) |
 | `SignalStore` thread-safety (`SyncRoot`) | n/a | ✅ |
 | **Mori.SkyScope.Streaming**: `FrameBroadcaster` (ISignalSink → all sockets, bounded per-client queues, drop accounting) + `MapSkyScopeStream` | — | ✅ |
 | **Demo server** `samples/Mori.SkyScope.DemoServer` (`--channels --rate --batch-ms --quantized`, `/`, `/channels`, `/ws`) | — | ✅ |
@@ -71,9 +71,9 @@ Verified live in Chrome: React sample and Blazor sample both streaming from the 
 | Pure layout: margins → legend → y-axis columns → stacked lanes → time axis | `charts/trend-layout.ts` | `TrendLayoutEngine` |
 | `TrendChartModel`: live/paused/review window with clamping, per-axis autoscale (5 % pad, flat-series pad, fixed, digital), M4 decimation per series bound to the store, digital step expansion, readouts at/before time, cursor A/B + Δ, legend values, pan/zoom/box-zoom/hover/click/reset effects, move series between lanes | `charts/trend-model.ts` | `Charts/TrendChartModel*.cs` |
 | Three-pass drawing (background / series / foreground) + GPU geometry export | `charts/trend-draw.ts` | `Charts/TrendChartRenderer*.cs` |
-| `TrendChartView`: 3 stacked canvases (2D bg, WebGL series with per-lane scissor, 2D fg), RAF loop with fps cap, ResizeObserver, pointer/wheel/keyboard → reducer → model, box-zoom preview, legend-row drag onto a lane | `@mori/skyscope-render` | — |
-| React: `<TrendChart>`, `<Button>`, `useSignalStore`, `useWebSocketSource`, `useSource` | `@mori/skyscope-react` | — |
-| Blazor: `<TrendChart WsUrl Config Tool>` Razor component + JS bridge (`@mori/skyscope-blazor` → `wwwroot/skyscope.js`, 42 KB, esbuild); charts sharing a URL share one socket; C# config serialised to the TS JSON shape | `@mori/skyscope-blazor` | `Mori.SkyScope.Blazor` |
+| `TrendChartView`: 3 stacked canvases (2D bg, WebGL series with per-lane scissor, 2D fg), RAF loop with fps cap, ResizeObserver, pointer/wheel/keyboard → reducer → model, box-zoom preview, legend-row drag onto a lane | `@cmori/skyscope-render` | — |
+| React: `<TrendChart>`, `<Button>`, `useSignalStore`, `useWebSocketSource`, `useSource` | `@cmori/skyscope-react` | — |
+| Blazor: `<TrendChart WsUrl Config Tool>` Razor component + JS bridge (`@cmori/skyscope-blazor` → `wwwroot/skyscope.js`, 42 KB, esbuild); charts sharing a URL share one socket; C# config serialised to the TS JSON shape | `@cmori/skyscope-blazor` | `Mori.SkyScope.Blazor` |
 | Samples: React (`npm run sample`) and Blazor (`dotnet run --project samples/Mori.SkyScope.Blazor.Sample`) against `samples/Mori.SkyScope.DemoServer` | ✅ | ✅ |
 
 ### Fixed along the way
@@ -169,7 +169,7 @@ machinery with TrendChart.
 
 ## Day 7 — samples, docs, packaging, CI (2026-09-06)
 - **Dashboards**: React, Blazor and WPF samples now show the same robot dashboard — trend chart (incl. the synthetic robot's pose lane on channels 100–103), gauges, analytic charts and the live scene relayed by the demo server.
-- **Plugin template + doc**: `docs/PLUGINS.md` (contracts, sinks, clock, layer JSON, relaying to browsers, testing) with working templates `ts/packages/source-template` (`@mori/skyscope-source-template`) and `dotnet/Mori.SkyScope.Sources.Template`, each with tests (store-driven, registry discovery).
+- **Plugin template + doc**: `docs/PLUGINS.md` (contracts, sinks, clock, layer JSON, relaying to browsers, testing) with working templates `ts/packages/source-template` (`@cmori/skyscope-source-template`) and `dotnet/Mori.SkyScope.Sources.Template`, each with tests (store-driven, registry discovery).
 - **Packaging**: NuGet metadata in `Directory.Build.props` (readme, tags, docs XML); `dotnet pack dotnet/Mori.SkyScope.slnx -c Release -o artifacts/nuget` → Core, Render.Skia, Streaming, Wpf, Blazor (with `staticwebassets/skyscope.js`), Sources.Mqtt, Sources.Ros2. npm: `npm run pack` → tokens, core, render, sources, react, source-template tarballs (public scoped packages, per-package README). Samples, tests and the template project are not packable.
 - **CI**: `.github/workflows/ci.yml` (windows-latest: npm build/test/pack, dotnet build/test/pack, artifacts uploaded).
 - **Bench** (`npm run bench -- 60`, `BENCH_SECONDS=60 dotnet test --filter Category=Bench`): 500 ch × 1 kHz for 60 s through encode → decode → store: TS 30 M samples in 274 ms (109 Msamples/s), C# in 476 ms (63 Msamples/s), zero drops. A 2 s version runs in both suites.

@@ -1,4 +1,4 @@
-# @mori/skyscope-react
+# @cmori/skyscope-react
 
 React components for Mori.SkyScope: TrendChart, gauges, analytic charts, SceneView.
 

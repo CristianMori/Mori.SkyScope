@@ -2,8 +2,8 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import type { SignalStore } from "@mori/skyscope-core";
-import { SignalTreePanel, type TrendChartView } from "@mori/skyscope-render";
+import type { SignalStore } from "@cmori/skyscope-core";
+import { SignalTreePanel, type TrendChartView } from "@cmori/skyscope-render";
 import { cx } from "./cx.js";
 
 /** Props of `SignalTree`. */

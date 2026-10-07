@@ -1,7 +1,7 @@
 // Mori.SkyScope — Records the shared SkyScope stream (frames, catalog, relayed layers) of wsUrl to an MCAP file in the browser.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { saveFile, recordingFileName } from "@mori/skyscope-render";
+import { saveFile, recordingFileName } from "@cmori/skyscope-render";
 import { acquire } from "./shared.js";
 
 /**

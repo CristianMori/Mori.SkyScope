@@ -2,7 +2,7 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { forwardRef, type ButtonHTMLAttributes } from "react";
-import type { ButtonVariant, Size } from "@mori/skyscope-core";
+import type { ButtonVariant, Size } from "@cmori/skyscope-core";
 import { cx } from "./cx.js";
 
 /** Props of `Button`; every native button attribute is forwarded, `type` defaults to "button". */

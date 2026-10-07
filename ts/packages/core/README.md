@@ -1,4 +1,4 @@
-# @mori/skyscope-core
+# @cmori/skyscope-core
 
 Headless engine for Mori.SkyScope: ring buffers, M4 decimation, SkyScopeFrame codec, scales, painter contract, trend chart, gauges, analytic charts, scene layers, source-plugin contracts.
 

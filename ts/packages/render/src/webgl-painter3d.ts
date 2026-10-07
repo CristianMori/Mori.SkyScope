@@ -1,7 +1,7 @@
 // Mori.SkyScope — WebGL2 implementation of Painter3D: one VAO per mesh key, re-uploaded when the mesh version changes; three programs (flat/lit geometry, t…
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { isRasterImage, type ImageHandle, type Mat4, type Material3D, type Mesh3D, type Painter3D, resolveMaterial, meshVertexCount } from "@mori/skyscope-core";
+import { isRasterImage, type ImageHandle, type Mat4, type Material3D, type Mesh3D, type Painter3D, resolveMaterial, meshVertexCount } from "@cmori/skyscope-core";
 import { cssToRgba } from "./webgl-lines.js";
 
 /**

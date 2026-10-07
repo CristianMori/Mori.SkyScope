@@ -2,7 +2,7 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { describe, expect, it } from "vitest";
-import { ManualClock, NullLayerSink, SignalStore, SourceRegistry, type SourceContext } from "@mori/skyscope-core";
+import { ManualClock, NullLayerSink, SignalStore, SourceRegistry, type SourceContext } from "@cmori/skyscope-core";
 import { CounterSource, counterFactory } from "./index.js";
 
 describe("counter source (template)", () => {

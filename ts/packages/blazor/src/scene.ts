@@ -1,8 +1,8 @@
 // Mori.SkyScope — Blazor bridge for the 2D scene view: layers declared and pushed as JSON, relayed layers from the shared socket.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { SceneLayerSink, applyLayerPayload, createLayer, type SceneTool } from "@mori/skyscope-core";
-import { SceneView, type SceneViewOptions } from "@mori/skyscope-render";
+import { SceneLayerSink, applyLayerPayload, createLayer, type SceneTool } from "@cmori/skyscope-core";
+import { SceneView, type SceneViewOptions } from "@cmori/skyscope-render";
 import { acquire } from "./shared.js";
 
 /**

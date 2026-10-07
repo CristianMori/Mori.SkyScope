@@ -2,7 +2,7 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useState } from "react";
-import { AxesLayer, Grid3DLayer, MarkerLayer, Path3DLayer, PointCloud3DLayer, Pose3DLayer, SceneLayerSink, parseUrdf, publishUrdf, quatFromEuler, type FanoutLayerSink, type Scene3DTool } from "@mori/skyscope-core";
+import { AxesLayer, Grid3DLayer, MarkerLayer, Path3DLayer, PointCloud3DLayer, Pose3DLayer, SceneLayerSink, parseUrdf, publishUrdf, quatFromEuler, type FanoutLayerSink, type Scene3DTool } from "@cmori/skyscope-core";
 
 /** A two-joint arm (the same model the demo server carries) mounted on the robot. */
 const ARM_URDF = `<robot name="arm">
@@ -13,7 +13,7 @@ const ARM_URDF = `<robot name="arm">
   <joint name="shoulder" type="revolute"><parent link="base_link"/><child link="upper_arm"/><origin xyz="0 0 0.2"/><axis xyz="0 1 0"/><limit lower="-1.57" upper="1.57"/></joint>
   <joint name="elbow" type="revolute"><parent link="upper_arm"/><child link="forearm"/><origin xyz="0.4 0 0"/><axis xyz="0 1 0"/><limit lower="-2.5" upper="2.5"/></joint>
 </robot>`;
-import { Button, Scene3DView } from "@mori/skyscope-react";
+import { Button, Scene3DView } from "@cmori/skyscope-react";
 
 /**
  * A 3D scene generated in the browser (no server needed): a robot driving a circle on a metric grid with a

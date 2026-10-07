@@ -3,8 +3,8 @@
 
 namespace Mori.SkyScope.Core;
 
-/// <summary>Control size, shared by every sized component. Mirrors <c>Size</c> in <c>@mori/skyscope-core</c>.</summary>
+/// <summary>Control size, shared by every sized component. Mirrors <c>Size</c> in <c>@cmori/skyscope-core</c>.</summary>
 public enum Size { Sm, Md, Lg }
 
-/// <summary>Mirrors <c>ButtonVariant</c> in <c>@mori/skyscope-core</c>.</summary>
+/// <summary>Mirrors <c>ButtonVariant</c> in <c>@cmori/skyscope-core</c>.</summary>
 public enum ButtonVariant { Default, Primary, Danger, Subtle, Ghost }

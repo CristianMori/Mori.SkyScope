@@ -2,8 +2,8 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { McapRecorder, NullLayerSink, PlaybackSource, SignalStore, formatNumber, type LayerSink, type Recording, type RecorderStats, type SourceContext } from "@mori/skyscope-core";
-import { createFileSink, recordingFileName, saveFile, type FileSink } from "@mori/skyscope-render";
+import { McapRecorder, NullLayerSink, PlaybackSource, SignalStore, formatNumber, type LayerSink, type Recording, type RecorderStats, type SourceContext } from "@cmori/skyscope-core";
+import { createFileSink, recordingFileName, saveFile, type FileSink } from "@cmori/skyscope-render";
 import { Button } from "./Button.js";
 import { cx } from "./cx.js";
 

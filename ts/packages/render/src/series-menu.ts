@@ -1,7 +1,7 @@
 // Mori.SkyScope — Context menu for a series of the trend chart: show or hide, rename, colour, line width, remove.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { SERIES_PALETTE, type TrendChartModel } from "@mori/skyscope-core";
+import { SERIES_PALETTE, type TrendChartModel } from "@cmori/skyscope-core";
 
 const CSS = `
 .skyscope-menu{position:fixed;z-index:1000;min-width:180px;padding:4px;border:1px solid var(--skyscope-color-border,#cbd5e1);border-radius:6px;background:var(--skyscope-color-surface,#fff);color:var(--skyscope-color-text,#0f172a);box-shadow:0 8px 24px rgba(0,0,0,.18);font:12px/1.4 var(--skyscope-font-family,system-ui,sans-serif);user-select:none}

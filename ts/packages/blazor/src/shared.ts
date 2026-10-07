@@ -1,8 +1,8 @@
 // Mori.SkyScope — One socket per URL shared by every chart and scene on the page; released when the last user disposes.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { FanoutLayerSink, LiveClock, McapRecorder, SignalStore, type SourceContext, type TimeSource } from "@mori/skyscope-core";
-import { WebSocketFrameSource } from "@mori/skyscope-sources";
+import { FanoutLayerSink, LiveClock, McapRecorder, SignalStore, type SourceContext, type TimeSource } from "@cmori/skyscope-core";
+import { WebSocketFrameSource } from "@cmori/skyscope-sources";
 
 /** One socket per URL shared by every chart and scene on the page; released when the last user disposes. */
 interface Shared { store: SignalStore; source: WebSocketFrameSource; layers: FanoutLayerSink; recorder: McapRecorder; refs: number }

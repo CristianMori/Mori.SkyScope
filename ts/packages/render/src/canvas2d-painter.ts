@@ -1,7 +1,7 @@
 // Mori.SkyScope — Canvas2D implementation of the painter contract with device-pixel-ratio handling, layer surfaces and raster upload.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { isRasterImage, resolveFill, resolveStroke, resolveText, type Fill, type ImageHandle, type RasterImage, type Painter, type ResolvedStroke, type Stroke, type TextMetrics, type TextStyle } from "@mori/skyscope-core";
+import { isRasterImage, resolveFill, resolveStroke, resolveText, type Fill, type ImageHandle, type RasterImage, type Painter, type ResolvedStroke, type Stroke, type TextMetrics, type TextStyle } from "@cmori/skyscope-core";
 
 /** Any canvas the painter can draw on: a DOM canvas or an OffscreenCanvas (layers and rasters prefer the latter when available). */
 export type CanvasLike = HTMLCanvasElement | OffscreenCanvas;

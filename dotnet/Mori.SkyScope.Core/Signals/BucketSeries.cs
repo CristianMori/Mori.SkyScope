@@ -22,7 +22,7 @@ public readonly record struct Bucket(
 
 /// <summary>
 /// Incremental M4 decimation over a <see cref="SignalBuffer"/>. Mirrors <c>BucketSeries</c> in
-/// <c>@mori/skyscope-core</c>; pinned by <c>spec/fixtures/decimation.json</c>.
+/// <c>@cmori/skyscope-core</c>; pinned by <c>spec/fixtures/decimation.json</c>.
 /// Bucket index = floor(t / quantum). Each bucket keeps first/min/max/last with their times, so a
 /// window draws at most 4 points per bucket regardless of sample count.
 /// </summary>

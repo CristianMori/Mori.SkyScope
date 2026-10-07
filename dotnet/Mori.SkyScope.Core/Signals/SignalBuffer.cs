@@ -13,7 +13,7 @@ public enum TimeKind { Regular, Timestamped }
 public readonly record struct RunSegment(long FromSeq, long ToSeq, double Dt);
 
 /// <summary>
-/// Append-only ring buffer for one channel. Mirrors <c>SignalBuffer</c> in <c>@mori/skyscope-core</c>;
+/// Append-only ring buffer for one channel. Mirrors <c>SignalBuffer</c> in <c>@cmori/skyscope-core</c>;
 /// behaviour is pinned by <c>spec/fixtures/signal-buffer.json</c>.
 /// Samples are addressed by a monotonically increasing sequence number. Regular-rate channels store
 /// no per-sample timestamp: time is derived from "runs" (t0 + i·dt).

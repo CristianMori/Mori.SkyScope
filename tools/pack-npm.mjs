@@ -8,6 +8,6 @@ const out = "artifacts/npm";
 fs.mkdirSync(out, { recursive: true });
 // Dependency order (tokens first); blazor is bundled into the Razor package and is not published to npm.
 for (const p of ["tokens", "core", "render", "sources", "react", "source-template"]) {
-  execSync(`npm pack --pack-destination ${out} -w @mori/skyscope-${p}`, { stdio: "inherit" });
+  execSync(`npm pack --pack-destination ${out} -w @cmori/skyscope-${p}`, { stdio: "inherit" });
 }
 console.log(fs.readdirSync(out).join("\n"));

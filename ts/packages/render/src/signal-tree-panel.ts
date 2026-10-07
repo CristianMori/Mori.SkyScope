@@ -1,7 +1,7 @@
 // Mori.SkyScope — DOM panel for the signal tree: search box, grouped rows, selection, and drag of channels onto a trend chart.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { CHANNEL_DRAG_DIGITAL_MIME, CHANNEL_DRAG_MIME, encodeChannelDrag, SignalTreeModel, type ChannelDragPayload, type SignalStore, type SignalTreeRow } from "@mori/skyscope-core";
+import { CHANNEL_DRAG_DIGITAL_MIME, CHANNEL_DRAG_MIME, encodeChannelDrag, SignalTreeModel, type ChannelDragPayload, type SignalStore, type SignalTreeRow } from "@cmori/skyscope-core";
 import type { TrendChartView } from "./trend-chart-view.js";
 
 /** Options for `SignalTreePanel`. */

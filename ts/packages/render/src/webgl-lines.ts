@@ -1,7 +1,7 @@
 // Mori.SkyScope — Draws many polylines (decimated series) with WebGL as anti-aliased instanced quads: one GPU buffer per series in data space, one uniform transform per draw.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import type { ClipTransform, Rect } from "@mori/skyscope-core";
+import type { ClipTransform, Rect } from "@cmori/skyscope-core";
 
 /**
  * Draws many polylines (decimated series) with WebGL: one GPU buffer per series in data space,

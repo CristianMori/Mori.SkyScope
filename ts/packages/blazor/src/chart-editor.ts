@@ -1,7 +1,7 @@
 // Mori.SkyScope — Blazor bridge for the chart editor panel, attached to a mounted trend chart.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { ChartEditorPanel, type TrendChartView } from "@mori/skyscope-render";
+import { ChartEditorPanel, type TrendChartView } from "@cmori/skyscope-render";
 
 /** Options of `mountChartEditor`: `hideChartSettings` hides the chart-level section. */
 export interface ChartEditorMountOptions { hideChartSettings?: boolean | undefined }

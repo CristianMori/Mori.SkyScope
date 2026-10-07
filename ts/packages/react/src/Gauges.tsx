@@ -3,8 +3,8 @@
 
 import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { AttitudeIndicator, Compass, Knob, Led, LedArray, LinearGauge, NumericDisplay, RadialGauge, Slider, Switch,
-  type AttitudeOptions, type CompassOptions, type KnobOptions, type LedArrayOptions, type LedOptions, type LinearGaugeOptions, type NumericDisplayOptions, type RadialGaugeOptions, type SliderOptions, type SwitchOptions } from "@mori/skyscope-core";
-import { GaugeView, bindKnob, bindSlider, bindSwitch, type GaugeLike } from "@mori/skyscope-render";
+  type AttitudeOptions, type CompassOptions, type KnobOptions, type LedArrayOptions, type LedOptions, type LinearGaugeOptions, type NumericDisplayOptions, type RadialGaugeOptions, type SliderOptions, type SwitchOptions } from "@cmori/skyscope-core";
+import { GaugeView, bindKnob, bindSlider, bindSwitch, type GaugeLike } from "@cmori/skyscope-render";
 import { cx } from "./cx.js";
 
 interface HostProps { className?: string | undefined; style?: CSSProperties | undefined }

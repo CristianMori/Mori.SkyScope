@@ -3,7 +3,7 @@
 
 // Usage:  node tools/release.mjs 0.1.1 [--notes "one line"] [--no-commit] [--push]
 //   - rewrites <Version> in dotnet/Directory.Build.props, "version" in package.json and every ts/packages/*/package.json,
-//     and the "@mori/skyscope-*" dependency pins in packages and samples;
+//     and the "@cmori/skyscope-*" dependency pins in packages and samples;
 //   - inserts a "## 0.1.1 (YYYY-MM-DD)" section at the top of CHANGELOG.md with the notes (edit it before pushing);
 //   - commits "Release 0.1.1" and creates the annotated tag v0.1.1 (unless --no-commit);
 //   - with --push, pushes main and the tag; the release workflow then builds, tests and publishes the packages.
@@ -37,7 +37,7 @@ for (const rel of packageJsons) {
   if (isPackage) json.version = version;
   for (const key of ["dependencies", "devDependencies", "peerDependencies"]) {
     const deps = json[key]; if (!deps) continue;
-    for (const name of Object.keys(deps)) if (name.startsWith("@mori/skyscope-")) deps[name] = version;
+    for (const name of Object.keys(deps)) if (name.startsWith("@cmori/skyscope-")) deps[name] = version;
   }
   fs.writeFileSync(file, JSON.stringify(json, null, 2) + "\n");
   console.log(`npm: ${rel}`);

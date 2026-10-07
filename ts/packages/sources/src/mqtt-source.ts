@@ -1,7 +1,7 @@
 // Mori.SkyScope — MQTT source over WebSocket: subscribes to topic filters and maps JSON payloads to samples.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { mapMqttMessage, mqttChannels, samplesToFrame, type MqttRule, type MqttSample, type Source, type SourceContext, type SourceFactory } from "@mori/skyscope-core";
+import { mapMqttMessage, mqttChannels, samplesToFrame, type MqttRule, type MqttSample, type Source, type SourceContext, type SourceFactory } from "@cmori/skyscope-core";
 import mqtt, { type MqttClient } from "mqtt";
 
 /** Configuration of `MqttSource`. */

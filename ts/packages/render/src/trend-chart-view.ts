@@ -3,7 +3,7 @@
 
 import { TrendChartModel, applyTrendOptions, drawTrendChartBackground, drawTrendChartForeground, drawTrendChartSeries, seriesGeometry, initialInteraction, reduceInteraction, LiveClock, formatFixed,
   CHANNEL_DRAG_MIME, CHANNEL_DRAG_DIGITAL_MIME, parseChannelDrag, channelDragIsDigital, type ChannelDragPayload, type DropTarget,
-  type InputEvent, type InteractionState, type Modifiers, type Rect, type SignalStore, type TimeSource, type Tool, type TrendChartOptions, type TrendLayout } from "@mori/skyscope-core";
+  type InputEvent, type InteractionState, type Modifiers, type Rect, type SignalStore, type TimeSource, type Tool, type TrendChartOptions, type TrendLayout } from "@cmori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
 import { saveFile } from "./download.js";
 import { showSeriesMenu } from "./series-menu.js";

@@ -1,5 +1,5 @@
 {
-  "name": "@mori/skyscope-sources",
+  "name": "@cmori/skyscope-sources",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "author": "Cristian Mori",
@@ -20,7 +20,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@mori/skyscope-core": "0.1.0",
+    "@cmori/skyscope-core": "0.1.0",
     "mqtt": "^5.15.2"
   },
   "sideEffects": false,

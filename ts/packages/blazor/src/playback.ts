@@ -1,8 +1,8 @@
 // Mori.SkyScope — Browser-side playback for Blazor: a CSV or MCAP recording drives a PlaybackSource against a store and a layer fan-out registered under pl…
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { PlaybackSource, parseCsv, readRecording, type CsvOptions, type Recording, type SourceContext } from "@mori/skyscope-core";
-import { pickFile } from "@mori/skyscope-render";
+import { PlaybackSource, parseCsv, readRecording, type CsvOptions, type Recording, type SourceContext } from "@cmori/skyscope-core";
+import { pickFile } from "@cmori/skyscope-render";
 import { registerPlayback, unregisterPlayback } from "./shared.js";
 
 /**

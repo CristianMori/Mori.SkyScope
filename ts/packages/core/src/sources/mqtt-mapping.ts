@@ -8,7 +8,7 @@ import type { SkyScopeFrame } from "../streaming/frame.js";
  * Turns MQTT messages into samples. A rule matches a topic filter (`+` and `#` wildcards) and extracts a number
  * from the payload: the whole payload as text, or a JSON path (`a.b[2].c`). Time comes from a JSON field when
  * named, otherwise from the receive time. Mirrors `Mori.SkyScope.Core.Sources.MqttMapping`; pinned by
- * `spec/fixtures/mqtt-mapping.json`. The MQTT clients (`@mori/skyscope-sources`, `Mori.SkyScope.Sources.Mqtt`)
+ * `spec/fixtures/mqtt-mapping.json`. The MQTT clients (`@cmori/skyscope-sources`, `Mori.SkyScope.Sources.Mqtt`)
  * are thin wrappers around this.
  */
 export interface MqttRule {

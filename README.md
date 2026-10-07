@@ -330,8 +330,8 @@ The C# configuration is the same shape (`TrendChartConfig`, `LaneConfig`, `AxisC
 ### React
 
 ```tsx
-import { SignalTree, TrendChart, useSignalStore, useWebSocketSource } from "@mori/skyscope-react";
-import type { TrendChartView } from "@mori/skyscope-render";
+import { SignalTree, TrendChart, useSignalStore, useWebSocketSource } from "@cmori/skyscope-react";
+import type { TrendChartView } from "@cmori/skyscope-render";
 
 function Dashboard() {
   const store = useSignalStore({ retentionSeconds: 600 });
@@ -531,14 +531,14 @@ Everything that produces data is a source plugin against one contract (`Source`,
 
 | Source | TypeScript | C# |
 |---|---|---|
-| WebSocket stream (`SkyScopeFrame` + layers) | `@mori/skyscope-sources` | `Mori.SkyScope.Core` |
-| Synthetic signals (sine, square, triangle, sawtooth, ramp, noise; analog or digital) | `@mori/skyscope-sources` | `Mori.SkyScope.Core` |
+| WebSocket stream (`SkyScopeFrame` + layers) | `@cmori/skyscope-sources` | `Mori.SkyScope.Core` |
+| Synthetic signals (sine, square, triangle, sawtooth, ramp, noise; analog or digital) | `@cmori/skyscope-sources` | `Mori.SkyScope.Core` |
 | CSV playback with a scrubber | core | core |
 | MCAP playback (signals, catalog, layers) | core | core |
-| MQTT (topic filters, JSON paths, timestamps, scaling) | `@mori/skyscope-sources` (mqtt.js over WebSocket) | `Mori.SkyScope.Sources.Mqtt` (MQTTnet) |
+| MQTT (topic filters, JSON paths, timestamps, scaling) | `@cmori/skyscope-sources` (mqtt.js over WebSocket) | `Mori.SkyScope.Sources.Mqtt` (MQTTnet) |
 | ROS 2 (scalars, Twist, Imu, JointState, LaserScan, Odometry, OccupancyGrid, PointCloud2, TF, MarkerArray, Path, URDF robots) | — | `Mori.SkyScope.Sources.Ros2` on Mori.Ros2Sharp |
 | Synthetic 2D robot scene and 3D scene with a two-joint arm | — | core |
-| Template to copy | `@mori/skyscope-source-template` | `Mori.SkyScope.Sources.Template` |
+| Template to copy | `@cmori/skyscope-source-template` | `Mori.SkyScope.Sources.Template` |
 
 Browsers cannot open raw sockets, so desktop-side sources (ROS 2, MQTT over TCP, serial) run in a .NET process and
 are relayed through the broadcaster to every web client. [docs/PLUGINS.md](docs/PLUGINS.md) walks through writing
@@ -608,13 +608,13 @@ spec/fixtures/*.json · spec/frames/*.bin · spec/meshes · spec/mcap     shared
 design/tokens → CSS variables, TS constants, C# constants               one token source
 
 TypeScript                                   C#
-@mori/skyscope-core      headless engine     Mori.SkyScope.Core          headless engine
-@mori/skyscope-render    Canvas2D, WebGL,    Mori.SkyScope.Render.Skia   SkiaSharp painter
+@cmori/skyscope-core      headless engine     Mori.SkyScope.Core          headless engine
+@cmori/skyscope-render    Canvas2D, WebGL,    Mori.SkyScope.Render.Skia   SkiaSharp painter
                          WebGL2 3D, views    Mori.SkyScope.Render.OpenTK OpenGL 3D painter
-@mori/skyscope-react     React components    Mori.SkyScope.Wpf           WPF controls
+@cmori/skyscope-react     React components    Mori.SkyScope.Wpf           WPF controls
                                              Mori.SkyScope.WinForms      Windows Forms controls (designer, CPU/GPU)
-@mori/skyscope-blazor    JS bridge (bundled) Mori.SkyScope.Blazor        Razor components + bundle
-@mori/skyscope-sources   WebSocket, MQTT,    Mori.SkyScope.Streaming     broadcaster, ASP.NET endpoint
+@cmori/skyscope-blazor    JS bridge (bundled) Mori.SkyScope.Blazor        Razor components + bundle
+@cmori/skyscope-sources   WebSocket, MQTT,    Mori.SkyScope.Streaming     broadcaster, ASP.NET endpoint
                          synthetic           Mori.SkyScope.Sources.*     Mqtt, Ros2, Template
 ```
 
@@ -658,12 +658,12 @@ docs/               COMPONENTS.md (every component with its files and fixture), 
 
 | npm | NuGet |
 |---|---|
-| `@mori/skyscope-core` — headless engine | `Mori.SkyScope.Core` — headless engine |
-| `@mori/skyscope-render` — Canvas2D + WebGL painters, views, signal tree panel | `Mori.SkyScope.Render.Skia` — SkiaSharp painter |
-| `@mori/skyscope-react` — React components and hooks | `Mori.SkyScope.Render.OpenTK` — OpenGL 3D painter |
-| `@mori/skyscope-sources` — WebSocket, MQTT, synthetic sources | `Mori.SkyScope.Wpf` — WPF controls |
-| `@mori/skyscope-tokens` — design tokens | `Mori.SkyScope.WinForms` — Windows Forms controls, designer properties, CPU or OpenGL |
-| `@mori/skyscope-source-template` — plugin starting point | `Mori.SkyScope.Blazor` — Razor components + bundled JS |
+| `@cmori/skyscope-core` — headless engine | `Mori.SkyScope.Core` — headless engine |
+| `@cmori/skyscope-render` — Canvas2D + WebGL painters, views, signal tree panel | `Mori.SkyScope.Render.Skia` — SkiaSharp painter |
+| `@cmori/skyscope-react` — React components and hooks | `Mori.SkyScope.Render.OpenTK` — OpenGL 3D painter |
+| `@cmori/skyscope-sources` — WebSocket, MQTT, synthetic sources | `Mori.SkyScope.Wpf` — WPF controls |
+| `@cmori/skyscope-tokens` — design tokens | `Mori.SkyScope.WinForms` — Windows Forms controls, designer properties, CPU or OpenGL |
+| `@cmori/skyscope-source-template` — plugin starting point | `Mori.SkyScope.Blazor` — Razor components + bundled JS |
 | | `Mori.SkyScope.Streaming` — frame broadcaster, ASP.NET endpoint |
 | | `Mori.SkyScope.Sources.Mqtt`, `.Sources.Ros2`, `.Sources.Template` |
 

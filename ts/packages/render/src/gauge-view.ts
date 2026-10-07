@@ -1,7 +1,7 @@
 // Mori.SkyScope — Canvas host for any gauge model: redraws only when invalidated or while the needle is settling, so a dashboard of idle gauges costs nothing.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import type { Knob, Painter, Slider, Switch } from "@mori/skyscope-core";
+import type { Knob, Painter, Slider, Switch } from "@cmori/skyscope-core";
 import { Canvas2DPainter, capture } from "./canvas2d-painter.js";
 
 /** The minimum a gauge model must offer the host: `draw` paints it into a `width` x `height` CSS-pixel area. */

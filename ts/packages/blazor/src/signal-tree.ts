@@ -2,7 +2,7 @@
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
 import { acquire } from "./shared.js";
-import { SignalTreePanel, type TrendChartView } from "@mori/skyscope-render";
+import { SignalTreePanel, type TrendChartView } from "@cmori/skyscope-render";
 
 /** Options of `mountSignalTree`: `wsUrl` and `retentionSeconds` select the shared store as for the trend chart; `separators` split channel names into groups; `placeholder` is the search box hint. */
 export interface SignalTreeMountOptions { wsUrl?: string | undefined; retentionSeconds?: number | undefined; separators?: string | undefined; placeholder?: string | undefined }

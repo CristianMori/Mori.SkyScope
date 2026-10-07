@@ -1,8 +1,8 @@
 // Mori.SkyScope — Blazor bridge for the gauges and inputs: mounts a gauge view and relays value changes to .NET.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-import { AttitudeIndicator, Compass, Knob, Led, LedArray, LinearGauge, NumericDisplay, RadialGauge, Slider, Switch } from "@mori/skyscope-core";
-import { GaugeView, bindKnob, bindSlider, bindSwitch, type GaugeLike } from "@mori/skyscope-render";
+import { AttitudeIndicator, Compass, Knob, Led, LedArray, LinearGauge, NumericDisplay, RadialGauge, Slider, Switch } from "@cmori/skyscope-core";
+import { GaugeView, bindKnob, bindSlider, bindSwitch, type GaugeLike } from "@cmori/skyscope-render";
 
 /** Which gauge model `mountGauge` builds; knob, switch and slider are inputs that report changes back to .NET. */
 export type GaugeKind = "radial" | "linear" | "led" | "ledArray" | "numeric" | "compass" | "attitude" | "knob" | "switch" | "slider";

@@ -1,7 +1,7 @@
 // Mori.SkyScope — Generates the golden SkyScopeFrame binaries and their JSON expectations in spec/frames.
 // Author: Cristian Mori. Copyright 2026 Cristian Mori. Licensed under the Apache License, Version 2.0.
 
-// Regenerates spec/frames/*.bin from spec/frames/*.json using the TS encoder (build @mori/skyscope-core first).
+// Regenerates spec/frames/*.bin from spec/frames/*.json using the TS encoder (build @cmori/skyscope-core first).
 // The C# tests then prove the independent C# encoder produces identical bytes.
 import fs from "node:fs";
 import path from "node:path";
