@@ -464,8 +464,11 @@ Every host raises `ConfigChanged` (`onConfigChanged`) afterwards, so a custom tr
 
 Drop the controls from the toolbox and lay the chart out in the property grid: `Lanes`, `Axes`, `Series`,
 `Thresholds` and `Markers` are collection properties with their own editors, next to `TimeSpanSeconds`,
-`TimeFormat`, `Legend`, `Theme`, `PlotLabels`, `LaneHeaders`, `Navigator` and `MeasurePanel`. What the designer
-writes into `InitializeComponent` is plain code, so the same lines work by hand:
+`TimeFormat`, `Legend`, `Theme`, `PlotLabels`, `LaneHeaders`, `Navigator` and `MeasurePanel`. The design surface
+repaints as you edit: every collection and item announces its changes and the chart rebuilds its model, in the
+designer and at runtime alike, until code calls `Configure`. Verified with Visual Studio 2022's designer; the sample's
+`MainForm.Designer.cs` is in the form the designer writes. What it writes into `InitializeComponent` is plain code,
+so the same lines work by hand:
 
 ```csharp
 chart.Lanes.Add(new LaneDefinition { Id = "analog", Weight = 2 });

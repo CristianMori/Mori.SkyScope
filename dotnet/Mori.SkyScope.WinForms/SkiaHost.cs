@@ -414,6 +414,13 @@ public abstract class SkiaHostControl : Control
         AttachSurface();
     }
 
+    /// <summary>Siting happens after construction: a control that asked for the GPU in its constructor swaps to the CPU surface once it learns it lives in a designer.</summary>
+    public override ISite? Site
+    {
+        get => base.Site;
+        set { base.Site = value; if (DesignMode && _surface is GpuSurface) AttachSurface(); }
+    }
+
     /// <summary>CPU bitmap or OpenGL surface. The designer and sessions without OpenGL always paint on the CPU.</summary>
     [Category("Rendering"), DefaultValue(RenderingMode.Cpu), Description("CPU bitmap or OpenGL surface. The designer and sessions without OpenGL always paint on the CPU.")]
     public RenderingMode Rendering

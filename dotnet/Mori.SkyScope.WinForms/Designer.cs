@@ -19,16 +19,20 @@ public enum ChartThemeChoice
 
 /// <summary>A lane as the designer edits it; becomes a <see cref="LaneConfig"/>.</summary>
 [TypeConverter(typeof(ExpandableObjectConverter))]
-public sealed class LaneDefinition
+public sealed class LaneDefinition : DefinitionItem
 {
     /// <summary>Lane id, referenced by series.</summary>
-    [Description("Lane id, referenced by series.")] public string Id { get; set; } = "lane";
+    private string _id = "lane";
+    [Description("Lane id, referenced by series.")] public string Id { get => _id; set { _id = value; Notify(); } }
     /// <summary>Optional caption.</summary>
-    public string? Label { get; set; }
+    private string? _label;
+    [DefaultValue(null)] public string? Label { get => _label; set { _label = value; Notify(); } }
     /// <summary>Share of the plot height relative to the other lanes.</summary>
-    [DefaultValue(1.0)] public double Weight { get; set; } = 1;
+    private double _weight = 1;
+    [DefaultValue(1.0)] public double Weight { get => _weight; set { _weight = value; Notify(); } }
     /// <summary>Start folded to a summary bar.</summary>
-    [DefaultValue(false)] public bool Collapsed { get; set; }
+    private bool _collapsed;
+    [DefaultValue(false)] public bool Collapsed { get => _collapsed; set { _collapsed = value; Notify(); } }
     /// <inheritdoc/>
     public override string ToString() => $"{Id} (×{Weight})";
     internal LaneConfig ToConfig() => new(Id) { Label = Label, Weight = Weight, Collapsed = Collapsed };
@@ -36,20 +40,26 @@ public sealed class LaneDefinition
 
 /// <summary>An axis as the designer edits it; becomes an <see cref="AxisConfig"/>. Leave a bound NaN for autoscale.</summary>
 [TypeConverter(typeof(ExpandableObjectConverter))]
-public sealed class AxisDefinition
+public sealed class AxisDefinition : DefinitionItem
 {
     /// <summary>Axis id, referenced by series and thresholds.</summary>
-    public string Id { get; set; } = "axis";
+    private string _id = "axis";
+    public string Id { get => _id; set { _id = value; Notify(); } }
     /// <summary>Caption drawn at the top of the strip.</summary>
-    public string? Label { get; set; }
+    private string? _label;
+    [DefaultValue(null)] public string? Label { get => _label; set { _label = value; Notify(); } }
     /// <summary>Unit shown in the legend.</summary>
-    public string? Unit { get; set; }
+    private string? _unit;
+    [DefaultValue(null)] public string? Unit { get => _unit; set { _unit = value; Notify(); } }
     /// <summary>Fixed lower bound; NaN autoscales.</summary>
-    [DefaultValue(double.NaN)] public double Min { get; set; } = double.NaN;
+    private double _min = double.NaN;
+    [DefaultValue(double.NaN)] public double Min { get => _min; set { _min = value; Notify(); } }
     /// <summary>Fixed upper bound; NaN autoscales.</summary>
-    [DefaultValue(double.NaN)] public double Max { get; set; } = double.NaN;
+    private double _max = double.NaN;
+    [DefaultValue(double.NaN)] public double Max { get => _max; set { _max = value; Notify(); } }
     /// <summary>Left or right column.</summary>
-    [DefaultValue(AxisSide.Left)] public AxisSide Side { get; set; } = AxisSide.Left;
+    private AxisSide _side = AxisSide.Left;
+    [DefaultValue(AxisSide.Left)] public AxisSide Side { get => _side; set { _side = value; Notify(); } }
     /// <inheritdoc/>
     public override string ToString() => Id;
     internal AxisConfig ToConfig() => new(Id) { Label = Label, Unit = Unit, Min = double.IsNaN(Min) ? null : Min, Max = double.IsNaN(Max) ? null : Max, Side = Side };
@@ -57,26 +67,35 @@ public sealed class AxisDefinition
 
 /// <summary>A series as the designer edits it; becomes a <see cref="SeriesConfig"/>.</summary>
 [TypeConverter(typeof(ExpandableObjectConverter))]
-public sealed class SeriesDefinition
+public sealed class SeriesDefinition : DefinitionItem
 {
     /// <summary>Series id (unique in the chart).</summary>
-    public string Id { get; set; } = "s1";
+    private string _id = "s1";
+    public string Id { get => _id; set { _id = value; Notify(); } }
     /// <summary>Channel of the store this series draws.</summary>
-    [DefaultValue(1)] public int ChannelId { get; set; } = 1;
+    private int _channelId = 1;
+    [DefaultValue(1)] public int ChannelId { get => _channelId; set { _channelId = value; Notify(); } }
     /// <summary>Lane id; empty = the first lane.</summary>
-    public string? LaneId { get; set; }
+    private string? _laneId;
+    [DefaultValue(null)] public string? LaneId { get => _laneId; set { _laneId = value; Notify(); } }
     /// <summary>Axis id; empty = the lane's default axis.</summary>
-    public string? AxisId { get; set; }
+    private string? _axisId;
+    [DefaultValue(null)] public string? AxisId { get => _axisId; set { _axisId = value; Notify(); } }
     /// <summary>Display name; empty = the channel name.</summary>
-    public string? Name { get; set; }
+    private string? _name;
+    [DefaultValue(null)] public string? Name { get => _name; set { _name = value; Notify(); } }
     /// <summary>CSS colour; empty = palette.</summary>
-    public string? Color { get; set; }
+    private string? _color;
+    [DefaultValue(null)] public string? Color { get => _color; set { _color = value; Notify(); } }
     /// <summary>Line width in pixels; 0 = style default.</summary>
-    [DefaultValue(0.0)] public double Width { get; set; }
+    private double _width;
+    [DefaultValue(0.0)] public double Width { get => _width; set { _width = value; Notify(); } }
     /// <summary>Shown or hidden.</summary>
-    [DefaultValue(true)] public bool Visible { get; set; } = true;
+    private bool _visible = true;
+    [DefaultValue(true)] public bool Visible { get => _visible; set { _visible = value; Notify(); } }
     /// <summary>Logic-analyzer track instead of an analog line.</summary>
-    [DefaultValue(false)] public bool Digital { get; set; }
+    private bool _digital;
+    [DefaultValue(false)] public bool Digital { get => _digital; set { _digital = value; Notify(); } }
     /// <inheritdoc/>
     public override string ToString() => $"{Id} ← ch {ChannelId}";
     internal SeriesConfig ToConfig() => new(Id, ChannelId)
@@ -88,20 +107,26 @@ public sealed class SeriesDefinition
 
 /// <summary>A threshold as the designer edits it; becomes a <see cref="ThresholdConfig"/>. Leave <see cref="To"/> NaN for a line.</summary>
 [TypeConverter(typeof(ExpandableObjectConverter))]
-public sealed class ThresholdDefinition
+public sealed class ThresholdDefinition : DefinitionItem
 {
     /// <summary>Threshold id.</summary>
-    public string Id { get; set; } = "t1";
+    private string _id = "t1";
+    public string Id { get => _id; set { _id = value; Notify(); } }
     /// <summary>Axis the values refer to.</summary>
-    public string AxisId { get; set; } = "axis";
+    private string _axisId = "axis";
+    public string AxisId { get => _axisId; set { _axisId = value; Notify(); } }
     /// <summary>Line value, or the band's lower bound.</summary>
-    public double From { get; set; }
+    private double _from;
+    public double From { get => _from; set { _from = value; Notify(); } }
     /// <summary>Band's upper bound; NaN draws a line.</summary>
-    [DefaultValue(double.NaN)] public double To { get; set; } = double.NaN;
+    private double _to = double.NaN;
+    [DefaultValue(double.NaN)] public double To { get => _to; set { _to = value; Notify(); } }
     /// <summary>CSS colour.</summary>
-    public string Color { get; set; } = "#dc2626";
+    private string _color = "#dc2626";
+    public string Color { get => _color; set { _color = value; Notify(); } }
     /// <summary>Optional caption.</summary>
-    public string? Label { get; set; }
+    private string? _label;
+    [DefaultValue(null)] public string? Label { get => _label; set { _label = value; Notify(); } }
     /// <inheritdoc/>
     public override string ToString() => $"{Id} @ {From}";
     internal ThresholdConfig ToConfig() => new(Id, AxisId, From, Color) { To = double.IsNaN(To) ? null : To, Label = Label };
@@ -109,20 +134,46 @@ public sealed class ThresholdDefinition
 
 /// <summary>An event marker as the designer edits it; becomes a <see cref="MarkerConfig"/>.</summary>
 [TypeConverter(typeof(ExpandableObjectConverter))]
-public sealed class MarkerDefinition
+public sealed class MarkerDefinition : DefinitionItem
 {
     /// <summary>Marker id.</summary>
-    public string Id { get; set; } = "m1";
+    private string _id = "m1";
+    public string Id { get => _id; set { _id = value; Notify(); } }
     /// <summary>Chart time in seconds.</summary>
-    public double Time { get; set; }
+    private double _time;
+    public double Time { get => _time; set { _time = value; Notify(); } }
     /// <summary>Optional caption.</summary>
-    public string? Label { get; set; }
+    private string? _label;
+    [DefaultValue(null)] public string? Label { get => _label; set { _label = value; Notify(); } }
     /// <summary>CSS colour; empty = theme marker colour.</summary>
-    public string? Color { get; set; }
+    private string? _color;
+    [DefaultValue(null)] public string? Color { get => _color; set { _color = value; Notify(); } }
     /// <inheritdoc/>
     public override string ToString() => $"{Id} @ {Time}";
     internal MarkerConfig ToConfig() => new(Id, Time) { Label = Label, Color = string.IsNullOrWhiteSpace(Color) ? null : Color };
 }
 
-/// <summary>Collections the designer serialises item by item.</summary>
-public sealed class DefinitionCollection<T> : Collection<T> where T : new() { }
+/// <summary>Base of the designer items: raises <see cref="Changed"/> when a property is set, so a chart can rebuild while the collection editor edits an item.</summary>
+public abstract class DefinitionItem
+{
+    /// <summary>Raised after any property changed.</summary>
+    public event Action? Changed;
+    /// <summary>Raises <see cref="Changed"/>.</summary>
+    protected void Notify() => Changed?.Invoke();
+}
+
+/// <summary>Collections the designer serialises item by item; <see cref="Changed"/> fires when items are added, removed or replaced, and when an item's property changes.</summary>
+public sealed class DefinitionCollection<T> : Collection<T> where T : DefinitionItem, new()
+{
+    /// <summary>Raised after the collection or one of its items changed.</summary>
+    public event Action? Changed;
+    private void Raise() => Changed?.Invoke();
+    /// <inheritdoc/>
+    protected override void InsertItem(int index, T item) { base.InsertItem(index, item); item.Changed += Raise; Raise(); }
+    /// <inheritdoc/>
+    protected override void RemoveItem(int index) { this[index].Changed -= Raise; base.RemoveItem(index); Raise(); }
+    /// <inheritdoc/>
+    protected override void SetItem(int index, T item) { this[index].Changed -= Raise; base.SetItem(index, item); item.Changed += Raise; Raise(); }
+    /// <inheritdoc/>
+    protected override void ClearItems() { foreach (var it in this) it.Changed -= Raise; base.ClearItems(); Raise(); }
+}

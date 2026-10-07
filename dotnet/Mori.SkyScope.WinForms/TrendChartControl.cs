@@ -37,6 +37,28 @@ public class TrendChartControl : SkiaHostControl
         Clock = new LiveClock();
         AllowDrop = true;
         _timer.Tick += (_, _) => { if (!DesignMode) Redraw(); };
+        Lanes.Changed += DesignerChanged; Axes.Changed += DesignerChanged; Series.Changed += DesignerChanged; Thresholds.Changed += DesignerChanged; Markers.Changed += DesignerChanged;
+    }
+
+    /// <summary>
+    /// A designer property or collection changed: unless code took over with <see cref="Configure"/>, the model is rebuilt
+    /// from the designer properties and the control repaints, in the designer and at runtime alike.
+    /// </summary>
+    private void DesignerChanged()
+    {
+        if (_configured) return;
+        _designerDirty = true;
+        Redraw();
+    }
+    private bool _designerDirty;
+
+    /// <summary>Rebuilds the model from the designer properties when they changed since the last paint.</summary>
+    private void FlushDesignerConfig()
+    {
+        if (!_designerDirty) return;
+        _designerDirty = false;
+        Model = new TrendChartModel(Store, BuildDesignerConfig()) { Now = Model.Now };
+        _layout = null;
     }
 
     // ---- designer properties --------------------------------------------------
@@ -57,31 +79,40 @@ public class TrendChartControl : SkiaHostControl
     public DefinitionCollection<MarkerDefinition> Markers { get; } = [];
     /// <summary>Visible time span in seconds.</summary>
     [Category("Chart"), DefaultValue(30.0), Description("Visible time span in seconds.")]
-    public double TimeSpanSeconds { get; set; } = 30;
+    public double TimeSpanSeconds { get => _timeSpanSeconds; set { _timeSpanSeconds = value; DesignerChanged(); } }
+    private double _timeSpanSeconds = 30;
     /// <summary>Time axis labels: wall clock (UTC) or seconds back from the live edge.</summary>
     [Category("Chart"), DefaultValue(TimeFormat.Utc), Description("Time axis labels: wall clock (UTC) or seconds back from the live edge.")]
-    public TimeFormat TimeFormat { get; set; } = TimeFormat.Utc;
+    public TimeFormat TimeFormat { get => _timeFormat; set { _timeFormat = value; DesignerChanged(); } }
+    private TimeFormat _timeFormat = TimeFormat.Utc;
     /// <summary>Legend placement.</summary>
     [Category("Chart"), DefaultValue(LegendPosition.TopLeft), Description("Legend placement.")]
-    public LegendPosition Legend { get; set; } = LegendPosition.TopLeft;
+    public LegendPosition Legend { get => _legend; set { _legend = value; DesignerChanged(); } }
+    private LegendPosition _legend = LegendPosition.TopLeft;
     /// <summary>Light or dark theme.</summary>
     [Category("Chart"), DefaultValue(ChartThemeChoice.Light), Description("Light or dark theme.")]
-    public ChartThemeChoice Theme { get; set; } = ChartThemeChoice.Light;
+    public ChartThemeChoice Theme { get => _theme; set { _theme = value; DesignerChanged(); } }
+    private ChartThemeChoice _theme = ChartThemeChoice.Light;
     /// <summary>Series names inside the lanes (the drag handles).</summary>
     [Category("Chart"), DefaultValue(true), Description("Series names inside the lanes (the drag handles).")]
-    public bool PlotLabels { get; set; } = true;
+    public bool PlotLabels { get => _plotLabels; set { _plotLabels = value; DesignerChanged(); } }
+    private bool _plotLabels = true;
     /// <summary>Header bars left of the lanes: drag to reorder, fold, remove.</summary>
     [Category("Chart"), DefaultValue(true), Description("Header bars left of the lanes: drag to reorder, fold, remove.")]
-    public bool LaneHeaders { get; set; } = true;
+    public bool LaneHeaders { get => _laneHeaders; set { _laneHeaders = value; DesignerChanged(); } }
+    private bool _laneHeaders = true;
     /// <summary>Overview strip under the time axis with the visible window framed.</summary>
     [Category("Chart"), DefaultValue(false), Description("Overview strip under the time axis with the visible window framed.")]
-    public bool Navigator { get; set; }
+    public bool Navigator { get => _navigator; set { _navigator = value; DesignerChanged(); } }
+    private bool _navigator;
     /// <summary>Measurement table while both cursors are set.</summary>
     [Category("Chart"), DefaultValue(true), Description("Measurement table while both cursors are set.")]
-    public bool MeasurePanel { get; set; } = true;
+    public bool MeasurePanel { get => _measurePanel; set { _measurePanel = value; DesignerChanged(); } }
+    private bool _measurePanel = true;
     /// <summary>Lane header bar width in pixels.</summary>
     [Category("Chart"), DefaultValue(14.0)]
-    public double LaneHeaderWidth { get; set; } = 14;
+    public double LaneHeaderWidth { get => _laneHeaderWidth; set { _laneHeaderWidth = value; DesignerChanged(); } }
+    private double _laneHeaderWidth = 14;
 
     /// <summary>Builds a configuration from the designer properties (the collections above and the scalar settings).</summary>
     public TrendChartConfig BuildDesignerConfig()
@@ -99,8 +130,8 @@ public class TrendChartControl : SkiaHostControl
         return cfg;
     }
 
-    /// <summary>Apply the designer properties now (also done automatically on first paint when <see cref="Configure"/> was not called).</summary>
-    public void ApplyDesignerConfig() => Configure(BuildDesignerConfig());
+    /// <summary>Apply the designer properties now; the control keeps following them until <see cref="Configure"/> hands the configuration to code.</summary>
+    public void ApplyDesignerConfig() { _designerDirty = true; FlushDesignerConfig(); Redraw(); }
 
     // ---- runtime surface ---------------------------------------------------------
     /// <summary>The store the chart reads; replace it with <see cref="SetStore"/>.</summary>
@@ -230,7 +261,7 @@ public class TrendChartControl : SkiaHostControl
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
-        if (!_configured && !DesignMode && (Lanes.Count > 0 || Series.Count > 0 || Axes.Count > 0)) ApplyDesignerConfig();
+        if (!_configured && (Lanes.Count > 0 || Series.Count > 0 || Axes.Count > 0)) ApplyDesignerConfig();
         if (!DesignMode) _timer.Start();
     }
     protected override void OnHandleDestroyed(EventArgs e) { _timer.Stop(); base.OnHandleDestroyed(e); }
@@ -399,7 +430,7 @@ public class TrendChartControl : SkiaHostControl
 
     protected override void OnPaintSurface(SkiaPaintEventArgs e)
     {
-        if (DesignMode && !_configured && (Lanes.Count > 0 || Series.Count > 0 || Axes.Count > 0)) { Model = new TrendChartModel(Store, BuildDesignerConfig()); }
+        FlushDesignerConfig();
         lock (Store.SyncRoot)
         {
             Model.Now = DesignMode ? 0 : Clock.Now();
